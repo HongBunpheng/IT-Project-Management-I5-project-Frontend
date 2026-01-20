@@ -1,0 +1,101 @@
+import 'package:flutter/material.dart';
+import '../models/exam_model.dart';
+import '../services/exam_service.dart';
+import '../widgets/exam/rounded_donut_chart.dart';
+import '../widgets/exam/subject_score_row.dart';
+import '../widgets/exam/scores_table_header.dart';
+import '../widgets/common/app_header.dart';
+import '../widgets/common/profile_avatar.dart';
+import '../widgets/common/primary_button.dart';
+
+class ScoresSummaryScreen extends StatefulWidget {
+  const ScoresSummaryScreen({super.key});
+
+  @override
+  State<ScoresSummaryScreen> createState() => _ScoresSummaryScreenState();
+}
+
+class _ScoresSummaryScreenState extends State<ScoresSummaryScreen> {
+  final ExamService _examService = ExamService();
+  List<SubjectScore> _subjectScores = [];
+  double _averageScore = 0.0;
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSummaryData();
+  }
+
+  Future<void> _loadSummaryData() async {
+    try {
+      final summary = await _examService.getScoresSummary();
+      final examSummary = await _examService.getExamResults();
+      setState(() {
+        _subjectScores = summary;
+        _averageScore = examSummary.averageScore;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error loading summary: $e')),
+        );
+      }
+    }
+  }
+
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.white,
+      body: SafeArea(
+        child: _isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : Column(
+                children: [
+                  // Header with profile picture
+                  AppHeader(
+                    title: 'Scores Summary',
+                    trailing: const ProfileAvatar(),
+                  ),
+                  const SizedBox(height: 65),
+                  // Donut Chart with rounded segments
+                  RoundedDonutChart(
+                    subjects: _subjectScores,
+                    averageScore: _averageScore,
+                  ),
+                  const SizedBox(height: 60),
+                  // Table Header
+                  const ScoresTableHeader(),
+                  const SizedBox(height: 12),
+                  // Table Rows
+                  Expanded(
+                    child: ListView.builder(
+                      padding: const EdgeInsets.only(left: 32.0, right: 16.0),
+                      itemCount: _subjectScores.length,
+                      itemBuilder: (context, index) {
+                        return SubjectScoreRow(
+                          subject: _subjectScores[index],
+                        );
+                      },
+                    ),
+                  ),
+                  // Back Button
+                  Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: PrimaryButton(
+                      text: 'Back',
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ),
+                ],
+              ),
+      ),
+    );
+  }
+}

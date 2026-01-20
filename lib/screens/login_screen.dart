@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:it_project_management_i5_project_frontend/screens/signup_screen.dart';
 import '../configs/app_colors.dart';
 import '../repositories/auth_repository.dart';
 import '../utils/helpers.dart';
 import '../utils/validators.dart';
 import '../screens/signup_screen.dart';
+import '../screens/attendance/attendance_overview_screen.dart';
+
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -34,8 +35,17 @@ class _LoginScreenState extends State<LoginScreen> {
 
     setState(() => _isLoading = false);
 
+    if (!mounted) return;
+
     if (res["statusCode"] == 200) {
       Helpers.showSnackBar(context, "Login Successful!");
+
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (_) => const AttendanceOverviewScreen(),
+        ),
+      );
     } else {
       Helpers.showSnackBar(context, res["body"]["message"] ?? "Login failed");
     }

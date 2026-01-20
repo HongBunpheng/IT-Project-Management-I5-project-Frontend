@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
 import '../configs/app_colors.dart';
 import 'login_screen.dart';
+import '../screens/attendance/attendance_overview_screen.dart';
+import '../repositories/auth_repository.dart';
+import '../utils/helpers.dart';
+import '../utils/validators.dart';
+
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
@@ -10,12 +15,50 @@ class SignUpScreen extends StatefulWidget {
 }
 
 class _SignUpScreenState extends State<SignUpScreen> {
+  final _formKey = GlobalKey<FormState>();
   bool _hidePassword = true;
+  bool _isLoading = false;
 
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
   final _passwordController = TextEditingController();
+
+  final AuthRepository _authRepo = AuthRepository();
+
+  Future<void> _handleRegister() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() => _isLoading = true);
+
+    final res = await _authRepo.register(
+      fullName: _nameController.text.trim(),
+      email: _emailController.text.trim(),
+      phone: _phoneController.text.trim(),
+      password: _passwordController.text.trim(),
+    );
+
+    setState(() => _isLoading = false);
+
+    if (!mounted) return;
+
+    if (res["statusCode"] == 200) {
+      Helpers.showSnackBar(context, "Register Successful!");
+
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (_) => const AttendanceOverviewScreen(),
+        ),
+      );
+    } else {
+      Helpers.showSnackBar(
+        context,
+        res["body"]["message"] ?? "Registration failed",
+      );
+    }
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -83,87 +126,102 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
                       const SizedBox(height: 25),
 
-                      // FULL NAME FIELD
-                      buildField(
-                        label: "Full Name",
-                        controller: _nameController,
-                        hint: "Enter your name",
-                      ),
-
-                      // EMAIL
-                      buildField(
-                        label: "Email",
-                        controller: _emailController,
-                        hint: "Enter your email",
-                      ),
-
-                      // PHONE
-                      buildField(
-                        label: "Phone Number",
-                        controller: _phoneController,
-                        hint: "Enter your phone",
-                      ),
-
-                      // PASSWORD
-                      buildField(
-                        label: "Set Password",
-                        controller: _passwordController,
-                        hint: "Enter your password",
-                        obscure: _hidePassword,
-                        toggle: () {
-                          setState(() => _hidePassword = !_hidePassword);
-                        },
-                      ),
-
-                      const SizedBox(height: 30),
-
-                      // REGISTER BUTTON
-                      SizedBox(
-                        width: double.infinity,
-                        height: 50,
-                        child: ElevatedButton(
-                          onPressed: () {},
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primaryBlue,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
+                      Form(
+                        key: _formKey,
+                        child: Column(
+                          children: [
+                            // FULL NAME FIELD
+                            buildField(
+                              label: "Full Name",
+                              controller: _nameController,
+                              hint: "Enter your name",
+                              validator: Validators.validateName,
                             ),
-                          ),
-                          child: const Text(
-                            "Register",
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.white,
+
+                            // EMAIL
+                            buildField(
+                              label: "Email",
+                              controller: _emailController,
+                              hint: "Enter your email",
+                              validator: Validators.validateEmail,
                             ),
-                          ),
-                        ),
-                      ),
 
-                      const SizedBox(height: 20),
+                            // PHONE
+                            buildField(
+                              label: "Phone Number",
+                              controller: _phoneController,
+                              hint: "Enter your phone",
+                              validator: Validators.validatePhone,
+                            ),
 
-                      // BOTTOM “Already have account?”
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Text("Already have an account? "),
-                          TextButton(
-                            onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => const LoginScreen(),
+                            // PASSWORD
+                            buildField(
+                              label: "Set Password",
+                              controller: _passwordController,
+                              hint: "Enter your password",
+                              obscure: _hidePassword,
+                              validator: Validators.validatePassword,
+                              toggle: () {
+                                setState(() => _hidePassword = !_hidePassword);
+                              },
+                            ),
+
+                            const SizedBox(height: 30),
+
+                            // REGISTER BUTTON
+                            SizedBox(
+                              width: double.infinity,
+                              height: 50,
+                              child: ElevatedButton(
+                                onPressed: _isLoading ? null : _handleRegister,
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppColors.primaryBlue,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
                                 ),
-                              );
-                            },
-                            child: const Text(
-                              "Login",
-                              style: TextStyle(
-                                color: AppColors.primaryBlue,
+                                child: _isLoading
+                                    ? const CircularProgressIndicator(
+                                        color: Colors.white,
+                                      )
+                                    : const Text(
+                                        "Register",
+                                        style: TextStyle(
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.w600,
+                                          color: Colors.white,
+                                        ),
+                                      ),
                               ),
                             ),
-                          ),
-                        ],
+
+                            const SizedBox(height: 20),
+
+                            // BOTTOM "Already have account?"
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const Text("Already have an account? "),
+                                TextButton(
+                                  onPressed: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) => const LoginScreen(),
+                                      ),
+                                    );
+                                  },
+                                  child: const Text(
+                                    "Login",
+                                    style: TextStyle(
+                                      color: AppColors.primaryBlue,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
                       ),
                     ],
                   ),
@@ -184,6 +242,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
     required TextEditingController controller,
     required String hint,
     bool obscure = false,
+    String? Function(String?)? validator,
     VoidCallback? toggle,
   }) {
     return Column(
@@ -201,6 +260,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
         TextFormField(
           controller: controller,
           obscureText: obscure,
+          validator: validator,
           decoration: InputDecoration(
             filled: true,
             fillColor: Colors.white,
