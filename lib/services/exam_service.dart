@@ -110,8 +110,6 @@ class ExamService {
 
   /// Get scores summary with color mapping
   Future<List<SubjectScore>> getScoresSummary() async {
-    final examSummary = await getExamResults();
-    
     // Color mapping for subjects (matching the design)
     final colorMap = {
       'Network Security': 0xFF00BCD4, // Teal/Cyan

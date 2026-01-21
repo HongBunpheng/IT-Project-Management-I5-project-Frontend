@@ -86,7 +86,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     borderRadius: BorderRadius.circular(20),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.08),
+                        color: Colors.black.withValues(alpha: 0.08),
                         spreadRadius: 1,
                         blurRadius: 10,
                       ),
@@ -191,11 +191,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                             : Icons.visibility,
                                         color: Colors.grey,
                                       ),
-                                      onPressed:
-                                          () => setState(
-                                            () =>
-                                                _hidePassword = !_hidePassword,
-                                          ),
+                                      onPressed: () => setState(
+                                        () => _hidePassword = !_hidePassword,
+                                      ),
                                     ),
                                     contentPadding: const EdgeInsets.symmetric(
                                       horizontal: 16,
@@ -232,19 +230,18 @@ class _LoginScreenState extends State<LoginScreen> {
                                     borderRadius: BorderRadius.circular(12),
                                   ),
                                 ),
-                                child:
-                                    _isLoading
-                                        ? const CircularProgressIndicator(
+                                child: _isLoading
+                                    ? const CircularProgressIndicator(
+                                        color: Colors.white,
+                                      )
+                                    : const Text(
+                                        "Log In",
+                                        style: TextStyle(
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.w600,
                                           color: Colors.white,
-                                        )
-                                        : const Text(
-                                          "Log In",
-                                          style: TextStyle(
-                                            fontSize: 18,
-                                            fontWeight: FontWeight.w600,
-                                            color: Colors.white,
-                                          ),
                                         ),
+                                      ),
                               ),
                             ),
 

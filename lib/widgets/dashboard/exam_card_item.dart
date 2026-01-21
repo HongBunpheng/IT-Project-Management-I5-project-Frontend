@@ -6,21 +6,18 @@ import '../../models/dashboard_models.dart';
 class ExamCardItem extends StatelessWidget {
   final ExamCard exam;
 
-  const ExamCardItem({
-    super.key,
-    required this.exam,
-  });
+  const ExamCardItem({super.key, required this.exam});
 
   @override
   Widget build(BuildContext context) {
     final Color cardColor = exam.iconCategory == 'blue'
         ? AppColors.cardBlue
-        : AppColors.cardPink;
+        : AppColors.primaryBlueLight;
     final Color iconColor = exam.iconCategory == 'blue'
         ? AppColors.iconPink
         : AppColors.iconOrange;
     final Color progressColor = exam.iconCategory == 'blue'
-        ? AppColors.info
+        ? AppColors.primaryBlueLight
         : AppColors.progressOrange;
     final IconData iconData = Icons.work_outline;
 

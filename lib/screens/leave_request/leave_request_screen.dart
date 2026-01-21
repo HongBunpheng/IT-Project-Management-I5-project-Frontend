@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../widgets/common/primary_button.dart';
 import 'apply_leave_screen.dart';
 
 class LeaveRequestScreen extends StatefulWidget {
@@ -10,7 +9,6 @@ class LeaveRequestScreen extends StatefulWidget {
 }
 
 class _LeaveRequestScreenState extends State<LeaveRequestScreen> {
-  DateTime _focusedDate = DateTime(2025, 10, 1);
   final List<String> _weekDays = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
   
   // Mock mock data for calendar status
@@ -149,7 +147,6 @@ class _LeaveRequestScreenState extends State<LeaveRequestScreen> {
   }
 
   Widget _buildDayCell(int day) {
-    Color? bgColor;
     Color textColor = Colors.grey.shade700;
     
     // Status Logic
@@ -159,10 +156,9 @@ class _LeaveRequestScreenState extends State<LeaveRequestScreen> {
       
       switch (status) {
         case 'declined':
-          bgColor = const Color(0xFFEF5350); // Red
           break;
         case 'approved':
-          bgColor = const Color(0xFF66BB6A); // Green - small dot logic needs CustomPainter, using simple circle for now or stack
+          // Green - small dot logic needs CustomPainter, using simple circle for now or stack
           // For 'approved' (16) screenshot shows green DOT, others show full circle? 
           // Actually screenshot 8 is RED circle. 16 is GREEN DOT. 21, 22 ORANGE DOT.
           // Let's implement dots for some, circle for others based on image.
@@ -203,9 +199,6 @@ class _LeaveRequestScreenState extends State<LeaveRequestScreen> {
               const CircleAvatar(radius: 4, backgroundColor: Colors.orange),
             ],
           );
-        case 'declined':
-           // Already handled above but let's separate
-           break;
       }
     }
     

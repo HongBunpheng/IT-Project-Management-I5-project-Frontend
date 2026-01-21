@@ -9,7 +9,7 @@ class TimetableHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final horizontalPadding = Responsive.getPadding(context);
-    
+
     return Container(
       padding: EdgeInsets.symmetric(
         horizontal: horizontalPadding,
@@ -25,10 +25,7 @@ class TimetableHeader extends StatelessWidget {
             decoration: BoxDecoration(
               color: AppColors.white,
               borderRadius: BorderRadius.circular(AppSizes.radiusM),
-              border: Border.all(
-                color: AppColors.borderLight,
-                width: 1,
-              ),
+              border: Border.all(color: AppColors.borderLight, width: 1),
             ),
             child: Icon(
               Icons.calendar_today,
@@ -61,14 +58,11 @@ class TimetableHeader extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: AppColors.white,
                   shape: BoxShape.circle,
-                  border: Border.all(
-                    color: AppColors.borderLight,
-                    width: 1,
-                  ),
+                  border: Border.all(color: AppColors.borderLight, width: 1),
                 ),
                 child: Icon(
                   Icons.settings,
-                  color: AppColors.darkGrey,
+                  color: AppColors.grey,
                   size: AppSizes.iconSizeM,
                 ),
               ),

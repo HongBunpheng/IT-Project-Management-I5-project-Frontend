@@ -216,7 +216,7 @@ class _ActionButton extends StatelessWidget {
       return ShaderMask(
         shaderCallback: (bounds) => LinearGradient(
           colors: [
-            cardColor.withOpacity(0.7), // Lighter blue for left page
+            cardColor.withValues(alpha: 0.7), // Lighter blue for left page
             cardColor, // Darker blue for right page
           ],
           begin: Alignment.centerLeft,
@@ -255,13 +255,13 @@ class _ActionButton extends StatelessWidget {
 
   // Helper method to get gradient colors based on card type
   List<Color> _getGradientColors(Color baseColor) {
-    if (baseColor.value == 0xFF42A5F5) {
+    if (baseColor.toARGB32() == 0xFF42A5F5) {
       // Blue card gradient
       return [
         const Color(0xFF448AFF), // Darker Blue
         const Color(0xFF40C4FF), // Lighter Blue
       ];
-    } else if (baseColor.value == 0xFF66BB6A) {
+    } else if (baseColor.toARGB32() == 0xFF66BB6A) {
       // Green card gradient
       return [
         const Color(0xFF00BFA5), // Teal/Green
@@ -269,7 +269,7 @@ class _ActionButton extends StatelessWidget {
       ];
     }
     return [
-      baseColor.withOpacity(0.6),
+      baseColor.withValues(alpha: 0.6),
       baseColor,
     ];
   }
@@ -289,7 +289,7 @@ class _ActionButton extends StatelessWidget {
           ),
           boxShadow: [
             BoxShadow(
-              color: color.withOpacity(0.3),
+              color: color.withValues(alpha: 0.3),
               blurRadius: 8,
               offset: const Offset(0, 4),
             ),
@@ -305,7 +305,7 @@ class _ActionButton extends StatelessWidget {
                 width: 100,
                 height: 100,
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.1),
+                  color: Colors.white.withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
               ),
@@ -322,14 +322,10 @@ class _ActionButton extends StatelessWidget {
                     width: 44,
                     height: 44,
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
+                      color: Colors.white.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: Icon(
-                      icon,
-                      color: Colors.white,
-                      size: 22,
-                    ),
+                    child: Center(child: _buildIcon(icon, color)),
                   ),
                   
                   // Texts
@@ -354,7 +350,7 @@ class _ActionButton extends StatelessWidget {
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
-                            color: Colors.white.withOpacity(0.9),
+                            color: Colors.white.withValues(alpha: 0.9),
                             fontSize: 12,
                           ),
                         ),

@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../models/attendance_model.dart';
-import '../../configs/app_colors.dart';
 import '../../widgets/attendance/date_selector.dart';
 import '../../widgets/attendance/stat_card.dart';
 import '../../widgets/attendance/activity_item.dart';

@@ -131,12 +131,12 @@ class _ScoreDetailsCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.08),
+            color: Colors.grey.withValues(alpha: 0.08),
             blurRadius: 15,
             offset: const Offset(0, 5),
           ),
           BoxShadow(
-            color: Colors.grey.withOpacity(0.05),
+            color: Colors.grey.withValues(alpha: 0.05),
             blurRadius: 5,
             offset: const Offset(0, 2),
           ),
@@ -230,7 +230,7 @@ class _ExamDateCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFFFCE4EC).withOpacity(0.5), // Light pinkish
+        color: const Color(0xFFFCE4EC).withValues(alpha: 0.5), // Light pinkish
         borderRadius: BorderRadius.circular(20),
       ),
       child: Row(
@@ -283,9 +283,9 @@ class _LecturersCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: const Color(0xFFE3F2FD).withOpacity(0.5), // Light blue bg
+        color: const Color(0xFFE3F2FD).withValues(alpha: 0.5), // Light blue bg
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.blue.withOpacity(0.1)),
+        border: Border.all(color: Colors.blue.withValues(alpha: 0.1)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

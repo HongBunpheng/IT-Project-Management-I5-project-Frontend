@@ -78,7 +78,7 @@ class LeaveRequestDetailScreen extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFFFCC80).withOpacity(0.5), // Light Orange
+                        color: const Color(0xFFFFCC80).withValues(alpha: 0.5), // Light Orange
                         borderRadius: BorderRadius.circular(4),
                       ),
                       child: const Text(

@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../widgets/common/primary_button.dart';
-import '../../configs/app_colors.dart';
 import 'leave_request_detail_screen.dart';
 
 class ApplyLeaveScreen extends StatefulWidget {

@@ -57,9 +57,9 @@ class TaskCardItem extends StatelessWidget {
             height: 50,
             decoration: BoxDecoration(
               color: Color.fromRGBO(
-                iconColor.red,
-                iconColor.green,
-                iconColor.blue,
+                (iconColor.r * 255).round().clamp(0, 255).toInt(),
+                (iconColor.g * 255).round().clamp(0, 255).toInt(),
+                (iconColor.b * 255).round().clamp(0, 255).toInt(),
                 0.2,
               ),
               borderRadius: BorderRadius.circular(AppSizes.radiusS),

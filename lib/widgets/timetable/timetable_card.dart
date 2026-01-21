@@ -1,17 +1,13 @@
 import 'package:flutter/material.dart';
 import '../../configs/app_colors.dart';
 import '../../configs/app_sizes.dart';
-import '../../models/timetable_task_model.dart'; // Checking if it's correct context
+import '../../models/timetable_model.dart';
 
 class TimetableCard extends StatelessWidget {
   final TimetableModel timetable;
   final VoidCallback? onTap;
 
-  const TimetableCard({
-    super.key,
-    required this.timetable,
-    this.onTap,
-  });
+  const TimetableCard({super.key, required this.timetable, this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -64,7 +60,11 @@ class TimetableCard extends StatelessWidget {
               const SizedBox(height: AppSizes.spacingS),
               Row(
                 children: [
-                  const Icon(Icons.access_time, size: 16, color: AppColors.textSecondary),
+                  const Icon(
+                    Icons.access_time,
+                    size: 16,
+                    color: AppColors.textSecondary,
+                  ),
                   const SizedBox(width: AppSizes.spacingXS),
                   Text(
                     '${timetable.startTime ?? '00:00'} - ${timetable.endTime ?? '00:00'}',
@@ -79,7 +79,11 @@ class TimetableCard extends StatelessWidget {
                 const SizedBox(height: AppSizes.spacingXS),
                 Row(
                   children: [
-                    const Icon(Icons.location_on, size: 16, color: AppColors.textSecondary),
+                    const Icon(
+                      Icons.location_on,
+                      size: 16,
+                      color: AppColors.textSecondary,
+                    ),
                     const SizedBox(width: AppSizes.spacingXS),
                     Text(
                       timetable.location!,
@@ -95,7 +99,11 @@ class TimetableCard extends StatelessWidget {
                 const SizedBox(height: AppSizes.spacingXS),
                 Row(
                   children: [
-                    const Icon(Icons.person, size: 16, color: AppColors.textSecondary),
+                    const Icon(
+                      Icons.person,
+                      size: 16,
+                      color: AppColors.textSecondary,
+                    ),
                     const SizedBox(width: AppSizes.spacingXS),
                     Text(
                       timetable.instructor!,

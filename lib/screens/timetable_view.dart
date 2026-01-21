@@ -7,7 +7,6 @@ import '../widgets/timetable/date_picker_widget.dart';
 import '../widgets/timetable/intake_progress_widget.dart';
 import '../widgets/timetable/timetable_task_card.dart';
 import '../models/timetable_task_model.dart';
-import 'dashboard/dashboard_view.dart';
 
 class TimetableView extends StatefulWidget {
   const TimetableView({super.key});

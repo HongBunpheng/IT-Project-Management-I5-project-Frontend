@@ -6,16 +6,13 @@ import '../../models/timetable_task_model.dart';
 class IntakeProgressWidget extends StatelessWidget {
   final IntakeModel intake;
 
-  const IntakeProgressWidget({
-    super.key,
-    required this.intake,
-  });
+  const IntakeProgressWidget({super.key, required this.intake});
 
   @override
   Widget build(BuildContext context) {
     final progress = intake.total > 0 ? intake.completed / intake.total : 0.0;
     final isCompleted = intake.completed == intake.total && intake.total > 0;
-    
+
     return Column(
       children: [
         Text(
@@ -62,8 +59,8 @@ class IntakeProgressWidget extends StatelessWidget {
                       style: TextStyle(
                         fontSize: AppSizes.fontSizeXXXL,
                         fontWeight: FontWeight.bold,
-                        color: isCompleted 
-                            ? AppColors.success 
+                        color: isCompleted
+                            ? AppColors.success
                             : AppColors.textSecondary,
                       ),
                     ),

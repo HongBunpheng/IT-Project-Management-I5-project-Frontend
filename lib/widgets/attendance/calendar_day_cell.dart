@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../../models/attendance_model.dart';
-import '../../configs/app_colors.dart';
 
 class CalendarDayCell extends StatelessWidget {
   final CalendarDay day;

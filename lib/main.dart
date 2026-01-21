@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import 'screens/dashboard/dashboard_view.dart';
-import 'screens/exam_scores_screen.dart';
 
 void main() {
   runApp(const MyApp());

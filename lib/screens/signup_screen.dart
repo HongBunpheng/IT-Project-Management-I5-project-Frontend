@@ -96,7 +96,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     borderRadius: BorderRadius.circular(20),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.08),
+                        color: Colors.black.withValues(alpha: 0.08),
                         spreadRadius: 1,
                         blurRadius: 10,
                       ),
@@ -173,19 +173,18 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                     borderRadius: BorderRadius.circular(12),
                                   ),
                                 ),
-                                child:
-                                    _isLoading
-                                        ? const CircularProgressIndicator(
+                                child: _isLoading
+                                    ? const CircularProgressIndicator(
+                                        color: Colors.white,
+                                      )
+                                    : const Text(
+                                        "Register",
+                                        style: TextStyle(
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.w600,
                                           color: Colors.white,
-                                        )
-                                        : const Text(
-                                          "Register",
-                                          style: TextStyle(
-                                            fontSize: 18,
-                                            fontWeight: FontWeight.w600,
-                                            color: Colors.white,
-                                          ),
                                         ),
+                                      ),
                               ),
                             ),
 
@@ -260,16 +259,15 @@ class _SignUpScreenState extends State<SignUpScreen> {
             fillColor: Colors.white,
             hintText: hint,
             hintStyle: const TextStyle(color: Colors.grey, fontSize: 16),
-            suffixIcon:
-                toggle != null
-                    ? IconButton(
-                      icon: Icon(
-                        obscure ? Icons.visibility_off : Icons.visibility,
-                        color: Colors.grey,
-                      ),
-                      onPressed: toggle,
-                    )
-                    : null,
+            suffixIcon: toggle != null
+                ? IconButton(
+                    icon: Icon(
+                      obscure ? Icons.visibility_off : Icons.visibility,
+                      color: Colors.grey,
+                    ),
+                    onPressed: toggle,
+                  )
+                : null,
             contentPadding: const EdgeInsets.symmetric(
               horizontal: 16,
               vertical: 14,
