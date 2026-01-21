@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import '../models/attendance_model.dart';
-import '../widgets/user_profile_section.dart';
-import '../widgets/attendance_day_selector.dart';
-import '../widgets/check_in_out_section.dart';
-import '../widgets/summary_statistics.dart';
-import '../widgets/activity_list.dart';
-import 'attendance_calendar_screen.dart';
+import '../../models/attendance_model.dart';
+import '../../configs/app_colors.dart';
+import '../../widgets/attendance/date_selector.dart';
+import '../../widgets/attendance/stat_card.dart';
+import '../../widgets/attendance/activity_item.dart';
+import 'attendance_history_screen.dart';
+import '../leave_request/leave_request_screen.dart';
 
 class AttendanceScreen extends StatefulWidget {
   const AttendanceScreen({super.key});
@@ -15,24 +15,14 @@ class AttendanceScreen extends StatefulWidget {
 }
 
 class _AttendanceScreenState extends State<AttendanceScreen> {
-  int selectedDay = 4; // Default to day 04 Wed
-
-  final List<DayInfo> days = [
-    DayInfo(day: 1, dayName: 'Sun'),
-    DayInfo(day: 2, dayName: 'Mon'),
-    DayInfo(day: 3, dayName: 'Tue'),
-    DayInfo(day: 4, dayName: 'Wed', isSelected: true),
-    DayInfo(day: 5, dayName: 'Thu'),
-  ];
-
-  final List<AttendanceRecord> activities = [
-    AttendanceRecord(
-      date: '26/6/2025',
-      checkInTime: '8:20 AM',
-      checkOutTime: '5:20 PM',
-      checkInStatus: 'late 1:20 min',
-      checkOutStatus: 'on time',
-    ),
+  int _selectedDateIndex = 3; // "04 Wed" selected in screenshot
+  
+  final List<Map<String, String>> _days = [
+    {"day": "01", "weekday": "Sun"},
+    {"day": "02", "weekday": "Mon"},
+    {"day": "03", "weekday": "Tue"},
+    {"day": "04", "weekday": "Wed"},
+    {"day": "05", "weekday": "Th6"}, // Screenshot says Th6? probably Thu
   ];
 
   @override
@@ -41,99 +31,284 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
       backgroundColor: Colors.white,
       body: SafeArea(
         child: SingleChildScrollView(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const SizedBox(height: 8),
-                // User Profile Section
-                const UserProfileSection(
-                  name: 'Kadorukuriki',
-                  id: 'e20211399',
-                  hasNotification: true,
-                ),
-                const SizedBox(height: 24),
-                // Attendance Sheet Section
-                GestureDetector(
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const AttendanceCalendarScreen(),
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header
+              Row(
+                children: [
+                  const CircleAvatar(
+                    backgroundImage: NetworkImage('https://i.pravatar.cc/150?img=5'), // Placeholder
+                    radius: 20,
+                  ),
+                  const SizedBox(width: 12),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: const [
+                      Text(
+                        "Kadorukuriki",
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                       ),
-                    );
-                  },
-                  child: const Text(
-                    'Attendance sheet',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF2196F3),
+                      Text(
+                        "e20211399",
+                        style: TextStyle(color: Colors.grey, fontSize: 12),
+                      ),
+                    ],
+                  ),
+                  const Spacer(),
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.grey.shade200),
+                    ),
+                    child: Stack(
+                      children: const [
+                        Icon(Icons.notifications_none, color: Colors.black87),
+                        Positioned(
+                          right: 2,
+                          top: 2,
+                          child: CircleAvatar(
+                            radius: 4,
+                            backgroundColor: Colors.red,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                ),
-                const SizedBox(height: 16),
-                // Day Selector
-                AttendanceDaySelector(
-                  days: days,
-                  selectedDay: selectedDay,
-                  onDaySelected: (day) {
-                    setState(() {
-                      selectedDay = day;
-                    });
-                  },
-                ),
-                const SizedBox(height: 24),
-                // Check In Today Section
-                const Text(
-                  'Check in today',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                const CheckInOutSection(
-                  checkInTime: '10:20 AM',
-                  checkInStatus: '2hours ago',
-                  checkOutTime: '5:30 PM',
-                  checkOutStatus: 'On time',
-                ),
-                const SizedBox(height: 24),
-                // Summary Statistics
-                const SummaryStatistics(
-                  attendance: 28,
-                  totalDays: 22,
-                ),
-                const SizedBox(height: 24),
-                // Your Activity Section
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text(
-                      'Your activity',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    TextButton(
-                      onPressed: () {},
-                      child: const Text(
-                        'See All',
-                        style: TextStyle(
-                          color: Color(0xFF2196F3),
+                ],
+              ),
+              const SizedBox(height: 24),
+              
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  // Title: Attendance Sheet
+                  Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const AttendanceHistoryScreen(),
+                          ),
+                        );
+                      },
+                      borderRadius: BorderRadius.circular(8),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 4.0, horizontal: 8.0),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: const [
+                            Text(
+                              "Attendance sheet",
+                              style: TextStyle(
+                                fontSize: 16, // Adjusted to fit both
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF154888), // Dark Blue
+                              ),
+                            ),
+                            SizedBox(width: 4),
+                            Icon(
+                              Icons.arrow_forward_ios,
+                              size: 14,
+                              color: Color(0xFF154888),
+                            ),
+                          ],
                         ),
                       ),
                     ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                ActivityList(activities: activities),
-                const SizedBox(height: 24),
-              ],
-            ),
+                  ),
+
+                  // Title: Leave Request
+                   Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const LeaveRequestScreen(),
+                          ),
+                        );
+                      },
+                      borderRadius: BorderRadius.circular(8),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 4.0, horizontal: 8.0),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: const [
+                            Text(
+                              "Leave Request",
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.red,
+                              ),
+                            ),
+                            SizedBox(width: 4),
+                            Icon(
+                              Icons.arrow_forward_ios,
+                              size: 14,
+                              color: Colors.red,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+
+              // Date Selector
+              DateSelector(
+                days: _days,
+                selectedIndex: _selectedDateIndex,
+                onSelect: (index) {
+                  setState(() => _selectedDateIndex = index);
+                },
+              ),
+              const SizedBox(height: 30),
+
+              const Text(
+                "Check in today",
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+              ),
+              const SizedBox(height: 20),
+
+              // Check In / Check Out Cards
+              Row(
+                children: [
+                  // Check In
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFE3F2FD),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: const [
+                              Icon(Icons.login, size: 18, color: Colors.blue),
+                              SizedBox(width: 8),
+                              Text("Check In", style: TextStyle(fontWeight: FontWeight.w500)),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        const Text(
+                          "10:20 AM",
+                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(height: 4),
+                        const Text(
+                          "2hours ago",
+                          style: TextStyle(color: Colors.grey, fontSize: 13),
+                        ),
+                      ],
+                    ),
+                  ),
+                  // Check Out
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                         Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFE3F2FD),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: const [
+                              Icon(Icons.logout, size: 18, color: Colors.blue),
+                              SizedBox(width: 8),
+                              Text("Check Out", style: TextStyle(fontWeight: FontWeight.w500)),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        const Text(
+                          "5:30 PM",
+                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(height: 4),
+                        const Text(
+                          "On time",
+                          style: TextStyle(color: Colors.grey, fontSize: 13),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 30),
+
+              // Stats Row
+              Row(
+                children: const [
+                  StatCard(
+                    title: "Attendance",
+                    value: "28",
+                    subtitle: "day of month",
+                    icon: Icons.calendar_today,
+                    iconColor: Colors.blue,
+                  ),
+                  SizedBox(width: 16),
+                  StatCard(
+                    title: "Total number day\nof month",
+                    value: "22",
+                    subtitle: "day of month",
+                    icon: Icons.calendar_month,
+                    iconColor: Colors.blue,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 30),
+
+              // Your Activity Section
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    "Your activity",
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                  ),
+                  TextButton(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const AttendanceHistoryScreen()),
+                      );
+                    },
+                    child: const Text("See All"),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+
+              // Activity List
+              const ActivityItemWidget(
+                type: "checkin",
+                date: "26/6/2025",
+                time: "8:20 AM",
+                statusMessage: "late 1:20 min",
+              ),
+              const ActivityItemWidget(
+                type: "checkout",
+                date: "26/6/2025",
+                time: "5:20 PM",
+                statusMessage: "on time",
+              ),
+            ],
           ),
         ),
       ),

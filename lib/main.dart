@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'screens/attendance_screen.dart';
+
 import 'screens/exam_scores_screen.dart';
 
 void main() {

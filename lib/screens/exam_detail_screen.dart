@@ -59,118 +59,160 @@ class _ExamDetailScreenState extends State<ExamDetailScreen> {
             ? const Center(child: CircularProgressIndicator())
             : _examResult == null
                 ? const Center(child: Text('No data available'))
-                : Column(
-                    children: [
-                      // Header
-                       AppHeader(
-                        title: widget.subjectName,
-                      ),
-                      const SizedBox(height: 65),
-                      // Donut Chart with rounded segments - centered
-                      Center(
-                        child: SingleScoreDonutChart(
-                          score: _examResult!.score.toDouble(),
-                          scoreColor: Colors.blue,
-                          remainingColor: Colors.grey[300]!,
+                : SingleChildScrollView(
+                    physics: const BouncingScrollPhysics(),
+                    child: Column(
+                      children: [
+                        const SizedBox(height: 20),
+                        // Header
+                        AppHeader(
+                          title: widget.subjectName,
                         ),
-                      ),
-                      const SizedBox(height: 60),
-                      // Detailed Exam Information with padding like scores summary
-                      Expanded(
-                        child: ListView(
-                          padding: const EdgeInsets.only(left: 30.0, right: 35.0),
-                          children: [
-                            _DetailRow(
-                              label: 'Total Mark:',
-                              value: '${_examResult!.totalMark ?? 100}',
-                              isBlue: true,
-                            ),
-                            const SizedBox(height: 12),
-                            _DetailRow(
-                              label: 'Max Score:',
-                              value: '${_examResult!.maxScore ?? 100}',
-                              isBlue: true,
-                            ),
-                            const SizedBox(height: 12),
-                            _DetailRow(
-                              label: 'Midterm Exam:',
-                              value: _examResult!.midtermScore != null
-                                  ? '${_examResult!.midtermScore} (${_examResult!.midtermScore}%)'
-                                  : 'N/A',
-                              isBlue: true,
-                            ),
-                            const SizedBox(height: 12),
-                            _DetailRow(
-                              label: 'Final Exam:',
-                              value: _examResult!.finalScore != null
-                                  ? '${_examResult!.finalScore} (${_examResult!.finalScore}%)'
-                                  : 'N/A',
-                              isBlue: true,
-                            ),
-                            const SizedBox(height: 12),
-                            _DetailRow(
-                              label: 'Exam Date:',
-                              value: _examResult!.examDate ?? 'N/A',
-                              isBlue: false,
-                            ),
-                            const SizedBox(height: 12),
-                            _LecturerRow(
-                              lecturers: _examResult!.lecturers,
-                            ),
-                          ],
+                        const SizedBox(height: 35),
+                        // Donut Chart
+                        Center(
+                          child: SingleScoreDonutChart(
+                            score: _examResult!.score.toDouble(),
+                            scoreColor: const Color(0xFF2196F3), // Blue
+                            remainingColor: const Color(0xFFEEEEEE),
+                            size: 180,
+                            strokeWidth: 20,
+                          ),
                         ),
-                      ),
-                      // Back Button
-                      Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: PrimaryButton(
-                          text: 'Back',
-                          onPressed: () => Navigator.pop(context),
+                        const SizedBox(height: 30),
+                        
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 20.0),
+                          child: Column(
+                            children: [
+                              // Score Details Card
+                              _ScoreDetailsCard(result: _examResult!),
+                              const SizedBox(height: 16),
+                              
+                              // Exam Date Card
+                              _ExamDateCard(date: _examResult!.examDate ?? 'N/A'),
+                              const SizedBox(height: 16),
+                              
+                              // Lecturers Card
+                              _LecturersCard(lecturers: _examResult!.lecturers ?? []),
+                            ],
+                          ),
                         ),
-                      ),
-                    ],
+                        
+                        const SizedBox(height: 20),
+                        // Back Button
+                        Padding(
+                          padding: const EdgeInsets.all(16.0),
+                          child: PrimaryButton(
+                            text: 'Back',
+                            onPressed: () => Navigator.pop(context),
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                      ],
+                    ),
                   ),
       ),
     );
   }
 }
 
-class _DetailRow extends StatelessWidget {
-  final String label;
-  final String value;
-  final bool isBlue;
+class _ScoreDetailsCard extends StatelessWidget {
+  final ExamResult result;
 
-  const _DetailRow({
-    required this.label,
-    required this.value,
-    this.isBlue = false,
-  });
+  const _ScoreDetailsCard({required this.result});
 
   @override
   Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.08),
+            blurRadius: 15,
+            offset: const Offset(0, 5),
+          ),
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.05),
+            blurRadius: 5,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 36,
+                height: 36,
+                decoration: const BoxDecoration(
+                  color: Color(0xFF2979FF), // Blue icon bg
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.verified, color: Colors.white, size: 20),
+              ),
+              const SizedBox(width: 12),
+              const Text(
+                'Score Details',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          _buildRow('Total Mark:', '${result.totalMark ?? 100}', const Color(0xFF2979FF)),
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 12.0),
+            child: Divider(height: 1, color: Color(0xFFEEEEEE)),
+          ),
+          _buildRow('Max Score:', '${result.maxScore ?? 100}', const Color(0xFF2979FF)),
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 12.0),
+            child: Divider(height: 1, color: Color(0xFFEEEEEE)),
+          ),
+          _buildRow(
+            'Midterm Exam:', 
+            result.midtermScore != null ? '${result.midtermScore} (${result.midtermScore}%)' : 'N/A', 
+            const Color(0xFF00C853), // Green for exam scores
+          ),
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 12.0),
+            child: Divider(height: 1, color: Color(0xFFEEEEEE)),
+          ),
+          _buildRow(
+            'Final Exam:', 
+            result.finalScore != null ? '${result.finalScore} (${result.finalScore}%)' : 'N/A', 
+            const Color(0xFF00C853), // Green
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRow(String label, String value, Color valueColor) {
     return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Expanded(
-          flex: 3,
-          child: Text(
-            label,
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.grey[700],
-            ),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 14,
+            color: Colors.grey[600],
           ),
         ),
-        Expanded(
-          flex: 3,
-          child: Text(
-            value,
-            textAlign: TextAlign.right,
-            style: TextStyle(
-              fontSize: 14,
-              color: isBlue ? Colors.blue : Colors.black87,
-              fontWeight: FontWeight.w500,
-            ),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.bold,
+            color: valueColor,
           ),
         ),
       ],
@@ -178,65 +220,119 @@ class _DetailRow extends StatelessWidget {
   }
 }
 
-class _LecturerRow extends StatelessWidget {
-  final List<String>? lecturers;
+class _ExamDateCard extends StatelessWidget {
+  final String date;
 
-  const _LecturerRow({
-    required this.lecturers,
-  });
+  const _ExamDateCard({required this.date});
 
   @override
   Widget build(BuildContext context) {
-    if (lecturers == null || lecturers!.isEmpty) {
-      return _DetailRow(
-        label: 'Lecturer:',
-        value: 'N/A',
-        isBlue: true,
-      );
-    }
-
-    // Display each lecturer name on its own row
-    final List<String> names = lecturers!;
-    final int totalNames = names.length;
-
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12.0),
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFCE4EC).withOpacity(0.5), // Light pinkish
+        borderRadius: BorderRadius.circular(20),
+      ),
       child: Row(
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: const BoxDecoration(
+              color: Color(0xFFEC407A), // Pink icon bg
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.calendar_today, color: Colors.white, size: 20),
+          ),
+          const SizedBox(width: 16),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Exam Date',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey[700],
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                date,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _LecturersCard extends StatelessWidget {
+  final List<String> lecturers;
+
+  const _LecturersCard({required this.lecturers});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: const Color(0xFFE3F2FD).withOpacity(0.5), // Light blue bg
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.blue.withOpacity(0.1)),
+      ),
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(
-            flex: 8,
-            child: Text(
-              'Lecturer:',
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey[700],
+          Row(
+            children: [
+              Container(
+                width: 36,
+                height: 36,
+                decoration: const BoxDecoration(
+                  color: Color(0xFF2196F3), // Blue icon bg
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.people, color: Colors.white, size: 20),
               ),
-            ),
+              const SizedBox(width: 12),
+              const Text(
+                'Lecturers',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
+              ),
+            ],
           ),
-          Expanded(
-            flex: 3,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                for (int i = 0; i < names.length; i++)
-                  Padding(
-                    padding: EdgeInsets.only(top: i > 0 ? 4.0 : 0.0),
-                    child: Text(
-                      i == totalNames - 1
-                          ? '${names[i].replaceAll(' (TP)', '').trim()} (TP)'
-                          : '${names[i].replaceAll(' (TP)', '').trim()},',
-                      textAlign: TextAlign.right,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        color: Colors.blue,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
+          const SizedBox(height: 16),
+          Wrap(
+            spacing: 8.0,
+            runSpacing: 8.0,
+            children: lecturers.map((lecturer) {
+              return Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  lecturer.replaceAll('(TP)', '').trim(),
+                  style: const TextStyle(
+                    color: Color(0xFF1565C0), // Darker blue text
+                    fontWeight: FontWeight.w500,
+                    fontSize: 14,
                   ),
-              ],
-            ),
+                ),
+              );
+            }).toList(),
           ),
         ],
       ),

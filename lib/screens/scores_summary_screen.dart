@@ -56,26 +56,30 @@ class _ScoresSummaryScreenState extends State<ScoresSummaryScreen> {
       body: SafeArea(
         child: _isLoading
             ? const Center(child: CircularProgressIndicator())
-            : Column(
-                children: [
-                  // Header with profile picture
-                  AppHeader(
-                    title: 'Scores Summary',
-                    trailing: const ProfileAvatar(),
-                  ),
-                  const SizedBox(height: 65),
-                  // Donut Chart with rounded segments
-                  RoundedDonutChart(
-                    subjects: _subjectScores,
-                    averageScore: _averageScore,
-                  ),
-                  const SizedBox(height: 60),
-                  // Table Header
-                  const ScoresTableHeader(),
-                  const SizedBox(height: 12),
-                  // Table Rows
-                  Expanded(
-                    child: ListView.builder(
+            : SingleChildScrollView(
+                physics: const BouncingScrollPhysics(),
+                child: Column(
+                  children: [
+                    const SizedBox(height: 20), // Added top space
+                    // Header with profile picture
+                    AppHeader(
+                      title: 'Scores Summary',
+                      trailing: const ProfileAvatar(),
+                    ),
+                    const SizedBox(height: 35),
+                    // Donut Chart with rounded segments
+                    RoundedDonutChart(
+                      subjects: _subjectScores,
+                      averageScore: _averageScore,
+                    ),
+                    const SizedBox(height: 60),
+                    // Table Header
+                    const ScoresTableHeader(),
+                    const SizedBox(height: 12),
+                    // Table Rows
+                    ListView.builder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
                       padding: const EdgeInsets.only(left: 32.0, right: 16.0),
                       itemCount: _subjectScores.length,
                       itemBuilder: (context, index) {
@@ -84,16 +88,16 @@ class _ScoresSummaryScreenState extends State<ScoresSummaryScreen> {
                         );
                       },
                     ),
-                  ),
-                  // Back Button
-                  Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: PrimaryButton(
-                      text: 'Back',
-                      onPressed: () => Navigator.pop(context),
+                    // Back Button
+                    Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: PrimaryButton(
+                        text: 'Back',
+                        onPressed: () => Navigator.pop(context),
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
       ),
     );

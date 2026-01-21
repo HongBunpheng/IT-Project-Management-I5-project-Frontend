@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/exam_model.dart';
 import '../services/exam_service.dart';
+import 'attendance/attendance_screen.dart';
 import 'scores_summary_screen.dart';
 import 'exam_detail_screen.dart';
 
@@ -65,6 +66,7 @@ class _ExamScoresScreenState extends State<ExamScoresScreen> {
                               constraints: const BoxConstraints(),
                             ),
                             const SizedBox(width: 8),
+                            const SizedBox(height: 15),
                             Expanded(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -72,7 +74,7 @@ class _ExamScoresScreenState extends State<ExamScoresScreen> {
                                   const Text(
                                     'Exam Scores',
                                     style: TextStyle(
-                                      fontSize: 23,
+                                      fontSize: 15,
                                       fontWeight: FontWeight.bold,
                                       color: Colors.black87,
                                     ),
@@ -100,12 +102,17 @@ class _ExamScoresScreenState extends State<ExamScoresScreen> {
                           children: [
                             Expanded(
                               child: _ActionButton(
-                                title: 'All Exams',
-                                icon: Icons.menu_book,
+                                title: 'Attendance and Leave Request',
+                                icon: Icons.bar_chart,
                                 color: const Color(0xFF42A5F5), // Brighter blue
                                 gradient: true,
                                 onTap: () {
-                                  // Already on this screen, could show all exams
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => const AttendanceScreen(),
+                                    ),
+                                  );
                                 },
                               ),
                             ),
@@ -113,7 +120,7 @@ class _ExamScoresScreenState extends State<ExamScoresScreen> {
                             Expanded(
                               child: _ActionButton(
                                 title: 'Score Summary',
-                                icon: Icons.show_chart,
+                                icon: Icons.description_outlined,
                                 color: const Color(0xFF66BB6A), // Brighter green
                                 gradient: true,
                                 onTap: () {
@@ -135,14 +142,24 @@ class _ExamScoresScreenState extends State<ExamScoresScreen> {
                         padding: const EdgeInsets.symmetric(horizontal: 16.0),
                         child: Align(
                           alignment: Alignment.centerLeft,
-                          child: Text(
-                            'Exam Results',
-                            style: const TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.black87,
+                          child: Row(
+                              children: [
+                                Icon(
+                                  Icons.workspace_premium, // Ribbon/Medal icon
+                                  color: const Color(0xFF5C6BC0), // Purple/Indigo color
+                                  size: 24,
+                                ),
+                                const SizedBox(width: 8),
+                                const Text(
+                                  'Exam Results',
+                                  style: TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFF1A1F36), // Dark text
+                                  ),
+                                ),
+                              ],
                             ),
-                          ),
                         ),
                       ),
                       const SizedBox(height: 16),
@@ -239,16 +256,16 @@ class _ActionButton extends StatelessWidget {
   // Helper method to get gradient colors based on card type
   List<Color> _getGradientColors(Color baseColor) {
     if (baseColor.value == 0xFF42A5F5) {
-      // Blue card gradient: bright cyan to darker blue (from image)
+      // Blue card gradient
       return [
-        const Color(0xFF00C6FF), // Bright cyan/sky blue at top (#00C6FF)
-        const Color(0xFF3790FF), // Darker blue at bottom (#3790FF)
+        const Color(0xFF448AFF), // Darker Blue
+        const Color(0xFF40C4FF), // Lighter Blue
       ];
     } else if (baseColor.value == 0xFF66BB6A) {
-      // Green card gradient: light green to teal (from image)
+      // Green card gradient
       return [
-        const Color(0xFF9CF993), // Light green at top (#9CF993)
-        const Color(0xFF099F9A), // Teal at bottom (#099F9A)
+        const Color(0xFF00BFA5), // Teal/Green
+        const Color(0xFF1DE9B6), // Lighter Teal
       ];
     }
     return [
@@ -262,45 +279,90 @@ class _ActionButton extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        height: 200,
-        padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+        height: 180,
         decoration: BoxDecoration(
-          color: gradient ? null : color,
-          gradient: gradient
-              ? LinearGradient(
-                  colors: _getGradientColors(color),
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                )
-              : null,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(20),
+          gradient: LinearGradient(
+            colors: _getGradientColors(color),
+            begin: Alignment.centerLeft,
+            end: Alignment.centerRight,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: color.withOpacity(0.3),
+              blurRadius: 8,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.start,
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: Stack(
           children: [
-            // Icon in a white circle - top left
-            Container(
-              width: 56,
-              height: 56,
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                shape: BoxShape.circle,
-              ),
-              child: Center(
-                child: _buildIcon(icon, color),
+            // Decorative circle top-right
+            Positioned(
+              top: -20,
+              right: -20,
+              child: Container(
+                width: 100,
+                height: 100,
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
               ),
             ),
-            const SizedBox(height: 12),
-            // Text below icon - aligned left
-            Text(
-              title,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
+            
+            Padding(
+              padding: const EdgeInsets.all(20.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  // Icon
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(
+                      icon,
+                      color: Colors.white,
+                      size: 22,
+                    ),
+                  ),
+                  
+                  // Texts
+                  Flexible(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          title,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          title.startsWith("Attendance") ? "View complete history" : "Detailed analytics",
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: Colors.white.withOpacity(0.9),
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
-              textAlign: TextAlign.left,
             ),
           ],
         ),
@@ -355,7 +417,7 @@ class _ExamResultCard extends StatelessWidget {
                 Text(
                   exam.subjectName,
                   style: const TextStyle(
-                    fontSize: 16,
+                    fontSize: 14,
                     fontWeight: FontWeight.w600,
                     color: Colors.black87,
                   ),
@@ -364,7 +426,7 @@ class _ExamResultCard extends StatelessWidget {
                 Text(
                   exam.statusText,
                   style: TextStyle(
-                    fontSize: 14,
+                    fontSize: 12,
                     color: exam.score < 50 
                         ? Colors.red 
                         : const Color(0xFF4CAF50), // Green color for completed
@@ -380,17 +442,17 @@ class _ExamResultCard extends StatelessWidget {
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF2196F3), // Blue button
               foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
               ),
               elevation: 0,
-              minimumSize: const Size(80, 40),
+              minimumSize: const Size(70, 32),
             ),
             child: const Text(
               'Preview',
               style: TextStyle(
-                fontSize: 14,
+                fontSize: 12,
                 fontWeight: FontWeight.w600,
               ),
             ),
