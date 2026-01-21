@@ -1,57 +1,57 @@
-// API calling
-
-import 'dart:convert';
-import 'package:http/http.dart' as http;
-import '../configs/app_constants.dart';
-
+/// Mock auth service for UI-only development (no API calls).
 class AuthService {
   Future<Map<String, dynamic>> login({
     required String emailOrPhone,
     required String password,
   }) async {
-    final url = Uri.parse(AppConstants.baseUrl + AppConstants.loginEndpoint);
+    await Future.delayed(const Duration(milliseconds: 400));
 
-    final response = await http.post(
-      url,
-      headers: {"Content-Type": "application/json"},
-      body: jsonEncode({
-        "email": emailOrPhone, 
-        "password": password,
-      }),
-    );
+    if (emailOrPhone.trim().isEmpty || password.trim().isEmpty) {
+      return {
+        "statusCode": 400,
+        "body": {"message": "Please enter email/phone and password"},
+      };
+    }
 
+    // Always succeed for now (UI-only mode)
     return {
-      "statusCode": response.statusCode,
-      "body": jsonDecode(response.body),
+      "statusCode": 200,
+      "body": {
+        "message": "Login Successful (mock)",
+        "user": {"emailOrPhone": emailOrPhone.trim()},
+      },
     };
   }
 
-Future<Map<String, dynamic>> register({
-  required String fullName,
-  required String email,
-  required String phone,
-  required String password,
-}) async {
-  final url = Uri.parse("${AppConstants.baseUrl}/auth/register");
+  Future<Map<String, dynamic>> register({
+    required String fullName,
+    required String email,
+    required String phone,
+    required String password,
+  }) async {
+    await Future.delayed(const Duration(milliseconds: 400));
 
-  final response = await http.post(
-    url,
-    headers: {"Content-Type": "application/json"},
-    body: jsonEncode({
-      "user_name": fullName,
-      "email": email,
-      "phone": phone,
-      "password": password,
-      "gender": "F",
-      "role": "student",
-    }),
-  );
+    if (fullName.trim().isEmpty ||
+        email.trim().isEmpty ||
+        phone.trim().isEmpty ||
+        password.trim().isEmpty) {
+      return {
+        "statusCode": 400,
+        "body": {"message": "Please fill in all fields"},
+      };
+    }
 
-  return {
-    "statusCode": response.statusCode,
-    "body": jsonDecode(response.body),
-  };
-}
-
-
+    // Always succeed for now (UI-only mode)
+    return {
+      "statusCode": 200,
+      "body": {
+        "message": "Register Successful (mock)",
+        "user": {
+          "fullName": fullName.trim(),
+          "email": email.trim(),
+          "phone": phone.trim(),
+        },
+      },
+    };
+  }
 }

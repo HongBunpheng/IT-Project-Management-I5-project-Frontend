@@ -97,7 +97,6 @@ class _DashboardViewState extends State<DashboardView> {
           children: [
             // Header
             AppHeader(
-              title: 'It Project Management', // Changed to match project likely or user name
               trailing: IconButton(
                 icon: const Icon(Icons.notifications),
                 onPressed: () {

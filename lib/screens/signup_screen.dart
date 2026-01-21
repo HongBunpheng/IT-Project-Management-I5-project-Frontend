@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import '../configs/app_colors.dart';
 import 'login_screen.dart';
-import '../screens/attendance/attendance_screen.dart';
 import '../repositories/auth_repository.dart';
 import '../utils/helpers.dart';
 import '../utils/validators.dart';
+import './dashboard/dashboard_view.dart';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
@@ -46,7 +46,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (_) => const AttendanceScreen()),
+        MaterialPageRoute(builder: (_) => const DashboardView()),
       );
     } else {
       Helpers.showSnackBar(

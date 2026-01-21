@@ -42,10 +42,20 @@ class _LeaveRequestScreenState extends State<LeaveRequestScreen> {
           IconButton(
             icon: const Icon(Icons.add, color: Colors.blue, size: 28),
             onPressed: () {
-               Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const ApplyLeaveScreen()),
-              );
+            showModalBottomSheet(
+              context: context,
+              isScrollControlled: true,
+              backgroundColor: Colors.transparent,
+              builder: (context) {
+                return FractionallySizedBox(
+                  heightFactor: 0.7, // 70% height sheet
+                  child: ClipRRect(
+                    borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                    child: const ApplyLeaveScreen(),
+                  ),
+                );
+              },
+            );
             },
           ),
         ],
@@ -118,24 +128,14 @@ class _LeaveRequestScreenState extends State<LeaveRequestScreen> {
 
               // Legend
               Container(
-                margin: const EdgeInsets.only(bottom: 24),
-                child: Column(
+                margin: const EdgeInsets.only(bottom: 54),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceAround, // Distribute evenly
-                      children: [
-                        _buildLegendItem(Colors.orange, 'Awaiting'),
-                        _buildLegendItem(Colors.green, 'Approved'),
-                        _buildLegendItem(Colors.red, 'Declined'),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    Row(
-                      children: [
-                        const SizedBox(width: 12), // Align somewhat with Awaiting
-                        _buildLegendItem(Colors.grey, 'Cancel'),
-                      ],
-                    ),
+                    _buildLegendItem(Colors.orange, 'Awaiting'),
+                    _buildLegendItem(Colors.green, 'Approved'),
+                    _buildLegendItem(Colors.red, 'Declined'),
+                    _buildLegendItem(Colors.grey, 'Cancel'),
                   ],
                 ),
               ),

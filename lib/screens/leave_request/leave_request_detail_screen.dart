@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import '../../configs/app_colors.dart';
+import '../../configs/app_sizes.dart';
+import '../../utils/responsive.dart';
 
 class LeaveRequestDetailScreen extends StatelessWidget {
   final String startDate;
@@ -16,166 +19,163 @@ class LeaveRequestDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final horizontalPadding = Responsive.getPadding(context);
+
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.white,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: AppColors.white,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, size: 20, color: Colors.black),
+          icon: const Icon(Icons.arrow_back_ios, size: AppSizes.iconSizeM, color: AppColors.black),
           onPressed: () => Navigator.pop(context),
         ),
         title: const Text(
           'Leave Request',
-          style: TextStyle(color: Colors.black, fontSize: 18, fontWeight: FontWeight.bold),
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.add, color: Colors.blue, size: 28),
-            onPressed: () {
-              // Could navigate to apply new leave, or just dummy
-            },
+          style: TextStyle(
+            color: AppColors.black,
+            fontSize: AppSizes.fontSizeL,
+            fontWeight: FontWeight.bold,
           ),
-        ],
+        ),
         centerTitle: false,
       ),
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24.0),
+          padding: EdgeInsets.symmetric(
+            horizontal: horizontalPadding,
+            vertical: AppSizes.spacingL,
+          ),
           child: Column(
-             crossAxisAlignment: CrossAxisAlignment.start,
-             children: [
-                const SizedBox(height: 10),
-                // Month Header (Mirrors screen 0 for context, though screen 2 shows details)
-                // Actually screen 2 overlays details on top of calendar or separate screen?
-                // Image 2 shows "Leave Request" title (Blue), Pending tag, and details.
-                // It looks like a modal or separate screen content. Let's make it a full screen as requested.
-                
-                const Text(
-                  'October 2025',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SizedBox(height: AppSizes.spacingS),
+              const Text(
+                'October 2025',
+                style: TextStyle(
+                  fontSize: AppSizes.fontSizeXL,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
                 ),
-                // Reusing the calendar visual from screen 1 might be overkill or confusing if static.
-                // The screenshot seems to show the calendar in background but greyed out?
-                // Or maybe it's just the details part. 
-                // Let's implement the visible content: Title "Leave Request", Pending badge, Details.
-                
-                const SizedBox(height: 30),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text(
-                      'Leave Request',
+              ),
+              const SizedBox(height: AppSizes.spacingL),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Leave Request',
+                    style: TextStyle(
+                      fontSize: AppSizes.fontSizeL,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF154888), // Dark Blue
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSizes.spacingS,
+                      vertical: AppSizes.spacingXS,
+                    ),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFCC80).withValues(alpha: 0.5), // Light Orange
+                      borderRadius: BorderRadius.circular(AppSizes.radiusS),
+                    ),
+                    child: const Text(
+                      'Pending',
                       style: TextStyle(
-                        fontSize: 18,
+                        color: Colors.orange,
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFF154888), // Dark Blue
+                        fontSize: AppSizes.fontSizeS,
                       ),
                     ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFFFCC80).withValues(alpha: 0.5), // Light Orange
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: const Text(
-                        'Pending',
-                        style: TextStyle(
-                          color: Colors.orange,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 12,
-                        ),
-                      ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: AppSizes.spacingXL),
+
+              _buildLabelValue('Start Date', startDate),
+              const SizedBox(height: AppSizes.spacingM),
+              _buildLabelValue('End Date', endDate),
+              const SizedBox(height: AppSizes.spacingM),
+              _buildLabelValue('Half day', isHalfDay ? 'Yes' : 'No'),
+              const SizedBox(height: AppSizes.spacingL),
+
+              const Text(
+                'Reason:',
+                style: TextStyle(
+                  fontSize: AppSizes.fontSizeM,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              const SizedBox(height: AppSizes.spacingS),
+              Text(
+                reason,
+                style: TextStyle(
+                  fontSize: AppSizes.fontSizeM,
+                  color: Colors.grey.shade700,
+                  height: 1.5,
+                ),
+              ),
+              const SizedBox(height: AppSizes.spacingS),
+              Text(
+                'Apply on Tue 20, July 2025', // Mock submission date
+                style: TextStyle(
+                  fontSize: AppSizes.fontSizeS,
+                  color: Colors.grey.shade400,
+                ),
+              ),
+
+              const Spacer(),
+              SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: OutlinedButton(
+                  onPressed: () => Navigator.pop(context),
+                  style: OutlinedButton.styleFrom(
+                    side: BorderSide(color: Colors.grey.shade300),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(AppSizes.radiusL),
                     ),
-                  ],
-                ),
-                const SizedBox(height: 30),
-                
-                _buildDetailRow('Start Date:', startDate),
-                const SizedBox(height: 12),
-                _buildDetailRow('End Date:', endDate),
-                const SizedBox(height: 12),
-                _buildDetailRow('Half day:', isHalfDay ? 'Yes' : 'No'),
-                const SizedBox(height: 24),
-                
-                const Text(
-                  'Reason:',
-                  style: TextStyle(
-                    fontSize: 16, 
-                    fontWeight: FontWeight.w600,
-                    color: Colors.black87
+                  ),
+                  child: const Text(
+                    'Close',
+                    style: TextStyle(
+                      color: AppColors.textPrimary,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
-                const SizedBox(height: 8),
-                Text(
-                  reason,
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey.shade700,
-                    height: 1.5,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Apply on Tue 20,July 2025', // Mock submission date
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey.shade400,
-                  ),
-                ),
-                
-                const Spacer(),
-                
-                SizedBox(
-                  width: double.infinity,
-                  height: 50,
-                  child: OutlinedButton(
-                     onPressed: () {
-                       // Navigate back to Leave Request Screen (Calendar)
-                       // Pop until we hit LeaveRequestScreen. 
-                       // ApplyLeaveScreen pushed this, LeaveRequestScreen pushed ApplyLeaveScreen.
-                       // So pop x2.
-                       int count = 0;
-                       Navigator.popUntil(context, (route) {
-                         return count++ == 2;
-                       });
-                     },
-                     style: OutlinedButton.styleFrom(
-                       side: BorderSide(color: Colors.grey.shade300),
-                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
-                     ),
-                     child: const Text('Close', style: TextStyle(color: Colors.black, fontWeight: FontWeight.normal)),
-                   ),
-                ),
-                const SizedBox(height: 16),
-             ],
+              ),
+            ],
           ),
         ),
       ),
     );
   }
 
-  Widget _buildDetailRow(String label, String value) {
+  Widget _buildLabelValue(String label, String value) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           label,
-          style: TextStyle(
-            fontSize: 16,
+          style: const TextStyle(
+            fontSize: AppSizes.fontSizeS,
             fontWeight: FontWeight.w600,
-            color: Colors.grey.shade800,
+            color: AppColors.textPrimary,
           ),
         ),
-        Text(
-          value,
-          style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w500, // Slightly lighter than label
-            color: Colors.black,
+        const SizedBox(width: AppSizes.spacingS),
+        Expanded(
+          child: Text(
+            value,
+            textAlign: TextAlign.right,
+            style: const TextStyle(
+              fontSize: AppSizes.fontSizeM,
+              fontWeight: FontWeight.w500,
+              color: AppColors.textPrimary,
+            ),
           ),
         ),
       ],

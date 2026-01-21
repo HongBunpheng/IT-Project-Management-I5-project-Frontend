@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
 import '../configs/app_colors.dart';
-import '../repositories/auth_repository.dart';
-import '../utils/helpers.dart';
 import '../utils/validators.dart';
 import '../screens/signup_screen.dart';
-import '../screens/attendance/attendance_screen.dart';
+import './dashboard/dashboard_view.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -17,36 +15,36 @@ class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailOrPhoneController = TextEditingController();
   final _passwordController = TextEditingController();
-  bool _isLoading = false;
+  // bool _isLoading = false;
   bool _hidePassword = true;
 
-  final AuthRepository _authRepo = AuthRepository();
+  // final AuthRepository _authRepo = AuthRepository();
 
-  Future<void> _handleLogin() async {
-    if (!_formKey.currentState!.validate()) return;
+  // Future<void> _handleLogin() async {
+  //   if (!_formKey.currentState!.validate()) return;
 
-    setState(() => _isLoading = true);
+  //   setState(() => _isLoading = true);
 
-    final res = await _authRepo.login(
-      _emailOrPhoneController.text.trim(),
-      _passwordController.text.trim(),
-    );
+  //   final res = await _authRepo.login(
+  //     _emailOrPhoneController.text.trim(),
+  //     _passwordController.text.trim(),
+  //   );
 
-    setState(() => _isLoading = false);
+  //   setState(() => _isLoading = false);
 
-    if (!mounted) return;
+  //   if (!mounted) return;
 
-    if (res["statusCode"] == 200) {
-      Helpers.showSnackBar(context, "Login Successful!");
+  //   if (res["statusCode"] == 200) {
+  //     Helpers.showSnackBar(context, "Login Successful!");
 
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const AttendanceScreen()),
-      );
-    } else {
-      Helpers.showSnackBar(context, res["body"]["message"] ?? "Login failed");
-    }
-  }
+  //     Navigator.pushReplacement(
+  //       context,
+  //       MaterialPageRoute(builder: (_) => const DashboardView()),
+  //     );
+  //   } else {
+  //     Helpers.showSnackBar(context, res["body"]["message"] ?? "Login failed");
+  //   }
+  // }
 
   @override
   Widget build(BuildContext context) {
@@ -223,25 +221,28 @@ class _LoginScreenState extends State<LoginScreen> {
                               width: double.infinity,
                               height: 50,
                               child: ElevatedButton(
-                                onPressed: _isLoading ? null : _handleLogin,
+                                onPressed: () {
+                                  Navigator.pushReplacement(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => const DashboardView(),
+                                    ),
+                                  );
+                                },
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: AppColors.primaryBlue,
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(12),
                                   ),
                                 ),
-                                child: _isLoading
-                                    ? const CircularProgressIndicator(
-                                        color: Colors.white,
-                                      )
-                                    : const Text(
-                                        "Log In",
-                                        style: TextStyle(
-                                          fontSize: 18,
-                                          fontWeight: FontWeight.w600,
-                                          color: Colors.white,
-                                        ),
-                                      ),
+                                child: const Text(
+                                  "Log In",
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.white,
+                                  ),
+                                ),
                               ),
                             ),
 

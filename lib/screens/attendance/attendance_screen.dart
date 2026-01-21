@@ -1,7 +1,9 @@
+import 'package:cg_intern_project/widgets/common/primary_button.dart';
 import 'package:flutter/material.dart';
 import '../../widgets/attendance/date_selector.dart';
 import '../../widgets/attendance/stat_card.dart';
 import '../../widgets/attendance/activity_item.dart';
+import '../../widgets/common/app_header.dart';
 import 'attendance_history_screen.dart';
 import '../leave_request/leave_request_screen.dart';
 
@@ -28,58 +30,19 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header
-              Row(
-                children: [
-                  const CircleAvatar(
-                    backgroundImage: NetworkImage('https://i.pravatar.cc/150?img=5'), // Placeholder
-                    radius: 20,
-                  ),
-                  const SizedBox(width: 12),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: const [
-                      Text(
-                        "Kadorukuriki",
-                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                      ),
-                      Text(
-                        "e20211399",
-                        style: TextStyle(color: Colors.grey, fontSize: 12),
-                      ),
-                    ],
-                  ),
-                  const Spacer(),
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(color: Colors.grey.shade200),
-                    ),
-                    child: Stack(
-                      children: const [
-                        Icon(Icons.notifications_none, color: Colors.black87),
-                        Positioned(
-                          right: 2,
-                          top: 2,
-                          child: CircleAvatar(
-                            radius: 4,
-                            backgroundColor: Colors.red,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 24),
-              
-              Row(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const AppHeader(
+              title: 'Attendance',
+            ),
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(24.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   // Title: Attendance Sheet
@@ -169,145 +132,155 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                   setState(() => _selectedDateIndex = index);
                 },
               ),
-              const SizedBox(height: 30),
+                    const SizedBox(height: 30),
 
-              const Text(
-                "Check in today",
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
-              ),
-              const SizedBox(height: 20),
+                    const Text(
+                      "Check in today",
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+                    ),
+                    const SizedBox(height: 20),
 
-              // Check In / Check Out Cards
-              Row(
-                children: [
-                  // Check In
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                    // Check In / Check Out Cards
+                    Row(
                       children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFE3F2FD),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: const [
-                              Icon(Icons.login, size: 18, color: Colors.blue),
-                              SizedBox(width: 8),
-                              Text("Check In", style: TextStyle(fontWeight: FontWeight.w500)),
+                        // Check In
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFE3F2FD),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: const [
+                                    Icon(Icons.login, size: 18, color: Colors.blue),
+                                    SizedBox(width: 8),
+                                    Text("Check In", style: TextStyle(fontWeight: FontWeight.w500)),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              const Text(
+                                "10:20 AM",
+                                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                              ),
+                              const SizedBox(height: 4),
+                              const Text(
+                                "2hours ago",
+                                style: TextStyle(color: Colors.grey, fontSize: 13),
+                              ),
                             ],
                           ),
                         ),
-                        const SizedBox(height: 12),
-                        const Text(
-                          "10:20 AM",
-                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                        ),
-                        const SizedBox(height: 4),
-                        const Text(
-                          "2hours ago",
-                          style: TextStyle(color: Colors.grey, fontSize: 13),
-                        ),
-                      ],
-                    ),
-                  ),
-                  // Check Out
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFE3F2FD),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: const [
-                              Icon(Icons.logout, size: 18, color: Colors.blue),
-                              SizedBox(width: 8),
-                              Text("Check Out", style: TextStyle(fontWeight: FontWeight.w500)),
+                        // Check Out
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                               Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFE3F2FD),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: const [
+                                    Icon(Icons.logout, size: 18, color: Colors.blue),
+                                    SizedBox(width: 8),
+                                    Text("Check Out", style: TextStyle(fontWeight: FontWeight.w500)),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              const Text(
+                                "5:30 PM",
+                                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                              ),
+                              const SizedBox(height: 4),
+                              const Text(
+                                "On time",
+                                style: TextStyle(color: Colors.grey, fontSize: 13),
+                              ),
                             ],
                           ),
                         ),
-                        const SizedBox(height: 12),
-                        const Text(
-                          "5:30 PM",
-                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      ],
+                    ),
+                    const SizedBox(height: 30),
+
+                    // Stats Row
+                    Row(
+                      children: const [
+                        StatCard(
+                          title: "Attendance",
+                          value: "28",
+                          subtitle: "day of month",
+                          icon: Icons.calendar_today,
+                          iconColor: Colors.blue,
                         ),
-                        const SizedBox(height: 4),
-                        const Text(
-                          "On time",
-                          style: TextStyle(color: Colors.grey, fontSize: 13),
+                        SizedBox(width: 16),
+                        StatCard(
+                          title: "Total number day\nof month",
+                          value: "22",
+                          subtitle: "day of month",
+                          icon: Icons.calendar_month,
+                          iconColor: Colors.blue,
                         ),
                       ],
                     ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 30),
+                    const SizedBox(height: 30),
 
-              // Stats Row
-              Row(
-                children: const [
-                  StatCard(
-                    title: "Attendance",
-                    value: "28",
-                    subtitle: "day of month",
-                    icon: Icons.calendar_today,
-                    iconColor: Colors.blue,
-                  ),
-                  SizedBox(width: 16),
-                  StatCard(
-                    title: "Total number day\nof month",
-                    value: "22",
-                    subtitle: "day of month",
-                    icon: Icons.calendar_month,
-                    iconColor: Colors.blue,
-                  ),
-                ],
-              ),
-              const SizedBox(height: 30),
+                    // Your Activity Section
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          "Your activity",
+                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                        ),
+                        TextButton(
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (context) => const AttendanceHistoryScreen()),
+                            );
+                          },
+                          child: const Text("See All"),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
 
-              // Your Activity Section
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    "Your activity",
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                  ),
-                  TextButton(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => const AttendanceHistoryScreen()),
-                      );
-                    },
-                    child: const Text("See All"),
-                  ),
-                ],
+                    // Activity List
+                    const ActivityItemWidget(
+                      type: "checkin",
+                      date: "26/6/2025",
+                      time: "8:20 AM",
+                      statusMessage: "late 1:20 min",
+                    ),
+                    const ActivityItemWidget(
+                      type: "checkout",
+                      date: "26/6/2025",
+                      time: "5:20 PM",
+                      statusMessage: "on time",
+                    ),
+                     Padding(
+                            padding: const EdgeInsets.all(16.0),
+                            child: PrimaryButton(
+                              text: 'Back',
+                              onPressed: () => Navigator.pop(context),
+                            ),
+                          ),
+                  ],
+                ),
               ),
-              const SizedBox(height: 10),
-
-              // Activity List
-              const ActivityItemWidget(
-                type: "checkin",
-                date: "26/6/2025",
-                time: "8:20 AM",
-                statusMessage: "late 1:20 min",
-              ),
-              const ActivityItemWidget(
-                type: "checkout",
-                date: "26/6/2025",
-                time: "5:20 PM",
-                statusMessage: "on time",
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
