@@ -4,10 +4,7 @@ import '../../models/attendance_model.dart';
 class WeekRecordItem extends StatelessWidget {
   final WeeklyAttendanceRecord record;
 
-  const WeekRecordItem({
-    super.key,
-    required this.record,
-  });
+  const WeekRecordItem({super.key, required this.record});
 
   @override
   Widget build(BuildContext context) {
@@ -65,10 +62,7 @@ class WeekRecordItem extends StatelessWidget {
                   padding: const EdgeInsets.only(top: 2.0),
                   child: Text(
                     record.additionalInfo!,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey[400],
-                    ),
+                    style: TextStyle(fontSize: 12, color: Colors.grey[400]),
                   ),
                 ),
             ],

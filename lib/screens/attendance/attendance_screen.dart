@@ -4,6 +4,9 @@ import '../../widgets/attendance/date_selector.dart';
 import '../../widgets/attendance/stat_card.dart';
 import '../../widgets/attendance/activity_item.dart';
 import '../../widgets/common/app_header.dart';
+import '../../services/attendance_service.dart';
+import '../../services/token_storage.dart';
+import '../../utils/json_utils.dart';
 import 'attendance_history_screen.dart';
 import '../leave_request/leave_request_screen.dart';
 
@@ -16,7 +19,13 @@ class AttendanceScreen extends StatefulWidget {
 
 class _AttendanceScreenState extends State<AttendanceScreen> {
   int _selectedDateIndex = 3; // "04 Wed" selected in screenshot
-  
+  final AttendanceService _attendanceService = AttendanceService();
+  final TokenStorage _tokenStorage = TokenStorage();
+
+  bool _isLoading = true;
+  String? _errorMessage;
+  List<Map<String, dynamic>> _attendanceRows = [];
+
   final List<Map<String, String>> _days = [
     {"day": "01", "weekday": "Sun"},
     {"day": "02", "weekday": "Mon"},
@@ -26,16 +35,54 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
   ];
 
   @override
+  void initState() {
+    super.initState();
+    _loadAttendance();
+  }
+
+  Future<void> _loadAttendance() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+    try {
+      final userId = await _tokenStorage.readUserId();
+      if (userId == null || userId.isEmpty) {
+        throw Exception('Missing user id. Please login again.');
+      }
+      final rows = await _attendanceService.myAttendance(userId);
+      if (!mounted) return;
+      setState(() {
+        _attendanceRows = rows;
+        _isLoading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _isLoading = false;
+        _errorMessage = e.toString();
+      });
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final totalDays = _attendanceRows.length;
+    final presentDays = _attendanceRows
+        .where(
+          (row) => (readString(row, const ['status']) ?? '')
+              .toLowerCase()
+              .contains('present'),
+        )
+        .length;
+
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const AppHeader(
-              
-            ),
+            const AppHeader(),
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.all(24.0),
@@ -43,100 +90,111 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  // Title: Attendance Sheet
-                  Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const AttendanceHistoryScreen(),
-                          ),
-                        );
-                      },
-                      borderRadius: BorderRadius.circular(8),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 4.0, horizontal: 8.0),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: const [
-                            Text(
-                              "Attendance sheet",
-                              style: TextStyle(
-                                fontSize: 16, // Adjusted to fit both
-                                fontWeight: FontWeight.bold,
-                                color: Color(0xFF154888), // Dark Blue
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        // Title: Attendance Sheet
+                        Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      const AttendanceHistoryScreen(),
+                                ),
+                              );
+                            },
+                            borderRadius: BorderRadius.circular(8),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 4.0,
+                                horizontal: 8.0,
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: const [
+                                  Text(
+                                    "Attendance sheet",
+                                    style: TextStyle(
+                                      fontSize: 16, // Adjusted to fit both
+                                      fontWeight: FontWeight.bold,
+                                      color: Color(0xFF154888), // Dark Blue
+                                    ),
+                                  ),
+                                  SizedBox(width: 4),
+                                  Icon(
+                                    Icons.arrow_forward_ios,
+                                    size: 14,
+                                    color: Color(0xFF154888),
+                                  ),
+                                ],
                               ),
                             ),
-                            SizedBox(width: 4),
-                            Icon(
-                              Icons.arrow_forward_ios,
-                              size: 14,
-                              color: Color(0xFF154888),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-
-                  // Title: Leave Request
-                   Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const LeaveRequestScreen(),
                           ),
-                        );
-                      },
-                      borderRadius: BorderRadius.circular(8),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 4.0, horizontal: 8.0),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: const [
-                            Text(
-                              "Leave Request",
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.red,
+                        ),
+
+                        // Title: Leave Request
+                        Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      const LeaveRequestScreen(),
+                                ),
+                              );
+                            },
+                            borderRadius: BorderRadius.circular(8),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 4.0,
+                                horizontal: 8.0,
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: const [
+                                  Text(
+                                    "Leave Request",
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.red,
+                                    ),
+                                  ),
+                                  SizedBox(width: 4),
+                                  Icon(
+                                    Icons.arrow_forward_ios,
+                                    size: 14,
+                                    color: Colors.red,
+                                  ),
+                                ],
                               ),
                             ),
-                            SizedBox(width: 4),
-                            Icon(
-                              Icons.arrow_forward_ios,
-                              size: 14,
-                              color: Colors.red,
-                            ),
-                          ],
+                          ),
                         ),
-                      ),
+                      ],
                     ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 20),
+                    const SizedBox(height: 20),
 
-              // Date Selector
-              DateSelector(
-                days: _days,
-                selectedIndex: _selectedDateIndex,
-                onSelect: (index) {
-                  setState(() => _selectedDateIndex = index);
-                },
-              ),
+                    // Date Selector
+                    DateSelector(
+                      days: _days,
+                      selectedIndex: _selectedDateIndex,
+                      onSelect: (index) {
+                        setState(() => _selectedDateIndex = index);
+                      },
+                    ),
                     const SizedBox(height: 30),
 
                     const Text(
                       "Check in today",
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                     const SizedBox(height: 20),
 
@@ -149,7 +207,10 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 8,
+                                ),
                                 decoration: BoxDecoration(
                                   color: const Color(0xFFE3F2FD),
                                   borderRadius: BorderRadius.circular(8),
@@ -157,21 +218,36 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: const [
-                                    Icon(Icons.login, size: 18, color: Colors.blue),
+                                    Icon(
+                                      Icons.login,
+                                      size: 18,
+                                      color: Colors.blue,
+                                    ),
                                     SizedBox(width: 8),
-                                    Text("Check In", style: TextStyle(fontWeight: FontWeight.w500)),
+                                    Text(
+                                      "Check In",
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
                                   ],
                                 ),
                               ),
                               const SizedBox(height: 12),
                               const Text(
                                 "10:20 AM",
-                                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                               const SizedBox(height: 4),
                               const Text(
                                 "2hours ago",
-                                style: TextStyle(color: Colors.grey, fontSize: 13),
+                                style: TextStyle(
+                                  color: Colors.grey,
+                                  fontSize: 13,
+                                ),
                               ),
                             ],
                           ),
@@ -181,8 +257,11 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 8,
+                                ),
                                 decoration: BoxDecoration(
                                   color: const Color(0xFFE3F2FD),
                                   borderRadius: BorderRadius.circular(8),
@@ -190,21 +269,36 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: const [
-                                    Icon(Icons.logout, size: 18, color: Colors.blue),
+                                    Icon(
+                                      Icons.logout,
+                                      size: 18,
+                                      color: Colors.blue,
+                                    ),
                                     SizedBox(width: 8),
-                                    Text("Check Out", style: TextStyle(fontWeight: FontWeight.w500)),
+                                    Text(
+                                      "Check Out",
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
                                   ],
                                 ),
                               ),
                               const SizedBox(height: 12),
                               const Text(
                                 "5:30 PM",
-                                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                               const SizedBox(height: 4),
                               const Text(
                                 "On time",
-                                style: TextStyle(color: Colors.grey, fontSize: 13),
+                                style: TextStyle(
+                                  color: Colors.grey,
+                                  fontSize: 13,
+                                ),
                               ),
                             ],
                           ),
@@ -215,18 +309,18 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
 
                     // Stats Row
                     Row(
-                      children: const [
+                      children: [
                         StatCard(
                           title: "Attendance",
-                          value: "28",
+                          value: "$presentDays",
                           subtitle: "day of month",
                           icon: Icons.calendar_today,
                           iconColor: Colors.blue,
                         ),
-                        SizedBox(width: 16),
+                        const SizedBox(width: 16),
                         StatCard(
                           title: "Total number day\nof month",
-                          value: "22",
+                          value: "$totalDays",
                           subtitle: "day of month",
                           icon: Icons.calendar_month,
                           iconColor: Colors.blue,
@@ -241,13 +335,19 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                       children: [
                         const Text(
                           "Your activity",
-                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                         TextButton(
                           onPressed: () {
                             Navigator.push(
                               context,
-                              MaterialPageRoute(builder: (context) => const AttendanceHistoryScreen()),
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    const AttendanceHistoryScreen(),
+                              ),
                             );
                           },
                           child: const Text("See All"),
@@ -257,25 +357,61 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                     const SizedBox(height: 10),
 
                     // Activity List
-                    const ActivityItemWidget(
-                      type: "checkin",
-                      date: "26/6/2025",
-                      time: "8:20 AM",
-                      statusMessage: "late 1:20 min",
-                    ),
-                    const ActivityItemWidget(
-                      type: "checkout",
-                      date: "26/6/2025",
-                      time: "5:20 PM",
-                      statusMessage: "on time",
-                    ),
-                     Padding(
-                            padding: const EdgeInsets.all(16.0),
-                            child: PrimaryButton(
-                              text: 'Back',
-                              onPressed: () => Navigator.pop(context),
+                    if (_isLoading)
+                      const Center(child: CircularProgressIndicator())
+                    else if (_errorMessage != null)
+                      Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: Column(
+                          children: [
+                            Text(_errorMessage!, textAlign: TextAlign.center),
+                            const SizedBox(height: 12),
+                            ElevatedButton(
+                              onPressed: _loadAttendance,
+                              child: const Text('Retry'),
                             ),
-                          ),
+                          ],
+                        ),
+                      )
+                    else if (_attendanceRows.isEmpty)
+                      const Text('No attendance records')
+                    else
+                      ..._attendanceRows.take(2).expand((row) {
+                        final date =
+                            readString(row, const ['date', 'created_at']) ??
+                            '-';
+                        final checkIn =
+                            readString(row, const ['check_in_time']) ?? '';
+                        final checkOut =
+                            readString(row, const ['check_out_time']) ?? '';
+                        final status =
+                            readString(row, const ['status', 'remark']) ??
+                            'on time';
+
+                        return [
+                          if (checkIn.isNotEmpty)
+                            ActivityItemWidget(
+                              type: "checkin",
+                              date: date,
+                              time: checkIn,
+                              statusMessage: status,
+                            ),
+                          if (checkOut.isNotEmpty)
+                            ActivityItemWidget(
+                              type: "checkout",
+                              date: date,
+                              time: checkOut,
+                              statusMessage: status,
+                            ),
+                        ];
+                      }),
+                    Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: PrimaryButton(
+                        text: 'Back',
+                        onPressed: () => Navigator.pop(context),
+                      ),
+                    ),
                   ],
                 ),
               ),

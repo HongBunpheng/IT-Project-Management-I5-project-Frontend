@@ -16,7 +16,7 @@ class CustomBottomNavigationBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final margin = Responsive.getPadding(context);
-    
+
     return Container(
       margin: EdgeInsets.only(
         top: margin,
@@ -30,8 +30,8 @@ class CustomBottomNavigationBar extends StatelessWidget {
         borderRadius: BorderRadius.circular(AppSizes.radiusL),
       ),
       padding: EdgeInsets.symmetric(
-        horizontal: Responsive.isMobile(context) 
-            ? AppSizes.spacingS 
+        horizontal: Responsive.isMobile(context)
+            ? AppSizes.spacingS
             : AppSizes.spacingM,
         vertical: AppSizes.spacingS,
       ),
@@ -89,11 +89,7 @@ class CustomBottomNavigationBar extends StatelessWidget {
           color: isActive ? AppColors.black : Colors.transparent,
           shape: BoxShape.circle,
         ),
-        child: Icon(
-          icon,
-          color: AppColors.white,
-          size: AppSizes.iconSizeM,
-        ),
+        child: Icon(icon, color: AppColors.white, size: AppSizes.iconSizeM),
       ),
     );
   }

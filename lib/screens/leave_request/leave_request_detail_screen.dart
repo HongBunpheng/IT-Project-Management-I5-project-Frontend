@@ -27,7 +27,11 @@ class LeaveRequestDetailScreen extends StatelessWidget {
         backgroundColor: AppColors.white,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, size: AppSizes.iconSizeM, color: AppColors.black),
+          icon: const Icon(
+            Icons.arrow_back_ios,
+            size: AppSizes.iconSizeM,
+            color: AppColors.black,
+          ),
           onPressed: () => Navigator.pop(context),
         ),
         title: const Text(
@@ -76,7 +80,9 @@ class LeaveRequestDetailScreen extends StatelessWidget {
                       vertical: AppSizes.spacingXS,
                     ),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFFFCC80).withValues(alpha: 0.5), // Light Orange
+                      color: const Color(
+                        0xFFFFCC80,
+                      ).withValues(alpha: 0.5), // Light Orange
                       borderRadius: BorderRadius.circular(AppSizes.radiusS),
                     ),
                     child: const Text(

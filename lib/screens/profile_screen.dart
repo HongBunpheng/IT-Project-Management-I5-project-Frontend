@@ -66,7 +66,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 padding: const EdgeInsets.all(AppSizes.spacingL),
                 children: const [
                   _SettingItem(icon: Icons.person, label: 'Account'),
-                  _SettingItem(icon: Icons.notifications, label: 'Notifications'),
+                  _SettingItem(
+                    icon: Icons.notifications,
+                    label: 'Notifications',
+                  ),
                   _SettingItem(icon: Icons.lock, label: 'Privacy'),
                   _SettingItem(icon: Icons.info_outline, label: 'About'),
                 ],

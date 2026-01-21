@@ -10,7 +10,7 @@ import 'scores_summary_screen.dart';
 import 'exam_detail_screen.dart';
 import 'dashboard/dashboard_view.dart';
 import 'timetable_view.dart';
-import 'settings_screen.dart';
+// import 'settings_screen.dart';
 import 'checkin_screen.dart';
 
 class ExamScoresScreen extends StatefulWidget {
@@ -23,6 +23,7 @@ class ExamScoresScreen extends StatefulWidget {
 class _ExamScoresScreenState extends State<ExamScoresScreen> {
   final ExamService _examService = ExamService();
   ExamSummary? _examSummary;
+  String? _errorMessage;
   int _currentBottomNavIndex = 2; // menu_book tab for exam scores
 
   @override
@@ -32,11 +33,18 @@ class _ExamScoresScreenState extends State<ExamScoresScreen> {
   }
 
   Future<void> _loadExamData() async {
-    // Load instantly without delay
-    final summary = await _examService.getExamResults();
-    if (mounted) {
+    try {
+      final summary = await _examService.getExamResults();
+      if (!mounted) return;
       setState(() {
         _examSummary = summary;
+        _errorMessage = null;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _examSummary = null;
+        _errorMessage = e.toString();
       });
     }
   }
@@ -50,10 +58,11 @@ class _ExamScoresScreenState extends State<ExamScoresScreen> {
         );
         break;
       case 1:
- Navigator.pushReplacement(
+        Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (_) => const CheckInScreen()),
-        );        break;
+        );
+        break;
       case 2:
         // Already on exam scores
         setState(() => _currentBottomNavIndex = 2);
@@ -64,12 +73,12 @@ class _ExamScoresScreenState extends State<ExamScoresScreen> {
           MaterialPageRoute(builder: (_) => const TimetableView()),
         );
         break;
-      case 4:
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const SettingsScreen()),
-        );
-        break;
+      // case 4:
+      //   Navigator.pushReplacement(
+      //     context,
+      //     MaterialPageRoute(builder: (_) => const SettingsScreen()),
+      //   );
+      //   break;
       default:
         break;
     }
@@ -81,25 +90,51 @@ class _ExamScoresScreenState extends State<ExamScoresScreen> {
       backgroundColor: AppColors.white,
       body: SafeArea(
         child: _examSummary == null
-            ? const Center(child: CircularProgressIndicator())
+            ? Center(
+                child: _errorMessage == null
+                    ? const CircularProgressIndicator()
+                    : Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(_errorMessage!, textAlign: TextAlign.center),
+                            const SizedBox(height: 12),
+                            ElevatedButton(
+                              onPressed: _loadExamData,
+                              child: const Text('Retry'),
+                            ),
+                          ],
+                        ),
+                      ),
+              )
             : Column(
                 children: [
                   const AppHeader(),
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16.0,
+                      vertical: 12.0,
+                    ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        Text( 'Exam Scores', style: TextStyle(
+                        Text(
+                          'Exam Scores',
+                          style: TextStyle(
                             fontSize: AppSizes.fontSizeM,
                             fontWeight: FontWeight.w600,
                             color: AppColors.textPrimary,
-                          ),),
-                        Text( 'Average Score: ${_examSummary!.averageScore.toInt()}%', style: const TextStyle(
+                          ),
+                        ),
+                        Text(
+                          'Average Score: ${_examSummary!.averageScore.toInt()}%',
+                          style: const TextStyle(
                             fontSize: AppSizes.fontSizeM,
                             fontWeight: FontWeight.w600,
                             color: AppColors.textSecondary,
-                          ),),
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -118,7 +153,8 @@ class _ExamScoresScreenState extends State<ExamScoresScreen> {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (context) => const AttendanceScreen(),
+                                  builder: (context) =>
+                                      const AttendanceScreen(),
                                 ),
                               );
                             },
@@ -135,7 +171,8 @@ class _ExamScoresScreenState extends State<ExamScoresScreen> {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (context) => const ScoresSummaryScreen(),
+                                  builder: (context) =>
+                                      const ScoresSummaryScreen(),
                                 ),
                               );
                             },
@@ -232,15 +269,9 @@ class _ActionButton extends StatelessWidget {
           begin: Alignment.centerLeft,
           end: Alignment.centerRight,
         ).createShader(bounds),
-        child: Icon(
-          iconData,
-          color: Colors.white,
-          size: 32,
-        ),
+        child: Icon(iconData, color: Colors.white, size: 32),
       );
-    }
-
-    else {
+    } else {
       return Container(
         width: 32,
         height: 32,
@@ -252,13 +283,7 @@ class _ActionButton extends StatelessWidget {
           ),
           borderRadius: BorderRadius.circular(8),
         ),
-        child: Center(
-          child: Icon(
-            iconData,
-            color: Colors.white,
-            size: 20,
-          ),
-        ),
+        child: Center(child: Icon(iconData, color: Colors.white, size: 20)),
       );
     }
   }
@@ -278,10 +303,7 @@ class _ActionButton extends StatelessWidget {
         const Color(0xFF1DE9B6), // Lighter Teal
       ];
     }
-    return [
-      baseColor.withValues(alpha: 0.6),
-      baseColor,
-    ];
+    return [baseColor.withValues(alpha: 0.6), baseColor];
   }
 
   @override
@@ -320,7 +342,7 @@ class _ActionButton extends StatelessWidget {
                 ),
               ),
             ),
-            
+
             Padding(
               padding: const EdgeInsets.all(20.0),
               child: Column(
@@ -337,7 +359,7 @@ class _ActionButton extends StatelessWidget {
                     ),
                     child: Center(child: _buildIcon(icon, color)),
                   ),
-                  
+
                   // Texts
                   Flexible(
                     child: Column(
@@ -356,7 +378,9 @@ class _ActionButton extends StatelessWidget {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          title.startsWith("Attendance") ? "View complete history" : "Detailed analytics",
+                          title.startsWith("Attendance")
+                              ? "View complete history"
+                              : "Detailed analytics",
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
@@ -381,10 +405,7 @@ class _ExamResultCard extends StatelessWidget {
   final ExamResult exam;
   final VoidCallback onPreview;
 
-  const _ExamResultCard({
-    required this.exam,
-    required this.onPreview,
-  });
+  const _ExamResultCard({required this.exam, required this.onPreview});
 
   @override
   Widget build(BuildContext context) {
@@ -433,10 +454,12 @@ class _ExamResultCard extends StatelessWidget {
                   exam.statusText,
                   style: TextStyle(
                     fontSize: 12,
-                    color: exam.score < 50 
-                        ? Colors.red 
+                    color: exam.score < 50
+                        ? Colors.red
                         : const Color(0xFF4CAF50), // Green color for completed
-                    fontWeight: exam.score < 50 ? FontWeight.w600 : FontWeight.normal,
+                    fontWeight: exam.score < 50
+                        ? FontWeight.w600
+                        : FontWeight.normal,
                   ),
                 ),
               ],
@@ -457,10 +480,7 @@ class _ExamResultCard extends StatelessWidget {
             ),
             child: const Text(
               'Preview',
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-              ),
+              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
             ),
           ),
         ],

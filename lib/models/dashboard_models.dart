@@ -3,10 +3,7 @@ class ExamScoreSummary {
   final double score;
   final String? title;
 
-  ExamScoreSummary({
-    required this.score,
-    this.title,
-  });
+  ExamScoreSummary({required this.score, this.title});
 }
 
 // Exam Card Model

@@ -9,9 +9,11 @@ import '../../widgets/dashboard/checkin_card.dart';
 import '../../widgets/dashboard/exam_card_item.dart';
 import '../../widgets/dashboard/task_card_item.dart';
 import '../../models/dashboard_models.dart';
+import '../../services/auth_service.dart';
+import '../../services/exam_service.dart';
 import '../notification_screen.dart';
 import '../exam_scores_screen.dart';
-import '../settings_screen.dart';
+// import '../settings_screen.dart';
 import '../checkin_screen.dart';
 
 class DashboardView extends StatefulWidget {
@@ -24,8 +26,12 @@ class DashboardView extends StatefulWidget {
 class _DashboardViewState extends State<DashboardView> {
   int _currentBottomNavIndex = 0;
 
-  final ExamScoreSummary _scoreSummary = ExamScoreSummary(score: 85.0);
-  
+  final AuthService _authService = AuthService();
+  final ExamService _examService = ExamService();
+  ExamScoreSummary _scoreSummary = ExamScoreSummary(score: 0.0);
+  String? _username;
+  String? _userId;
+
   final List<ExamCard> _exams = [
     ExamCard(
       category: 'HTML',
@@ -62,19 +68,54 @@ class _DashboardViewState extends State<DashboardView> {
     ),
   ];
 
+  @override
+  void initState() {
+    super.initState();
+    _loadSummary();
+    _loadMe();
+  }
+
+  Future<void> _loadSummary() async {
+    try {
+      final summary = await _examService.getExamResults();
+      if (!mounted) return;
+      setState(
+        () => _scoreSummary = ExamScoreSummary(score: summary.averageScore),
+      );
+    } catch (_) {
+      // ignore
+    }
+  }
+
+  Future<void> _loadMe() async {
+    try {
+      final me = await _authService.me();
+      if (!mounted || me == null) return;
+      final data = me['data'] is Map ? (me['data'] as Map) : me;
+      setState(() {
+        _username = (data['name'] ?? data['full_name'] ?? data['email'])
+            ?.toString();
+        _userId = (data['id'] ?? data['user_id'])?.toString();
+      });
+    } catch (_) {
+      // ignore
+    }
+  }
+
   void _onBottomNavTap(int index) {
     // Only update local index when staying on this tab
     switch (index) {
       case 0:
         setState(() => _currentBottomNavIndex = 0);
         break;
-         case 1:
- Navigator.push(
+      case 1:
+        Navigator.push(
           context,
           MaterialPageRoute(builder: (_) => const CheckInScreen()),
         ).then((_) {
           if (mounted) setState(() => _currentBottomNavIndex = 0);
-        });        break;
+        });
+        break;
       case 2:
         Navigator.push(
           context,
@@ -91,14 +132,14 @@ class _DashboardViewState extends State<DashboardView> {
           if (mounted) setState(() => _currentBottomNavIndex = 0);
         });
         break;
-      case 4:
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => const SettingsScreen()),
-        ).then((_) {
-          if (mounted) setState(() => _currentBottomNavIndex = 0);
-        });
-        break;
+      // case 4:
+      //   Navigator.push(
+      //     context,
+      //     MaterialPageRoute(builder: (_) => const SettingsScreen()),
+      //   ).then((_) {
+      //     if (mounted) setState(() => _currentBottomNavIndex = 0);
+      //   });
+      //   break;
       default:
         break;
     }
@@ -115,6 +156,8 @@ class _DashboardViewState extends State<DashboardView> {
           children: [
             // Header
             AppHeader(
+              username: _username,
+              userId: _userId,
               trailing: IconButton(
                 icon: const Icon(Icons.notifications_outlined),
                 onPressed: () => Navigator.push(

@@ -46,11 +46,7 @@ class AppHeader extends StatelessWidget {
                   : null,
             ),
             child: profileImageUrl == null
-                ? Icon(
-                    Icons.person,
-                    size: 30,
-                    color: AppColors.textSecondary,
-                  )
+                ? Icon(Icons.person, size: 30, color: AppColors.textSecondary)
                 : null,
           ),
           const SizedBox(width: AppSizes.spacingM),
@@ -86,21 +82,21 @@ class AppHeader extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: AppColors.lightGrey,
                   borderRadius: BorderRadius.circular(AppSizes.radiusS),
-                  border: Border.all(
-                    color: AppColors.borderLight,
-                    width: 1,
-                  ),
+                  border: Border.all(color: AppColors.borderLight, width: 1),
                 ),
                 child: IconButton(
                   icon: const Icon(
                     Icons.notifications_outlined,
                     color: AppColors.textPrimary,
                   ),
-                  onPressed: onNotificationTap ??
+                  onPressed:
+                      onNotificationTap ??
                       () => Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (_) => const NotificationView()),
-                          ),
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const NotificationView(),
+                        ),
+                      ),
                   padding: EdgeInsets.zero,
                 ),
               ),

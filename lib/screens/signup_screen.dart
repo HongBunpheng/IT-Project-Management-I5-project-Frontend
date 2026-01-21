@@ -25,6 +25,15 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
   final AuthRepository _authRepo = AuthRepository();
 
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _emailController.dispose();
+    _phoneController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
   Future<void> _handleRegister() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -41,7 +50,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
     if (!mounted) return;
 
-    if (res["statusCode"] == 200) {
+    final statusCode = res["statusCode"];
+    if (statusCode is int && statusCode >= 200 && statusCode < 300) {
       Helpers.showSnackBar(context, "Register Successful!");
 
       Navigator.pushReplacement(

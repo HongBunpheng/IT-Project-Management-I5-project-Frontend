@@ -7,15 +7,12 @@ import '../../models/timetable_task_model.dart';
 class TaskCompletionDialog extends StatelessWidget {
   final TimetableTaskModel task;
 
-  const TaskCompletionDialog({
-    super.key,
-    required this.task,
-  });
+  const TaskCompletionDialog({super.key, required this.task});
 
   @override
   Widget build(BuildContext context) {
     final horizontalPadding = Responsive.getPadding(context);
-    
+
     return Dialog(
       backgroundColor: Colors.transparent,
       insetPadding: EdgeInsets.symmetric(
@@ -184,10 +181,7 @@ class TaskCompletionDialog extends StatelessWidget {
     );
   }
 
-  static Future<bool?> show(
-    BuildContext context,
-    TimetableTaskModel task,
-  ) {
+  static Future<bool?> show(BuildContext context, TimetableTaskModel task) {
     return showDialog<bool>(
       context: context,
       builder: (context) => TaskCompletionDialog(task: task),

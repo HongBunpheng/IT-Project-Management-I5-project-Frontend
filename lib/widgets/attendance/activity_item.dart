@@ -28,8 +28,13 @@ class ActivityItemWidget extends StatelessWidget {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(type == "checkin" ? "Check In" : "Check Out",
-                  style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500)),
+              Text(
+                type == "checkin" ? "Check In" : "Check Out",
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
               Text(date, style: const TextStyle(color: Colors.grey)),
             ],
           ),
@@ -37,7 +42,13 @@ class ActivityItemWidget extends StatelessWidget {
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              Text(time, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+              Text(
+                time,
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
               Text(statusMessage, style: const TextStyle(color: Colors.grey)),
             ],
           ),

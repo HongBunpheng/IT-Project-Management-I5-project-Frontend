@@ -4,10 +4,7 @@ import '../../models/attendance_model.dart';
 class CalendarDayCell extends StatelessWidget {
   final CalendarDay day;
 
-  const CalendarDayCell({
-    super.key,
-    required this.day,
-  });
+  const CalendarDayCell({super.key, required this.day});
 
   @override
   Widget build(BuildContext context) {

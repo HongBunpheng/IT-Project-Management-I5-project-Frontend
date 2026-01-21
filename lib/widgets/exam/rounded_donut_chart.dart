@@ -29,10 +29,7 @@ class RoundedDonutChart extends StatelessWidget {
             children: [
               Text(
                 'Average',
-                style: TextStyle(
-                  color: Colors.grey[600],
-                  fontSize: 14,
-                ),
+                style: TextStyle(color: Colors.grey[600], fontSize: 14),
               ),
               Text(
                 averageScore.toStringAsFixed(1),
@@ -67,7 +64,7 @@ class _DonutChartPainter extends CustomPainter {
 
     for (var subject in subjects) {
       final double sweepAngle = (subject.percentage / 100) * 2 * pi;
-      
+
       final paint = Paint()
         ..color = Color(subject.colorValue)
         ..style = PaintingStyle.stroke

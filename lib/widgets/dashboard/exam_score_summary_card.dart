@@ -8,15 +8,12 @@ import '../../screens/checkin_screen.dart';
 class ExamScoreSummaryCard extends StatelessWidget {
   final ExamScoreSummary scoreSummary;
 
-  const ExamScoreSummaryCard({
-    super.key,
-    required this.scoreSummary,
-  });
+  const ExamScoreSummaryCard({super.key, required this.scoreSummary});
 
   @override
   Widget build(BuildContext context) {
     final horizontalPadding = Responsive.getPadding(context);
-    
+
     return Container(
       margin: EdgeInsets.symmetric(horizontal: horizontalPadding),
       padding: EdgeInsets.all(AppSizes.spacingL),
@@ -43,7 +40,9 @@ class ExamScoreSummaryCard extends StatelessWidget {
                   onPressed: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (context) => const CheckInScreen()),
+                      MaterialPageRoute(
+                        builder: (context) => const CheckInScreen(),
+                      ),
                     );
                   },
                   style: ElevatedButton.styleFrom(

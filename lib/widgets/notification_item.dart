@@ -87,15 +87,15 @@ class NotificationItem extends StatelessWidget {
                             vertical: AppSizes.spacingXS,
                           ),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(AppSizes.radiusS),
+                            borderRadius: BorderRadius.circular(
+                              AppSizes.radiusS,
+                            ),
                           ),
                           minimumSize: const Size(0, 32),
                         ),
                         child: const Text(
                           'Delete',
-                          style: TextStyle(
-                            fontSize: AppSizes.fontSizeS,
-                          ),
+                          style: TextStyle(fontSize: AppSizes.fontSizeS),
                         ),
                       ),
                       SizedBox(width: AppSizes.spacingS),
@@ -112,15 +112,15 @@ class NotificationItem extends StatelessWidget {
                             vertical: AppSizes.spacingXS,
                           ),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(AppSizes.radiusS),
+                            borderRadius: BorderRadius.circular(
+                              AppSizes.radiusS,
+                            ),
                           ),
                           minimumSize: const Size(0, 32),
                         ),
                         child: const Text(
                           'Decline',
-                          style: TextStyle(
-                            fontSize: AppSizes.fontSizeS,
-                          ),
+                          style: TextStyle(fontSize: AppSizes.fontSizeS),
                         ),
                       ),
                     ],

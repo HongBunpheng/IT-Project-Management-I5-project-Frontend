@@ -62,10 +62,7 @@ class ExamSummary {
   final double averageScore;
   final List<ExamResult> examResults;
 
-  ExamSummary({
-    required this.averageScore,
-    required this.examResults,
-  });
+  ExamSummary({required this.averageScore, required this.examResults});
 
   factory ExamSummary.fromJson(Map<String, dynamic> json) {
     return ExamSummary(

@@ -19,11 +19,7 @@ class DayInfo {
   final String dayName;
   final bool isSelected;
 
-  DayInfo({
-    required this.day,
-    required this.dayName,
-    this.isSelected = false,
-  });
+  DayInfo({required this.day, required this.dayName, this.isSelected = false});
 }
 
 enum AttendanceStatus {
@@ -37,10 +33,7 @@ class CalendarDay {
   final DateTime date;
   final AttendanceStatus status;
 
-  CalendarDay({
-    required this.date,
-    required this.status,
-  });
+  CalendarDay({required this.date, required this.status});
 }
 
 class WeeklyAttendanceRecord {

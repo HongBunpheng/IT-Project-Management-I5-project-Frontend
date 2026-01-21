@@ -7,9 +7,43 @@ import 'dashboard/dashboard_view.dart';
 import 'exam_scores_screen.dart';
 import 'timetable_view.dart';
 import 'qr_scanner_screen.dart';
+import '../services/attendance_service.dart';
+import '../services/token_storage.dart';
+import '../utils/json_utils.dart';
 
-class CheckInScreen extends StatelessWidget {
+class CheckInScreen extends StatefulWidget {
   const CheckInScreen({super.key});
+
+  @override
+  State<CheckInScreen> createState() => _CheckInScreenState();
+}
+
+class _CheckInScreenState extends State<CheckInScreen> {
+  final AttendanceService _attendanceService = AttendanceService();
+  final TokenStorage _tokenStorage = TokenStorage();
+
+  bool _isLoading = false;
+  List<Map<String, dynamic>> _recent = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadRecent();
+  }
+
+  Future<void> _loadRecent() async {
+    try {
+      final userId = await _tokenStorage.readUserId();
+      if (userId == null || userId.isEmpty) return;
+      final list = await _attendanceService.myAttendance(userId);
+      if (!mounted) return;
+      setState(() {
+        _recent = list.take(6).toList();
+      });
+    } catch (_) {
+      // ignore
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -42,11 +76,21 @@ class CheckInScreen extends StatelessWidget {
                     context,
                     MaterialPageRoute(builder: (_) => const QrScannerScreen()),
                   );
-                  if (!context.mounted) return;
+                  if (!mounted) return;
                   if (result != null && result.isNotEmpty) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Scanned: $result')),
-                    );
+                    setState(() => _isLoading = true);
+                    final res = await _attendanceService.checkIn(code: result);
+                    if (!context.mounted) return;
+                    setState(() => _isLoading = false);
+
+                    final body = res['body'];
+                    final message = body is Map
+                        ? (body['message']?.toString() ?? 'Check-in complete')
+                        : 'Check-in complete';
+                    ScaffoldMessenger.of(
+                      context,
+                    ).showSnackBar(SnackBar(content: Text(message)));
+                    await _loadRecent();
                   }
                 },
                 child: SizedBox(
@@ -58,7 +102,9 @@ class CheckInScreen extends StatelessWidget {
                       // blue corner frame
                       CustomPaint(
                         size: const Size(250, 250),
-                        painter: _QrCornerFramePainter(color: AppColors.primaryBlue),
+                        painter: _QrCornerFramePainter(
+                          color: AppColors.primaryBlue,
+                        ),
                       ),
                       // qr
                       Container(
@@ -79,9 +125,9 @@ class CheckInScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: AppSizes.spacingS),
-              const Text(
-                'Click me',
-                style: TextStyle(
+              Text(
+                _isLoading ? 'Checking in...' : 'Click me',
+                style: const TextStyle(
                   fontSize: AppSizes.fontSizeL,
                   fontWeight: FontWeight.w700,
                   color: Colors.green,
@@ -102,10 +148,25 @@ class CheckInScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: AppSizes.spacingS),
-              _ScanRow(code: 'CL3', date: '05-29-2022', inTime: '10:30', outTime: '12:00'),
-              _ScanRow(code: 'CL1', date: '06-29-2022', inTime: '10:30', outTime: '12:00'),
-              _ScanRow(code: 'CL5', date: '05-29-2022', inTime: '10:30', outTime: '12:00'),
-              _ScanRow(code: 'CL1', date: '06-29-2022', inTime: '10:30', outTime: '12:00'),
+              if (_recent.isEmpty)
+                const Text('No recent scans')
+              else
+                ..._recent.map((row) {
+                  final code =
+                      readString(row, const ['code', 'qr_code']) ?? '-';
+                  final date =
+                      readString(row, const ['date', 'created_at']) ?? '-';
+                  final inTime =
+                      readString(row, const ['check_in_time']) ?? '-';
+                  final outTime =
+                      readString(row, const ['check_out_time']) ?? '-';
+                  return _ScanRow(
+                    code: code,
+                    date: date,
+                    inTime: inTime,
+                    outTime: outTime,
+                  );
+                }),
             ],
           ),
         ),
@@ -115,15 +176,24 @@ class CheckInScreen extends StatelessWidget {
         onTap: (index) {
           switch (index) {
             case 0:
-              Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const DashboardView()));
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (_) => const DashboardView()),
+              );
               break;
             case 1:
               break;
             case 2:
-              Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const ExamScoresScreen()));
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (_) => const ExamScoresScreen()),
+              );
               break;
             case 3:
-              Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const TimetableView()));
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (_) => const TimetableView()),
+              );
               break;
             case 4:
               break;
@@ -146,7 +216,9 @@ class _SummaryCards extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final padding = Responsive.getPadding(context);
-    final spacing = Responsive.isMobile(context) ? AppSizes.spacingS : AppSizes.spacingM;
+    final spacing = Responsive.isMobile(context)
+        ? AppSizes.spacingS
+        : AppSizes.spacingM;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -210,9 +282,15 @@ class _SummaryCards extends StatelessWidget {
     required String label,
     required IconData icon,
   }) {
-    final cardPadding = Responsive.isMobile(context) ? AppSizes.spacingS : AppSizes.spacingM;
-    final numberFontSize = Responsive.isMobile(context) ? AppSizes.fontSizeXXL : AppSizes.fontSizeXXXL;
-    final labelFontSize = Responsive.isMobile(context) ? AppSizes.fontSizeS : AppSizes.fontSizeM;
+    final cardPadding = Responsive.isMobile(context)
+        ? AppSizes.spacingS
+        : AppSizes.spacingM;
+    final numberFontSize = Responsive.isMobile(context)
+        ? AppSizes.fontSizeXXL
+        : AppSizes.fontSizeXXXL;
+    final labelFontSize = Responsive.isMobile(context)
+        ? AppSizes.fontSizeS
+        : AppSizes.fontSizeM;
 
     return Container(
       padding: EdgeInsets.all(cardPadding),
@@ -236,11 +314,7 @@ class _SummaryCards extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(
-                icon,
-                size: AppSizes.iconSizeM,
-                color: AppColors.success,
-              ),
+              Icon(icon, size: AppSizes.iconSizeM, color: AppColors.success),
               const SizedBox(width: AppSizes.spacingXS),
               Flexible(
                 child: Text(
@@ -353,14 +427,38 @@ class _QrCornerFramePainter extends CustomPainter {
     const inset = 10.0;
 
     // top-left
-    canvas.drawLine(const Offset(inset, inset), const Offset(inset + corner, inset), paint);
-    canvas.drawLine(const Offset(inset, inset), const Offset(inset, inset + corner), paint);
+    canvas.drawLine(
+      const Offset(inset, inset),
+      const Offset(inset + corner, inset),
+      paint,
+    );
+    canvas.drawLine(
+      const Offset(inset, inset),
+      const Offset(inset, inset + corner),
+      paint,
+    );
     // top-right
-    canvas.drawLine(Offset(size.width - inset, inset), Offset(size.width - inset - corner, inset), paint);
-    canvas.drawLine(Offset(size.width - inset, inset), Offset(size.width - inset, inset + corner), paint);
+    canvas.drawLine(
+      Offset(size.width - inset, inset),
+      Offset(size.width - inset - corner, inset),
+      paint,
+    );
+    canvas.drawLine(
+      Offset(size.width - inset, inset),
+      Offset(size.width - inset, inset + corner),
+      paint,
+    );
     // bottom-left
-    canvas.drawLine(Offset(inset, size.height - inset), Offset(inset + corner, size.height - inset), paint);
-    canvas.drawLine(Offset(inset, size.height - inset), Offset(inset, size.height - inset - corner), paint);
+    canvas.drawLine(
+      Offset(inset, size.height - inset),
+      Offset(inset + corner, size.height - inset),
+      paint,
+    );
+    canvas.drawLine(
+      Offset(inset, size.height - inset),
+      Offset(inset, size.height - inset - corner),
+      paint,
+    );
     // bottom-right
     canvas.drawLine(
       Offset(size.width - inset, size.height - inset),
@@ -375,5 +473,6 @@ class _QrCornerFramePainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant _QrCornerFramePainter oldDelegate) => oldDelegate.color != color;
+  bool shouldRepaint(covariant _QrCornerFramePainter oldDelegate) =>
+      oldDelegate.color != color;
 }
