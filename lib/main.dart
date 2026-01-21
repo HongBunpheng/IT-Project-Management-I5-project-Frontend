@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'screens/dashboard/dashboard_view.dart';
 import 'screens/exam_scores_screen.dart';
 
 void main() {
@@ -17,7 +18,7 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
         useMaterial3: true,
       ),
-      home: const ExamScoresScreen(),
+      home: const DashboardView(),
       debugShowCheckedModeBanner: false,
     );
   }
