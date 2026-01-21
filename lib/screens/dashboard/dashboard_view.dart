@@ -5,10 +5,14 @@ import '../../utils/responsive.dart';
 import '../../widgets/common/app_header.dart';
 import '../../widgets/common/custom_bottom_navigation_bar.dart';
 import '../timetable_view.dart';
-import '../../widgets/dashboard/exam_score_summary_card.dart';
+import '../../widgets/dashboard/checkin_card.dart';
 import '../../widgets/dashboard/exam_card_item.dart';
 import '../../widgets/dashboard/task_card_item.dart';
 import '../../models/dashboard_models.dart';
+import '../notification_screen.dart';
+import '../exam_scores_screen.dart';
+import '../settings_screen.dart';
+import '../checkin_screen.dart';
 
 class DashboardView extends StatefulWidget {
   const DashboardView({super.key});
@@ -59,29 +63,43 @@ class _DashboardViewState extends State<DashboardView> {
   ];
 
   void _onBottomNavTap(int index) {
-    setState(() {
-      _currentBottomNavIndex = index;
-    });
-    
-    // Navigate based on index
+    // Only update local index when staying on this tab
     switch (index) {
       case 0:
-        // Already on dashboard
+        setState(() => _currentBottomNavIndex = 0);
         break;
-      case 1:
-        // Check-in
-        break;
+         case 1:
+ Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const CheckInScreen()),
+        ).then((_) {
+          if (mounted) setState(() => _currentBottomNavIndex = 0);
+        });        break;
       case 2:
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (context) => const TimetableView()),
-        );
+          MaterialPageRoute(builder: (_) => const ExamScoresScreen()),
+        ).then((_) {
+          if (mounted) setState(() => _currentBottomNavIndex = 0);
+        });
         break;
       case 3:
-        // Notifications
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const TimetableView()),
+        ).then((_) {
+          if (mounted) setState(() => _currentBottomNavIndex = 0);
+        });
         break;
       case 4:
-        // Settings
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const SettingsScreen()),
+        ).then((_) {
+          if (mounted) setState(() => _currentBottomNavIndex = 0);
+        });
+        break;
+      default:
         break;
     }
   }
@@ -98,13 +116,11 @@ class _DashboardViewState extends State<DashboardView> {
             // Header
             AppHeader(
               trailing: IconButton(
-                icon: const Icon(Icons.notifications),
-                onPressed: () {
-                   Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => const TimetableView()),
-                  );
-                },
+                icon: const Icon(Icons.notifications_outlined),
+                onPressed: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const NotificationView()),
+                ),
               ),
             ),
             // Main Content

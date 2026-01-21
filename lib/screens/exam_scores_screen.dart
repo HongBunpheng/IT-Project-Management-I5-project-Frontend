@@ -1,9 +1,17 @@
 import 'package:flutter/material.dart';
+import '../configs/app_colors.dart';
+import '../configs/app_sizes.dart';
 import '../models/exam_model.dart';
 import '../services/exam_service.dart';
+import '../widgets/common/app_header.dart';
+import '../widgets/common/custom_bottom_navigation_bar.dart';
 import 'attendance/attendance_screen.dart';
 import 'scores_summary_screen.dart';
 import 'exam_detail_screen.dart';
+import 'dashboard/dashboard_view.dart';
+import 'timetable_view.dart';
+import 'settings_screen.dart';
+import 'checkin_screen.dart';
 
 class ExamScoresScreen extends StatefulWidget {
   const ExamScoresScreen({super.key});
@@ -15,7 +23,7 @@ class ExamScoresScreen extends StatefulWidget {
 class _ExamScoresScreenState extends State<ExamScoresScreen> {
   final ExamService _examService = ExamService();
   ExamSummary? _examSummary;
-  bool _isLoading = true;
+  int _currentBottomNavIndex = 2; // menu_book tab for exam scores
 
   @override
   void initState() {
@@ -24,171 +32,173 @@ class _ExamScoresScreenState extends State<ExamScoresScreen> {
   }
 
   Future<void> _loadExamData() async {
-    try {
-      final summary = await _examService.getExamResults();
+    // Load instantly without delay
+    final summary = await _examService.getExamResults();
+    if (mounted) {
       setState(() {
         _examSummary = summary;
-        _isLoading = false;
       });
-    } catch (e) {
-      setState(() {
-        _isLoading = false;
-      });
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error loading exam data: $e')),
+    }
+  }
+
+  void _onBottomNavTap(int index) {
+    switch (index) {
+      case 0:
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const DashboardView()),
         );
-      }
+        break;
+      case 1:
+ Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const CheckInScreen()),
+        );        break;
+      case 2:
+        // Already on exam scores
+        setState(() => _currentBottomNavIndex = 2);
+        break;
+      case 3:
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const TimetableView()),
+        );
+        break;
+      case 4:
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const SettingsScreen()),
+        );
+        break;
+      default:
+        break;
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.white,
       body: SafeArea(
-        child: _isLoading
+        child: _examSummary == null
             ? const Center(child: CircularProgressIndicator())
-            : _examSummary == null
-                ? const Center(child: Text('No data available'))
-                : Column(
-                    children: [
-                      // Header with Title and Average Score on same row
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 0.0),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            IconButton(
-                              icon: const Icon(Icons.arrow_back),
-                              onPressed: () => Navigator.pop(context),
-                              padding: EdgeInsets.zero,
-                              constraints: const BoxConstraints(),
-                            ),
-                            const SizedBox(width: 8),
-                            const SizedBox(height: 15),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Text(
-                                    'Exam Scores',
-                                    style: TextStyle(
-                                      fontSize: 15,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.black87,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    'Average Score: ${_examSummary!.averageScore.toInt()}%',
-                                    style: const TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w500,
-                                      color: Colors.grey,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                      // Action Buttons
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: _ActionButton(
-                                title: 'Attendance and Leave Request',
-                                icon: Icons.bar_chart,
-                                color: const Color(0xFF42A5F5), // Brighter blue
-                                gradient: true,
-                                onTap: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => const AttendanceScreen(),
-                                    ),
-                                  );
-                                },
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: _ActionButton(
-                                title: 'Score Summary',
-                                icon: Icons.description_outlined,
-                                color: const Color(0xFF66BB6A), // Brighter green
-                                gradient: true,
-                                onTap: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => const ScoresSummaryScreen(),
-                                    ),
-                                  );
-                                },
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                      // Exam Results Section
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                        child: Align(
-                          alignment: Alignment.centerLeft,
-                          child: Row(
-                              children: [
-                                Icon(
-                                  Icons.workspace_premium, // Ribbon/Medal icon
-                                  color: const Color(0xFF5C6BC0), // Purple/Indigo color
-                                  size: 24,
+            : Column(
+                children: [
+                  const AppHeader(),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Text( 'Exam Scores', style: TextStyle(
+                            fontSize: AppSizes.fontSizeM,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.textPrimary,
+                          ),),
+                        Text( 'Average Score: ${_examSummary!.averageScore.toInt()}%', style: const TextStyle(
+                            fontSize: AppSizes.fontSizeM,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.textSecondary,
+                          ),),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: _ActionButton(
+                            title: 'Attendance and Leave Request',
+                            icon: Icons.bar_chart,
+                            color: const Color(0xFF42A5F5),
+                            gradient: true,
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => const AttendanceScreen(),
                                 ),
-                                const SizedBox(width: 8),
-                                const Text(
-                                  'Exam Results',
-                                  style: TextStyle(
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.bold,
-                                    color: Color(0xFF1A1F36), // Dark text
-                                  ),
-                                ),
-                              ],
-                            ),
+                              );
+                            },
+                          ),
                         ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _ActionButton(
+                            title: 'Score Summary',
+                            icon: Icons.description_outlined,
+                            color: const Color(0xFF66BB6A),
+                            gradient: true,
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => const ScoresSummaryScreen(),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: Row(
+                        children: const [
+                          Icon(
+                            Icons.workspace_premium,
+                            color: Color(0xFF5C6BC0),
+                            size: 24,
+                          ),
+                          SizedBox(width: 8),
+                          Text(
+                            'Exam Results',
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF1A1F36),
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 16),
-                      // Exam Results List
-                      Expanded(
-                        child: ListView.builder(
-                          padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                          itemCount: _examSummary!.examResults.length,
-                          itemBuilder: (context, index) {
-                            final exam = _examSummary!.examResults[index];
-                            return _ExamResultCard(
-                              exam: exam,
-                              onPreview: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => ExamDetailScreen(
-                                      examId: exam.examId,
-                                      subjectName: exam.subjectName,
-                                    ),
-                                  ),
-                                );
-                              },
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Expanded(
+                    child: ListView.builder(
+                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                      itemCount: _examSummary!.examResults.length,
+                      itemBuilder: (context, index) {
+                        final exam = _examSummary!.examResults[index];
+                        return _ExamResultCard(
+                          exam: exam,
+                          onPreview: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => ExamDetailScreen(
+                                  examId: exam.examId,
+                                  subjectName: exam.subjectName,
+                                ),
+                              ),
                             );
                           },
-                        ),
-                      ),
-                    ],
+                        );
+                      },
+                    ),
                   ),
+                ],
+              ),
+      ),
+      bottomNavigationBar: CustomBottomNavigationBar(
+        currentIndex: _currentBottomNavIndex,
+        onTap: _onBottomNavTap,
       ),
     );
   }

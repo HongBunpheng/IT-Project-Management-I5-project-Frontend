@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../configs/app_colors.dart';
 import '../../configs/app_sizes.dart';
+import '../../screens/notification_screen.dart';
 
 class AppHeader extends StatelessWidget {
   final String? profileImageUrl;
@@ -95,7 +96,11 @@ class AppHeader extends StatelessWidget {
                     Icons.notifications_outlined,
                     color: AppColors.textPrimary,
                   ),
-                  onPressed: onNotificationTap ?? () {},
+                  onPressed: onNotificationTap ??
+                      () => Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => const NotificationView()),
+                          ),
                   padding: EdgeInsets.zero,
                 ),
               ),

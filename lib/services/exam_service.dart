@@ -9,8 +9,7 @@ class ExamService {
   /// Fetch all exam results
   /// When API is ready, replace with actual HTTP call
   Future<ExamSummary> getExamResults() async {
-    // Simulate API delay
-    await Future.delayed(const Duration(milliseconds: 500));
+    // No delay for mock data - instant response
 
     // TODO: Replace with actual API call
     // Example:

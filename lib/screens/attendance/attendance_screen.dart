@@ -34,7 +34,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const AppHeader(
-              title: 'Attendance',
+              
             ),
             Expanded(
               child: SingleChildScrollView(

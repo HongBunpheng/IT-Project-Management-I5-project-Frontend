@@ -52,19 +52,19 @@ class CustomBottomNavigationBar extends StatelessWidget {
           ),
           _buildNavItem(
             context,
-            icon: Icons.schedule,
+            icon: Icons.menu_book,
             index: 2,
             isActive: currentIndex == 2,
           ),
           _buildNavItem(
             context,
-            icon: Icons.notifications_outlined,
+            icon: Icons.schedule,
             index: 3,
             isActive: currentIndex == 3,
           ),
           _buildNavItem(
             context,
-            icon: Icons.settings,
+            icon: Icons.person_outline,
             index: 4,
             isActive: currentIndex == 4,
           ),

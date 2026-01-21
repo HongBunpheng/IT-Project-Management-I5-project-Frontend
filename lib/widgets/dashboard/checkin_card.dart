@@ -17,13 +17,19 @@ class ExamScoreSummaryCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final horizontalPadding = Responsive.getPadding(context);
     
-    return Container(
-      margin: EdgeInsets.symmetric(horizontal: horizontalPadding),
-      padding: EdgeInsets.all(AppSizes.spacingL),
-      decoration: BoxDecoration(
-        color: AppColors.purple,
-        borderRadius: BorderRadius.circular(AppSizes.radiusL),
+    return InkWell(
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const CheckInScreen()),
       ),
+      borderRadius: BorderRadius.circular(AppSizes.radiusL),
+      child: Container(
+        margin: EdgeInsets.symmetric(horizontal: horizontalPadding),
+        padding: EdgeInsets.all(AppSizes.spacingL),
+        decoration: BoxDecoration(
+          color: AppColors.purple,
+          borderRadius: BorderRadius.circular(AppSizes.radiusL),
+        ),
       child: Row(
         children: [
           Expanded(
@@ -86,6 +92,7 @@ class ExamScoreSummaryCard extends StatelessWidget {
             ),
           ),
         ],
+      ),
       ),
     );
   }

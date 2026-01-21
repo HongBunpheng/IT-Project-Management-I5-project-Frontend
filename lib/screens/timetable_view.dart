@@ -2,11 +2,16 @@ import 'package:flutter/material.dart';
 import '../configs/app_colors.dart';
 import '../configs/app_sizes.dart';
 import '../widgets/common/custom_bottom_navigation_bar.dart';
+import 'dashboard/dashboard_view.dart';
 import '../widgets/timetable/timetable_header.dart';
 import '../widgets/timetable/date_picker_widget.dart';
 import '../widgets/timetable/intake_progress_widget.dart';
 import '../widgets/timetable/timetable_task_card.dart';
 import '../models/timetable_task_model.dart';
+import 'leave_request/apply_leave_screen.dart';
+import 'exam_scores_screen.dart';
+import 'settings_screen.dart';
+import 'checkin_screen.dart';
 
 class TimetableView extends StatefulWidget {
   const TimetableView({super.key});
@@ -16,7 +21,7 @@ class TimetableView extends StatefulWidget {
 }
 
 class _TimetableViewState extends State<TimetableView> {
-  int _currentBottomNavIndex = 2; // Schedule is index 2
+  int _currentBottomNavIndex = 3; // Schedule icon is index 3
   
   // Sample data - replace with API data later
   IntakeModel _currentIntake = IntakeModel(
@@ -94,14 +99,10 @@ class _TimetableViewState extends State<TimetableView> {
 
   void _onDaySelected(DayModel selectedDay) {
     setState(() {
-      // Update selected day index
       final index = _days.indexWhere((d) => d.day == selectedDay.day);
-      if (index != -1) {
-        _selectedDayIndex = index;
-      }
-      
-      // Update intake based on selected day
-      // This is sample data - replace with actual data from API
+      if (index != -1) _selectedDayIndex = index;
+
+      // Sample data update
       if (selectedDay.day == 7) {
         _currentIntake = IntakeModel(
           completed: 0,
@@ -123,7 +124,6 @@ class _TimetableViewState extends State<TimetableView> {
           ),
         ];
       } else {
-        // Sample data for other days
         _currentIntake = IntakeModel(
           completed: 2,
           total: 2,
@@ -145,30 +145,52 @@ class _TimetableViewState extends State<TimetableView> {
         ];
       }
     });
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return FractionallySizedBox(
+          heightFactor: 0.7,
+          child: ClipRRect(
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(AppSizes.radiusL)),
+            child: const ApplyLeaveScreen(),
+          ),
+        );
+      },
+    );
   }
 
   void _onBottomNavTap(int index) {
-    setState(() {
-      _currentBottomNavIndex = index;
-    });
-    
-    // Navigate based on index
+    // Only update local index when staying on this tab
     switch (index) {
       case 0:
-        // Navigate to dashboard
-        Navigator.pop(context); // Assuming we came from Dashboard
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const DashboardView()),
+        );
         break;
       case 1:
-        // Check in
-        break;
+Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const CheckInScreen()),
+        );        break;
       case 2:
-        // Already on timetable
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const ExamScoresScreen()),
+        );
         break;
       case 3:
-        // Notifications
+        // Already on timetable
+        setState(() => _currentBottomNavIndex = 3);
         break;
       case 4:
-        // Navigate to settings (if needed)
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const SettingsScreen()),
+        );
         break;
     }
   }
