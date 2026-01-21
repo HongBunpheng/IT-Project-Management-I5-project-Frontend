@@ -17,4 +17,7 @@ class AppColors {
   static const Color iconOrange = Color(0xFFFFB74D);
   static const Color error = Colors.red;
   static const Color success = Color(0xFF4CAF50);
+  static const Color cardPink = Color(0xFFFFE0E0);
+  static const Color info = Color(0xFF2196F3);
+  static const Color darkGrey = Color(0xFF424242);
 }

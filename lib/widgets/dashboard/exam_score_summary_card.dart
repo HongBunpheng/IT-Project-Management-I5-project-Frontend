@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../configs/app_colors.dart';
 import '../../configs/app_sizes.dart';
-import '../../core/responsive/responsive.dart';
+import '../../utils/responsive.dart';
 import '../../models/dashboard_models.dart';
 import '../../screens/exam_scores_screen.dart';
 
