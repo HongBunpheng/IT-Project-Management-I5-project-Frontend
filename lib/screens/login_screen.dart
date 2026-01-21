@@ -4,7 +4,6 @@ import '../configs/app_colors.dart';
 import '../repositories/auth_repository.dart';
 import '../utils/helpers.dart';
 import '../utils/validators.dart';
-import '../screens/signup_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
