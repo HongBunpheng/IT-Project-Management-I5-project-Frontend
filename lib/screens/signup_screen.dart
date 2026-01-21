@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
 import '../configs/app_colors.dart';
 import 'login_screen.dart';
-import '../screens/attendance/attendance_overview_screen.dart';
+import '../screens/attendance/attendance_screen.dart';
 import '../repositories/auth_repository.dart';
 import '../utils/helpers.dart';
 import '../utils/validators.dart';
-
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
@@ -47,9 +46,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(
-          builder: (_) => const AttendanceOverviewScreen(),
-        ),
+        MaterialPageRoute(builder: (_) => const AttendanceScreen()),
       );
     } else {
       Helpers.showSnackBar(
@@ -58,7 +55,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
       );
     }
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -83,10 +79,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
                 // LOGO
                 Center(
-                  child: Image.asset(
-                    "assets/images/logo.png",
-                    height: 110,
-                  ),
+                  child: Image.asset("assets/images/logo.png", height: 110),
                 ),
 
                 const SizedBox(height: 20),
@@ -180,18 +173,19 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                     borderRadius: BorderRadius.circular(12),
                                   ),
                                 ),
-                                child: _isLoading
-                                    ? const CircularProgressIndicator(
-                                        color: Colors.white,
-                                      )
-                                    : const Text(
-                                        "Register",
-                                        style: TextStyle(
-                                          fontSize: 18,
-                                          fontWeight: FontWeight.w600,
+                                child:
+                                    _isLoading
+                                        ? const CircularProgressIndicator(
                                           color: Colors.white,
+                                        )
+                                        : const Text(
+                                          "Register",
+                                          style: TextStyle(
+                                            fontSize: 18,
+                                            fontWeight: FontWeight.w600,
+                                            color: Colors.white,
+                                          ),
                                         ),
-                                      ),
                               ),
                             ),
 
@@ -265,21 +259,21 @@ class _SignUpScreenState extends State<SignUpScreen> {
             filled: true,
             fillColor: Colors.white,
             hintText: hint,
-            hintStyle: const TextStyle(
-              color: Colors.grey,
-              fontSize: 16,
+            hintStyle: const TextStyle(color: Colors.grey, fontSize: 16),
+            suffixIcon:
+                toggle != null
+                    ? IconButton(
+                      icon: Icon(
+                        obscure ? Icons.visibility_off : Icons.visibility,
+                        color: Colors.grey,
+                      ),
+                      onPressed: toggle,
+                    )
+                    : null,
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 14,
             ),
-            suffixIcon: toggle != null
-                ? IconButton(
-                    icon: Icon(
-                      obscure ? Icons.visibility_off : Icons.visibility,
-                      color: Colors.grey,
-                    ),
-                    onPressed: toggle,
-                  )
-                : null,
-            contentPadding:
-                const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: const BorderSide(color: Colors.grey),
