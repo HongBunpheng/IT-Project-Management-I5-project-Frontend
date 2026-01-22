@@ -12,6 +12,8 @@ class AppHeader extends StatefulWidget {
   final String? profileImageUrl;
   final String? username;
   final String? userId;
+  final String? fullName;
+  final String? email;
   final VoidCallback? onNotificationTap;
   final String? title;
   final Widget? trailing;
@@ -21,10 +23,24 @@ class AppHeader extends StatefulWidget {
     this.profileImageUrl,
     this.username,
     this.userId,
+    this.fullName,
+    this.email,
     this.onNotificationTap,
     this.title,
     this.trailing,
   });
+
+  String _capitalizeFullName(String? name) {
+    if (name == null || name.isEmpty) return '';
+    return name
+        .split(' ')
+        .map(
+          (word) => word.isEmpty
+              ? ''
+              : word[0].toUpperCase() + word.substring(1).toLowerCase(),
+        )
+        .join(' ');
+  }
 
   @override
   State<AppHeader> createState() => _AppHeaderState();
@@ -33,7 +49,7 @@ class AppHeader extends StatefulWidget {
 class _AppHeaderState extends State<AppHeader> {
   final AccountService _accountService = AccountService();
   final TokenStorage _tokenStorage = TokenStorage();
-  
+
   String? _fetchedProfileImageUrl;
   String? _fetchedUsername;
   String? _fetchedUserId;
@@ -60,13 +76,19 @@ class _AppHeaderState extends State<AppHeader> {
 
       // Extract avatar URL using service method
       final avatarUrl = _accountService.extractAvatarUrl(profileResponse);
-      
+
       // Extract user data
       final user = _accountService.extractUserData(profileResponse);
-      
-      final userName = readString(user, const ['user_name', 'name', 'full_name', 'fullName', 'username']);
+
+      final userName = readString(user, const [
+        'user_name',
+        'name',
+        'full_name',
+        'fullName',
+        'username',
+      ]);
       final userId = readString(user, const ['id', 'user_id', 'userId']);
-      
+
       if (mounted) {
         setState(() {
           _fetchedProfileImageUrl = avatarUrl;
@@ -83,12 +105,14 @@ class _AppHeaderState extends State<AppHeader> {
   Widget build(BuildContext context) {
     final appColors = context.appColors;
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+
     // Use fetched data or fallback to widget parameters
     final profileImageUrl = _fetchedProfileImageUrl ?? widget.profileImageUrl;
     final username = _fetchedUsername ?? widget.username;
     final userId = _fetchedUserId ?? widget.userId;
-    
+    final fullName = widget.fullName;
+    final email = widget.email;
+
     return Container(
       padding: EdgeInsets.only(
         left: AppSizes.spacingM,
@@ -97,7 +121,7 @@ class _AppHeaderState extends State<AppHeader> {
         top: MediaQuery.of(context).padding.top + AppSizes.spacingM,
       ),
       decoration: BoxDecoration(
-        color: isDark 
+        color: isDark
             ? AppColors.primaryBlue.withValues(alpha: 0.2)
             : AppColors.white,
         border: isDark
@@ -139,7 +163,7 @@ class _AppHeaderState extends State<AppHeader> {
                             child: CircularProgressIndicator(
                               value: loadingProgress.expectedTotalBytes != null
                                   ? loadingProgress.cumulativeBytesLoaded /
-                                      loadingProgress.expectedTotalBytes!
+                                        loadingProgress.expectedTotalBytes!
                                   : null,
                               color: appColors.primaryBlue,
                               strokeWidth: 2,
@@ -147,7 +171,9 @@ class _AppHeaderState extends State<AppHeader> {
                           );
                         },
                         errorBuilder: (context, error, stackTrace) {
-                          print('Error loading network image in header: $error');
+                          print(
+                            'Error loading network image in header: $error',
+                          );
                           print('Failed URL: $profileImageUrl');
                           // Clear invalid URL
                           if (mounted) {
@@ -175,27 +201,37 @@ class _AppHeaderState extends State<AppHeader> {
             ),
           ),
           const SizedBox(width: AppSizes.spacingM),
-          // Username and ID
+          // Full Name and Email
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  widget.title ?? username ?? 'Student Name',
+                  widget.title ??
+                      (fullName != null && fullName.isNotEmpty
+                          ? widget._capitalizeFullName(fullName)
+                          : (username ?? 'Student')),
                   style: TextStyle(
                     fontSize: AppSizes.fontSizeXL,
                     fontWeight: FontWeight.bold,
                     color: appColors.textPrimary,
                   ),
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  'ID: ${userId ?? 'e20211580'}',
-                  style: TextStyle(
-                    fontSize: AppSizes.fontSizeM,
-                    color: appColors.textSecondary,
+                if ((email != null && email.isNotEmpty) ||
+                    (userId != null && userId.isNotEmpty)) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    email != null && email.isNotEmpty
+                        ? email
+                        : 'ID: ${userId ?? ''}',
+                    style: TextStyle(
+                      fontSize: AppSizes.fontSizeM,
+                      color: appColors.textSecondary,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                ),
+                ],
               ],
             ),
           ),
@@ -221,13 +257,14 @@ class _AppHeaderState extends State<AppHeader> {
                     Icons.notifications_outlined,
                     color: appColors.textPrimary,
                   ),
-                  onPressed: widget.onNotificationTap ??
+                  onPressed:
+                      widget.onNotificationTap ??
                       () => Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => const NotificationView(),
-                            ),
-                          ),
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const NotificationView(),
+                        ),
+                      ),
                   padding: EdgeInsets.zero,
                 ),
               ),

@@ -43,6 +43,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final AccountService _accountService = AccountService();
 
   String? _name;
+  String? _fullName;
   String? _email;
   String? _userId;
   String? _groupId;
@@ -76,12 +77,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Future<void> _loadProfile() async {
     try {
+      // Try to load from storage first
       final storedUserId = await _tokenStorage.readUserId();
       final storedGroupId = await _tokenStorage.readGroupId();
+      final storedFullName = await _tokenStorage.readFullName();
+      final storedEmail = await _tokenStorage.readEmail();
+
       if (mounted) {
         setState(() {
           _userId = storedUserId;
           _groupId = storedGroupId;
+          _fullName = storedFullName;
+          _email = storedEmail;
+          _name = storedFullName ?? storedEmail;
         });
       }
 
@@ -94,31 +102,66 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
       // Extract avatar URL using service method
       final avatarUrl = _accountService.extractAvatarUrl(profileResponse);
-      
+
       // Extract user data
       final user = _accountService.extractUserData(profileResponse);
 
       if (mounted) {
         setState(() {
-          _name = readString(user, const ['user_name', 'name', 'full_name', 'fullName']);
+          _fullName = readString(user, const ['full_name', 'fullName', 'name']);
+          _name = readString(user, const [
+            'user_name',
+            'name',
+            'full_name',
+            'fullName',
+          ]);
           _email = readString(user, const ['email']);
-          _userId = readString(user, const ['id', 'user_id', 'userId']) ?? _userId;
-          _groupId = readString(user, const ['group_id', 'groupId']) ?? _groupId;
-          _major = readString(user, const ['major', 'department', 'faculty', 'course', 'program']);
-          // Only update if we got a valid full URL (starts with http)
+          _userId =
+              readString(user, const ['id', 'user_id', 'userId']) ?? _userId;
+          _groupId =
+              readString(user, const ['group_id', 'groupId']) ?? _groupId;
+          _major = readString(user, const [
+            'major',
+            'department',
+            'faculty',
+            'course',
+            'program',
+          ]);
           if (avatarUrl != null && avatarUrl.isNotEmpty) {
             _profileImageUrl = avatarUrl;
           }
-          // Don't overwrite existing valid URL with null or invalid URL
         });
-        
-        print('Loaded profile image URL: $_profileImageUrl');
       }
-    } catch (e) {
-      print('Error loading profile: $e');
+
+      if (_fullName != null && _fullName!.isNotEmpty) {
+        await _tokenStorage.writeFullName(_fullName!);
+      }
+      if (_email != null && _email!.isNotEmpty) {
+        await _tokenStorage.writeEmail(_email!);
+      }
+      if (_userId != null && _userId!.isNotEmpty) {
+        await _tokenStorage.writeUserId(_userId!);
+      }
+      if (_groupId != null && _groupId!.isNotEmpty) {
+        await _tokenStorage.writeGroupId(_groupId!);
+      }
+    } catch (_) {
+      // ignore
     } finally {
       if (mounted) setState(() => _isLoadingMe = false);
     }
+  }
+
+  String _capitalizeFullName(String? name) {
+    if (name == null || name.isEmpty) return '';
+    return name
+        .split(' ')
+        .map(
+          (word) => word.isEmpty
+              ? ''
+              : word[0].toUpperCase() + word.substring(1).toLowerCase(),
+        )
+        .join(' ');
   }
 
   Future<void> _handleLogout() async {
@@ -141,7 +184,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Future<void> _pickImage() async {
     final appColors = context.appColors;
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -167,7 +210,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
               const SizedBox(height: 20),
               Builder(
                 builder: (textContext) => Text(
-                  safeLocaleString(textContext, 'select_profile_photo', fallback: 'Select Profile Photo'),
+                  safeLocaleString(
+                    textContext,
+                    'select_profile_photo',
+                    fallback: 'Select Profile Photo',
+                  ),
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
@@ -182,7 +229,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   children: [
                     _buildImageSourceOption(
                       icon: Icons.photo_library,
-                      label: safeLocaleString(rowContext, 'gallery', fallback: 'Gallery'),
+                      label: safeLocaleString(
+                        rowContext,
+                        'gallery',
+                        fallback: 'Gallery',
+                      ),
                       onTap: () async {
                         Navigator.pop(context);
                         await _selectAndUploadImage(ImageSource.gallery);
@@ -190,16 +241,26 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                     _buildImageSourceOption(
                       icon: Icons.camera_alt,
-                      label: safeLocaleString(rowContext, 'camera', fallback: 'Camera'),
+                      label: safeLocaleString(
+                        rowContext,
+                        'camera',
+                        fallback: 'Camera',
+                      ),
                       onTap: () async {
                         Navigator.pop(context);
                         await _selectAndUploadImage(ImageSource.camera);
                       },
                     ),
-                    if (_profileImage != null || (_profileImageUrl != null && _profileImageUrl!.isNotEmpty))
+                    if (_profileImage != null ||
+                        (_profileImageUrl != null &&
+                            _profileImageUrl!.isNotEmpty))
                       _buildImageSourceOption(
                         icon: Icons.delete_outline,
-                        label: safeLocaleString(rowContext, 'remove', fallback: 'Remove'),
+                        label: safeLocaleString(
+                          rowContext,
+                          'remove',
+                          fallback: 'Remove',
+                        ),
                         onTap: () {
                           Navigator.pop(context);
                           setState(() {
@@ -228,7 +289,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         maxHeight: 512,
         imageQuality: 85,
       );
-      
+
       if (image != null) {
         final file = File(image.path);
         // Show local image immediately for better UX
@@ -252,26 +313,26 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Future<void> _uploadProfileImage(File imageFile) async {
     if (!mounted) return;
-    
+
     setState(() => _isUploadingImage = true);
-    
+
     try {
       // Use AccountService to upload avatar
       final response = await _accountService.uploadAvatar(imageFile);
-      
+
       if (response != null) {
         final statusCode = response['statusCode'] as int? ?? 0;
-        
+
         if (statusCode == 200) {
           final body = response['body'];
           if (body != null && body is Map<String, dynamic>) {
             // Debug: Print the response to see what we're getting
             print('Upload response: ${jsonEncode(body)}');
-            
+
             // Extract avatar URL using service method
             final avatarUrl = _accountService.extractAvatarUrl(body);
             print('Extracted avatar URL: $avatarUrl');
-            
+
             if (mounted) {
               // Only update if we got a valid URL
               if (avatarUrl != null && avatarUrl.isNotEmpty) {
@@ -281,12 +342,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   _profileImage = null;
                   _isUploadingImage = false;
                 });
-                
+
                 CustomSnackBar.success(
                   title: 'Success',
                   message: 'Profile photo uploaded successfully',
                 );
-                
+
                 // Reload profile after a short delay to ensure backend has processed
                 Future.delayed(const Duration(milliseconds: 500), () {
                   if (mounted) {
@@ -298,12 +359,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 setState(() {
                   _isUploadingImage = false;
                 });
-                
+
                 CustomSnackBar.success(
                   title: 'Success',
                   message: 'Profile photo uploaded successfully',
                 );
-                
+
                 // Reload profile to get the URL
                 Future.delayed(const Duration(milliseconds: 500), () {
                   if (mounted) {
@@ -326,13 +387,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
           if (mounted) {
             final body = response['body'];
             final errorMessage = body is Map<String, dynamic>
-                ? (readString(body, const ['message', 'error']) ?? 'Failed to upload image')
+                ? (readString(body, const ['message', 'error']) ??
+                      'Failed to upload image')
                 : 'Failed to upload image';
             setState(() => _isUploadingImage = false);
-            CustomSnackBar.error(
-              title: 'Upload Failed',
-              message: errorMessage,
-            );
+            CustomSnackBar.error(title: 'Upload Failed', message: errorMessage);
             print('Failed to upload image: $statusCode - $errorMessage');
           }
         }
@@ -464,14 +523,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     // Store the widget's context for locale changes
     final widgetContext = context;
-    
+
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       builder: (sheetContext) {
         final currentLocale = Locales.currentLocale(sheetContext);
         final currentLangCode = currentLocale?.languageCode ?? 'en';
-        
+
         return Container(
           decoration: BoxDecoration(
             color: isDark ? const Color(0xFF1E1E1E) : AppColors.white,
@@ -493,7 +552,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
                 const SizedBox(height: 20),
                 Text(
-                  safeLocaleString(sheetContext, 'language', fallback: 'Language'),
+                  safeLocaleString(
+                    sheetContext,
+                    'language',
+                    fallback: 'Language',
+                  ),
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
@@ -505,7 +568,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ListTile(
                   leading: const Icon(Icons.language),
                   title: Text(
-                    safeLocaleString(sheetContext, 'english', fallback: 'English'),
+                    safeLocaleString(
+                      sheetContext,
+                      'english',
+                      fallback: 'English',
+                    ),
                     style: TextStyle(
                       fontSize: 16,
                       color: appColors.textPrimary,
@@ -558,18 +625,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget build(BuildContext context) {
     final appColors = context.appColors;
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+
     return Scaffold(
       backgroundColor: isDark ? const Color(0xFF121212) : AppColors.white,
       appBar: AppBar(
-        backgroundColor: isDark 
+        backgroundColor: isDark
             ? AppColors.primaryBlue.withValues(alpha: 0.2)
             : AppColors.white,
         elevation: _isScrolled ? 4 : 0,
-        shadowColor: _isScrolled 
-            ? (isDark 
-                ? AppColors.primaryBlue.withValues(alpha: 0.3)
-                : AppColors.grey.withValues(alpha: 0.3)) 
+        shadowColor: _isScrolled
+            ? (isDark
+                  ? AppColors.primaryBlue.withValues(alpha: 0.3)
+                  : AppColors.grey.withValues(alpha: 0.3))
             : Colors.transparent,
         surfaceTintColor: Colors.transparent,
         flexibleSpace: isDark
@@ -637,58 +704,71 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                           height: 120,
                                         ),
                                       )
-                                    : _profileImageUrl != null && _profileImageUrl!.isNotEmpty
-                                        ? ClipOval(
-                                            child: Image.network(
-                                              _profileImageUrl!,
-                                              fit: BoxFit.cover,
-                                              width: 120,
-                                              height: 120,
-                                              loadingBuilder: (context, child, loadingProgress) {
-                                                if (loadingProgress == null) return child;
-                                                return Center(
-                                                  child: CircularProgressIndicator(
-                                                    value: loadingProgress.expectedTotalBytes != null
-                                                        ? loadingProgress.cumulativeBytesLoaded /
-                                                            loadingProgress.expectedTotalBytes!
-                                                        : null,
-                                                    color: appColors.primaryBlue,
-                                                    strokeWidth: 2,
-                                                  ),
-                                                );
-                                              },
-                                              errorBuilder: (context, error, stackTrace) {
-                                                print('Error loading network image: $error');
-                                                print('Failed URL: $_profileImageUrl');
-                                                // Clear invalid URL
+                                    : _profileImageUrl != null &&
+                                          _profileImageUrl!.isNotEmpty
+                                    ? ClipOval(
+                                        child: Image.network(
+                                          _profileImageUrl!,
+                                          fit: BoxFit.cover,
+                                          width: 120,
+                                          height: 120,
+                                          loadingBuilder: (context, child, loadingProgress) {
+                                            if (loadingProgress == null)
+                                              return child;
+                                            return Center(
+                                              child: CircularProgressIndicator(
+                                                value:
+                                                    loadingProgress
+                                                            .expectedTotalBytes !=
+                                                        null
+                                                    ? loadingProgress
+                                                              .cumulativeBytesLoaded /
+                                                          loadingProgress
+                                                              .expectedTotalBytes!
+                                                    : null,
+                                                color: appColors.primaryBlue,
+                                                strokeWidth: 2,
+                                              ),
+                                            );
+                                          },
+                                          errorBuilder: (context, error, stackTrace) {
+                                            print(
+                                              'Error loading network image: $error',
+                                            );
+                                            print(
+                                              'Failed URL: $_profileImageUrl',
+                                            );
+                                            // Clear invalid URL
+                                            if (mounted) {
+                                              Future.microtask(() {
                                                 if (mounted) {
-                                                  Future.microtask(() {
-                                                    if (mounted) {
-                                                      setState(() {
-                                                        _profileImageUrl = null;
-                                                      });
-                                                    }
+                                                  setState(() {
+                                                    _profileImageUrl = null;
                                                   });
                                                 }
-                                                return Icon(
-                                                  Icons.person,
-                                                  size: 60,
-                                                  color: appColors.textSecondary,
-                                                );
-                                              },
-                                            ),
-                                          )
-                                        : Icon(
-                                            Icons.person,
-                                            size: 60,
-                                            color: appColors.textSecondary,
-                                          ),
+                                              });
+                                            }
+                                            return Icon(
+                                              Icons.person,
+                                              size: 60,
+                                              color: appColors.textSecondary,
+                                            );
+                                          },
+                                        ),
+                                      )
+                                    : Icon(
+                                        Icons.person,
+                                        size: 60,
+                                        color: appColors.textSecondary,
+                                      ),
                                 // Loading overlay
                                 if (_isUploadingImage)
                                   Container(
                                     decoration: BoxDecoration(
                                       shape: BoxShape.circle,
-                                      color: Colors.black.withValues(alpha: 0.3),
+                                      color: Colors.black.withValues(
+                                        alpha: 0.3,
+                                      ),
                                     ),
                                     child: Center(
                                       child: CircularProgressIndicator(
@@ -713,7 +793,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 color: appColors.primaryBlue,
                                 shape: BoxShape.circle,
                                 border: Border.all(
-                                  color: isDark ? const Color(0xFF1E1E1E) : AppColors.white,
+                                  color: isDark
+                                      ? const Color(0xFF1E1E1E)
+                                      : AppColors.white,
                                   width: 3,
                                 ),
                               ),
@@ -728,59 +810,81 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ],
                     ),
                     const SizedBox(height: 20),
-                    // Name
+                    // Full Name (capitalized)
                     Text(
-                      _name ?? (_isLoadingMe ? 'Loading...' : 'Student'),
+                      _isLoadingMe
+                          ? 'Loading...'
+                          : (_fullName != null && _fullName!.isNotEmpty
+                                ? _capitalizeFullName(_fullName)
+                                : _name ?? 'Student Name'),
                       style: TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
-                        color: appColors.textPrimary,
+                        color: isDark ? Colors.white : AppColors.textPrimary,
                       ),
                     ),
-                    const SizedBox(height: 8),
-                    // ID and Major
-                    Text(
-                      'ID: ${_userId ?? '-'}',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: appColors.textSecondary,
+                    // Email
+                    if (_email != null && _email!.isNotEmpty) ...[
+                      const SizedBox(height: 8),
+                      Text(
+                        _email!,
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: isDark
+                              ? Colors.white70
+                              : AppColors.textSecondary,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      _major ?? _email ?? (_groupId != null ? 'Group: $_groupId' : '-'),
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: appColors.textSecondary,
-                      ),
-                    ),
+                    ],
                     const SizedBox(height: 32),
                     // Divider
                     const Divider(height: 1),
                     // Account Section
-                    _buildSectionHeader(safeLocaleString(context, 'account', fallback: 'Account'), context),
+                    _buildSectionHeader(
+                      safeLocaleString(context, 'account', fallback: 'Account'),
+                      context,
+                    ),
                     _buildAccountItem(
                       context: context,
                       icon: Icons.person_outline,
                       iconColor: appColors.primaryBlueLight,
-                      label: safeLocaleString(context, 'personal_information', fallback: 'Personal Information'),
+                      label: safeLocaleString(
+                        context,
+                        'personal_information',
+                        fallback: 'Personal Information',
+                      ),
                       onTap: _showPersonalInformation,
                     ),
                     _buildAccountItem(
                       context: context,
                       icon: Icons.school_outlined,
                       iconColor: appColors.primaryBlueLight,
-                      label: safeLocaleString(context, 'academic_records', fallback: 'Academic Records'),
+                      label: safeLocaleString(
+                        context,
+                        'academic_records',
+                        fallback: 'Academic Records',
+                      ),
                       onTap: _showAcademicRecords,
                     ),
                     const Divider(height: 1),
                     // Settings Section
-                    _buildSectionHeader(safeLocaleString(context, 'settings', fallback: 'Settings'), context),
+                    _buildSectionHeader(
+                      safeLocaleString(
+                        context,
+                        'settings',
+                        fallback: 'Settings',
+                      ),
+                      context,
+                    ),
                     _buildSettingsItemWithToggle(
                       context: context,
                       icon: Icons.notifications_outlined,
                       iconColor: appColors.primaryBlueLight,
-                      label: safeLocaleString(context, 'notifications', fallback: 'Notifications'),
+                      label: safeLocaleString(
+                        context,
+                        'notifications',
+                        fallback: 'Notifications',
+                      ),
                       value: _notificationsEnabled,
                       onChanged: (value) {
                         setState(() {
@@ -792,11 +896,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       context: context,
                       icon: Icons.dark_mode_outlined,
                       iconColor: appColors.primaryBlueLight,
-                      label: safeLocaleString(context, 'dark_mode', fallback: 'Dark Mode'),
-                      value: AdaptiveTheme.of(context).mode == AdaptiveThemeMode.dark,
+                      label: safeLocaleString(
+                        context,
+                        'dark_mode',
+                        fallback: 'Dark Mode',
+                      ),
+                      value:
+                          AdaptiveTheme.of(context).mode ==
+                          AdaptiveThemeMode.dark,
                       onChanged: (value) {
                         AdaptiveTheme.of(context).setThemeMode(
-                          value ? AdaptiveThemeMode.dark : AdaptiveThemeMode.light,
+                          value
+                              ? AdaptiveThemeMode.dark
+                              : AdaptiveThemeMode.light,
                         );
                       },
                     ),
@@ -804,7 +916,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       context: context,
                       icon: Icons.language_outlined,
                       iconColor: appColors.primaryBlueLight,
-                      label: safeLocaleString(context, 'language', fallback: 'Language'),
+                      label: safeLocaleString(
+                        context,
+                        'language',
+                        fallback: 'Language',
+                      ),
                       subtitle: _getCurrentLanguageName(context),
                       onTap: _showLanguagePicker,
                     ),
@@ -946,10 +1062,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ),
       subtitle: Text(
         subtitle,
-        style: TextStyle(
-          fontSize: 14,
-          color: appColors.textSecondary,
-        ),
+        style: TextStyle(fontSize: 14, color: appColors.textSecondary),
       ),
       trailing: Icon(
         Icons.chevron_right,
@@ -1029,7 +1142,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   const SizedBox(height: 12),
                   // Message
                   Text(
-                    safeLocaleString(context, 'logout_confirmation', fallback: 'Are you sure you want to logout?'),
+                    safeLocaleString(
+                      context,
+                      'logout_confirmation',
+                      fallback: 'Are you sure you want to logout?',
+                    ),
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 16,
@@ -1051,7 +1168,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             ),
                           ),
                           child: Text(
-                            safeLocaleString(context, 'cancel', fallback: 'Cancel'),
+                            safeLocaleString(
+                              context,
+                              'cancel',
+                              fallback: 'Cancel',
+                            ),
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w600,

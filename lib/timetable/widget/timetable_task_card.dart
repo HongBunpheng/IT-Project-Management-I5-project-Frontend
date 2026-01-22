@@ -18,13 +18,8 @@ class TimetableTaskCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () async {
-        if (!task.isCompleted) {
-          final result = await TaskCompletionDialog.show(context, task);
-          if (result == true && onCompletionChanged != null) {
-            onCompletionChanged!(true);
-          }
-        }
+      onTap: () {
+        TaskCompletionDialog.show(context, task);
       },
       child: Container(
         margin: EdgeInsets.only(
@@ -47,11 +42,13 @@ class TimetableTaskCard extends StatelessWidget {
               decoration: BoxDecoration(
                 color: task.isCompleted
                     ? AppColors.success
-                    : AppColors.iconOrange,
+                    : AppColors.primaryBlue,
                 shape: BoxShape.circle,
               ),
               child: Icon(
-                task.isCompleted ? Icons.check : Icons.info,
+                task.isCompleted 
+                    ? Icons.check_circle 
+                    : Icons.menu_book,
                 color: AppColors.white,
                 size: AppSizes.iconSizeM,
               ),
@@ -69,6 +66,8 @@ class TimetableTaskCard extends StatelessWidget {
                       fontWeight: FontWeight.bold,
                       color: AppColors.textPrimary,
                     ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                   SizedBox(height: AppSizes.spacingXS),
                   Text(
@@ -77,6 +76,8 @@ class TimetableTaskCard extends StatelessWidget {
                       fontSize: AppSizes.fontSizeS,
                       color: AppColors.textSecondary,
                     ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ],
               ),

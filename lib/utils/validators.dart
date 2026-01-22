@@ -12,6 +12,18 @@ class Validators {
 
   static String? validateName(String? value) {
     if (value == null || value.isEmpty) return "Please enter your name";
+    // Check if first letter of first word is capitalized
+    final trimmed = value.trim();
+    if (trimmed.isNotEmpty) {
+      final firstChar = trimmed[0];
+      // Check if first character is a letter
+      if (firstChar.contains(RegExp(r'[a-zA-Z]'))) {
+        // If it's a letter, it must be uppercase
+        if (firstChar != firstChar.toUpperCase()) {
+          return "Name must start with a capital letter";
+        }
+      }
+    }
     return null;
   }
 
