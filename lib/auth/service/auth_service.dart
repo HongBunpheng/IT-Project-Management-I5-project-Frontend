@@ -22,7 +22,15 @@ class AuthService {
     if (identifier.isEmpty || passwordTrimmed.isEmpty) {
       return {
         'statusCode': 400,
-        'body': {'message': 'Please enter email/phone and password'},
+        'body': {'message': 'Please enter email and password'},
+      };
+    }
+
+    // Validate email format
+    if (!identifier.contains('@')) {
+      return {
+        'statusCode': 400,
+        'body': {'message': 'Please enter a valid email address'},
       };
     }
 
@@ -30,12 +38,7 @@ class AuthService {
       final res = await _api.postJson(
         '/auth/login',
         body: <String, dynamic>{
-          'email_or_phone': identifier,
-          'emailOrPhone': identifier,
-          if (identifier.contains('@'))
-            'email': identifier
-          else
-            'phone': identifier,
+          'email': identifier,
           'password': passwordTrimmed,
         },
       );
@@ -44,15 +47,21 @@ class AuthService {
       final token = _extractToken(decoded);
       if (token != null && token.isNotEmpty) {
         await _tokenStorage.writeToken(token);
-        // Store email/phone securely for remember me functionality
-        if (identifier.contains('@')) {
-          await _tokenStorage.writeEmail(identifier);
-        } else {
-          await _tokenStorage.writePhone(identifier);
-        }
+        // Store email securely for remember me functionality
+        await _tokenStorage.writeEmail(identifier);
         await _tokenStorage.writeLastLogin(DateTime.now());
-        final storedFromResponse = await _storeUserContextFromDecoded(decoded);
-        if (!storedFromResponse) {
+        
+        // Try to store user context from login response first (might have some data)
+        await _storeUserContextFromDecoded(decoded);
+        
+        // Always fetch from /auth/me to ensure we have full name and all user data
+        // This is important because login response might not include full name
+        await _storeUserContext();
+        
+        // Double-check: if still no full name, retry once more after a short delay
+        final storedFullName = await _tokenStorage.readFullName();
+        if (storedFullName == null || storedFullName.isEmpty) {
+          await Future.delayed(const Duration(milliseconds: 500));
           await _storeUserContext();
         }
       }
@@ -88,17 +97,26 @@ class AuthService {
     }
 
     try {
+      // Generate username from email (before @) or use name
+      final userName = emailTrimmed.split('@').first.isNotEmpty
+          ? emailTrimmed.split('@').first
+          : nameTrimmed.toLowerCase().replaceAll(' ', '_');
+      
       final res = await _api.postJson(
         '/auth/register',
         body: <String, dynamic>{
           'name': nameTrimmed,
           'full_name': nameTrimmed,
           'fullName': nameTrimmed,
+          'user_name': userName,
+          'userName': userName,
+          'username': userName,
           'email': emailTrimmed,
           'phone': phoneTrimmed,
           'phone_number': phoneTrimmed,
           'password': passwordTrimmed,
           'password_confirmation': passwordTrimmed,
+          'role': 'student',
         },
       );
 
@@ -109,10 +127,39 @@ class AuthService {
         // Store email/phone securely for remember me functionality
         await _tokenStorage.writeEmail(emailTrimmed);
         await _tokenStorage.writePhone(phoneTrimmed);
+        // Store full name immediately since we have it from registration
+        await _tokenStorage.writeFullName(nameTrimmed);
         await _tokenStorage.writeLastLogin(DateTime.now());
-        final storedFromResponse = await _storeUserContextFromDecoded(decoded);
-        if (!storedFromResponse) {
-          await _storeUserContext();
+        
+        // Try to store user context from response first (might have some data)
+        await _storeUserContextFromDecoded(decoded);
+        
+        // Always fetch from /auth/me to ensure we have complete user data
+        // This is important because registration response might not include all fields
+        await _storeUserContext();
+        
+        // Double-check: if still no user ID, retry multiple times
+        var userId = await _tokenStorage.readUserId();
+        if (userId == null || userId.isEmpty) {
+          // Retry up to 3 times with increasing delays
+          for (int i = 0; i < 3; i++) {
+            await Future.delayed(Duration(milliseconds: 500 * (i + 1)));
+            await _storeUserContext();
+            userId = await _tokenStorage.readUserId();
+            if (userId != null && userId.isNotEmpty) break;
+          }
+        }
+        
+        // Final verification: ensure full name and email are stored
+        final storedFullName = await _tokenStorage.readFullName();
+        final storedEmail = await _tokenStorage.readEmail();
+        if (storedFullName == null || storedFullName.isEmpty) {
+          // If full name is missing, use the one from registration form
+          await _tokenStorage.writeFullName(nameTrimmed);
+        }
+        if (storedEmail == null || storedEmail.isEmpty) {
+          // If email is missing, use the one from registration form
+          await _tokenStorage.writeEmail(emailTrimmed);
         }
       }
 
@@ -172,17 +219,73 @@ class AuthService {
     if (groupId != null) {
       await _tokenStorage.writeGroupId(groupId);
     }
+
+    // Try multiple field names for full name (backend might use different field names)
+    var fullName = readString(user, const ['full_name', 'fullName', 'name', 'user_name', 'userName']);
+    if (fullName == null) {
+      // Also check in data level
+      fullName = readString(data, const ['full_name', 'fullName', 'name', 'user_name', 'userName']);
+    }
+    if (fullName == null) {
+      // Check in root level
+      fullName = readString(decoded, const ['full_name', 'fullName', 'name', 'user_name', 'userName']);
+    }
+    
+    if (fullName != null && fullName.isNotEmpty) {
+      await _tokenStorage.writeFullName(fullName);
+    }
+
+    final email = readString(user, const ['email']);
+    if (email != null && email.isNotEmpty) {
+      await _tokenStorage.writeEmail(email);
+    }
   }
 
   Future<bool> _storeUserContextFromDecoded(dynamic decoded) async {
     final map = asMap(decoded);
     if (map == null) return false;
 
+    // Try multiple response structures
     final data = asMap(map['data']) ?? map;
-    final user = asMap(data['user']) ?? asMap(map['user']) ?? data;
+    final user = asMap(data['user']) ?? 
+                 asMap(map['user']) ?? 
+                 asMap(data) ?? 
+                 map;
 
-    final userId = readString(user, const ['id', 'user_id', 'userId']);
-    final groupId = readString(user, const ['group_id', 'groupId']);
+    // Try to get user ID from various possible locations
+    var userId = readString(user, const ['id', 'user_id', 'userId']);
+    if (userId == null) {
+      // Also check in data level
+      userId = readString(data, const ['id', 'user_id', 'userId']);
+    }
+    if (userId == null) {
+      // Check in root level
+      userId = readString(map, const ['id', 'user_id', 'userId']);
+    }
+    
+    var groupId = readString(user, const ['group_id', 'groupId']);
+    if (groupId == null) {
+      groupId = readString(data, const ['group_id', 'groupId']);
+    }
+    if (groupId == null) {
+      groupId = readString(map, const ['group_id', 'groupId']);
+    }
+
+    var fullName = readString(user, const ['full_name', 'fullName', 'name']);
+    if (fullName == null) {
+      fullName = readString(data, const ['full_name', 'fullName', 'name']);
+    }
+    if (fullName == null) {
+      fullName = readString(map, const ['full_name', 'fullName', 'name']);
+    }
+
+    var email = readString(user, const ['email']);
+    if (email == null) {
+      email = readString(data, const ['email']);
+    }
+    if (email == null) {
+      email = readString(map, const ['email']);
+    }
 
     var wroteAny = false;
     if (userId != null && userId.isNotEmpty) {
@@ -191,6 +294,14 @@ class AuthService {
     }
     if (groupId != null && groupId.isNotEmpty) {
       await _tokenStorage.writeGroupId(groupId);
+      wroteAny = true;
+    }
+    if (fullName != null && fullName.isNotEmpty) {
+      await _tokenStorage.writeFullName(fullName);
+      wroteAny = true;
+    }
+    if (email != null && email.isNotEmpty) {
+      await _tokenStorage.writeEmail(email);
       wroteAny = true;
     }
 

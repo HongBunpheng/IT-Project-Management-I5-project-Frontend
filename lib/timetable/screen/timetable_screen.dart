@@ -12,6 +12,7 @@ import '../../services/timetable_service.dart';
 import '../../services/token_storage.dart';
 import '../../utils/json_utils.dart';
 import '../../account/screen/profile_screen.dart';
+import '../../auth/service/auth_service.dart';
 
 class TimetableView extends StatefulWidget {
   const TimetableView({super.key});
@@ -48,11 +49,35 @@ class _TimetableViewState extends State<TimetableView> {
     });
 
     try {
-      final userId = await _tokenStorage.readUserId();
-      final groupId = await _tokenStorage.readGroupId();
+      var userId = await _tokenStorage.readUserId();
+      var groupId = await _tokenStorage.readGroupId();
+
+      // If user ID is missing, try to fetch it from the API
+      if (userId == null || userId.isEmpty) {
+        try {
+          // Try to get user info from /auth/me
+          final authService = AuthService();
+          final meData = await authService.me();
+          if (meData != null) {
+            final data = asMap(meData['data']) ?? meData;
+            final user = asMap(data['user']) ?? data;
+            userId = readString(user, const ['id', 'user_id', 'userId']);
+            groupId = readString(user, const ['group_id', 'groupId']) ?? groupId;
+            
+            if (userId != null && userId.isNotEmpty) {
+              await _tokenStorage.writeUserId(userId);
+              if (groupId != null && groupId.isNotEmpty) {
+                await _tokenStorage.writeGroupId(groupId);
+              }
+            }
+          }
+        } catch (_) {
+          // If fetching fails, show error
+        }
+      }
 
       if (userId == null || userId.isEmpty) {
-        throw Exception('Missing user id. Please login again.');
+        throw 'Missing user id. Please login again.';
       }
 
       final raw = groupId != null && groupId.isNotEmpty
@@ -71,7 +96,11 @@ class _TimetableViewState extends State<TimetableView> {
       if (!mounted) return;
       setState(() {
         _isLoading = false;
-        _errorMessage = e.toString();
+        // Clean error message - remove "Exception:" prefix if present
+        final errorStr = e.toString();
+        _errorMessage = errorStr.startsWith('Exception: ') 
+            ? errorStr.substring(12) 
+            : errorStr;
         _tasks = [];
       });
     }
@@ -92,6 +121,8 @@ class _TimetableViewState extends State<TimetableView> {
           room: _tasks[index].room,
           instructor: _tasks[index].instructor,
           dayOfWeek: _tasks[index].dayOfWeek,
+          groupName: _tasks[index].groupName,
+          subjectName: _tasks[index].subjectName,
         );
       }
     });
@@ -352,58 +383,55 @@ class _TimetableViewState extends State<TimetableView> {
           return weekdayNumber != null && weekdayNumber == selectedWeekday;
         })
         .map((row) {
+          // Extract nested objects
           final subject = asMap(row['subject']);
-          final classroom = asMap(row['class']) ?? asMap(row['class_room']);
-          final building =
-              asMap(classroom?['building']) ?? asMap(row['building']);
+          final classroom = asMap(row['classroom']);
+          final teacher = asMap(row['teacher']);
+          final group = asMap(row['group']);
+          final building = asMap(classroom?['building']) ?? asMap(row['building']);
 
-          final title =
-              readString(subject ?? row, const [
-                'name',
-                'title',
-                'subject_name',
-                'subjectName',
-              ]) ??
-              'Class';
-
-          final start =
-              readString(row, const ['start_time', 'startTime']) ?? '';
-          final end = readString(row, const ['end_time', 'endTime']) ?? '';
-          final time = [start, end].where((s) => s.isNotEmpty).join(' - ');
-
-          final roomCode = readString(classroom ?? row, const [
-            'name',
-            'code',
-            'room',
-            'room_name',
-            'roomName',
-          ]);
-          final buildingCode = readString(building ?? row, const [
-            'name',
-            'code',
-            'building_name',
-            'buildingName',
-          ]);
+          // Get subject name
+          final subjectName = subject != null ? readString(subject, const ['name']) : null;
           
-          final instructor = readString(row, const [
-            'instructor',
-            'teacher',
-            'instructor_name',
-            'instructorName',
-            'teacher_name',
-            'teacherName',
-          ]);
-          
-          final dayOfWeek = readString(row, const [
-            'day_of_week',
-            'dayOfWeek',
-            'day',
-            'weekday',
-          ]);
+          // Get title - prefer timetable.title, then subject.name, then default
+          final title = readString(row, const ['title']) ??
+                       subjectName ?? 
+                       'Class';
 
+          // Get time - format start_time and end_time
+          final start = readString(row, const ['start_time']) ?? '';
+          final end = readString(row, const ['end_time']) ?? '';
+          String time = '';
+          if (start.isNotEmpty && end.isNotEmpty) {
+            // Format time: "08:00:00" -> "08:00"
+            final startFormatted = start.length >= 5 ? start.substring(0, 5) : start;
+            final endFormatted = end.length >= 5 ? end.substring(0, 5) : end;
+            time = '$startFormatted - $endFormatted';
+          } else if (start.isNotEmpty) {
+            time = start.length >= 5 ? start.substring(0, 5) : start;
+          }
+
+          // Get room name from classroom
+          final roomName = classroom != null ? readString(classroom, const ['name']) : null;
+          
+          // Get building name (if available in building object)
+          // Note: Backend returns building_id in classroom, not building object
+          // Building might need to be fetched separately or included in response
+          final buildingName = building != null ? readString(building, const ['name']) : null;
+          
+          // Get teacher name from teacher object
+          final teacherName = teacher != null ? readString(teacher, const ['user_name', 'name']) : null;
+          
+          // Get group name
+          final groupName = group != null ? readString(group, const ['name']) : null;
+          
+          // Get day of week
+          final dayOfWeek = readString(row, const ['day_of_week']);
+
+          // Build details string for card display (room and building)
           final details = [
-            if (buildingCode != null && buildingCode.isNotEmpty) buildingCode,
-            if (roomCode != null && roomCode.isNotEmpty) roomCode,
+            if (buildingName != null && buildingName.isNotEmpty) buildingName,
+            if (roomName != null && roomName.isNotEmpty) roomName,
           ].join(' • ');
 
           return TimetableTaskModel(
@@ -413,10 +441,12 @@ class _TimetableViewState extends State<TimetableView> {
             time: time.isEmpty ? '-' : time,
             isCompleted: false,
             iconType: 'info',
-            building: buildingCode,
-            room: roomCode,
-            instructor: instructor,
+            building: buildingName,
+            room: roomName,
+            instructor: teacherName,
             dayOfWeek: dayOfWeek,
+            groupName: groupName,
+            subjectName: subjectName,
           );
         })
         .toList();

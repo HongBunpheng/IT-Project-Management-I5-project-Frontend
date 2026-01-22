@@ -6,6 +6,8 @@ import '../repository/auth_repository.dart';
 import '../../utils/snackbar.dart';
 import '../../utils/validators.dart';
 import '../../dashboard/screen/dashboard_screen.dart';
+import '../../services/token_storage.dart';
+import '../service/auth_service.dart';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
@@ -53,6 +55,30 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
     final statusCode = res["statusCode"];
     if (statusCode is int && statusCode >= 200 && statusCode < 300) {
+      // Verify user data is stored before navigating
+      final tokenStorage = TokenStorage();
+      var userId = await tokenStorage.readUserId();
+      var fullName = await tokenStorage.readFullName();
+      var email = await tokenStorage.readEmail();
+      
+      // If user ID is still missing, wait a bit more and try to fetch
+      if (userId == null || userId.isEmpty) {
+        await Future.delayed(const Duration(milliseconds: 1000));
+        final authService = AuthService();
+        await authService.me(); // This will trigger _storeUserContext
+        userId = await tokenStorage.readUserId();
+        fullName = await tokenStorage.readFullName();
+        email = await tokenStorage.readEmail();
+      }
+      
+      // Ensure full name and email are stored (use form values as fallback)
+      if (fullName == null || fullName.isEmpty) {
+        await tokenStorage.writeFullName(_nameController.text.trim());
+      }
+      if (email == null || email.isEmpty) {
+        await tokenStorage.writeEmail(_emailController.text.trim());
+      }
+      
       CustomSnackBar.success(
         title: safeLocaleString(
           context,
@@ -67,22 +93,50 @@ class _SignUpScreenState extends State<SignUpScreen> {
       );
     } else {
       final body = res["body"];
-      final message = body is Map ? body["message"] : null;
+      String errorMessage = '';
+      
+      if (body is Map) {
+        // Try to get message
+        final message = body["message"];
+        if (message != null) {
+          errorMessage = message.toString();
+        }
+        
+        // Try to get errors object (Laravel-style validation errors)
+        final errors = body["errors"];
+        if (errors is Map) {
+          final errorList = <String>[];
+          errors.forEach((key, value) {
+            if (value is List && value.isNotEmpty) {
+              errorList.add('${value.first}');
+            } else if (value is String) {
+              errorList.add(value);
+            }
+          });
+          if (errorList.isNotEmpty) {
+            errorMessage = errorList.join('. ');
+          }
+        }
+      }
+      
       CustomSnackBar.error(
         title: safeLocaleString(
           context,
           'registration_failed',
           fallback: "Registration failed",
         ),
-        message: message?.toString() ?? '',
+        message: errorMessage,
       );
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
+    // Always use light mode for signup screen
+    return Theme(
+      data: ThemeData.light(),
+      child: Scaffold(
+        backgroundColor: Colors.white,
       body: Stack(
         children: [
           // BLUE CURVE HEADER (same as login)
@@ -248,6 +302,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
             ),
           ),
         ],
+      ),
       ),
     );
   }

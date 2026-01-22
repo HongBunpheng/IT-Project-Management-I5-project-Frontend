@@ -38,8 +38,9 @@ class _DashboardViewState extends State<DashboardView> {
   final TokenStorage _tokenStorage = TokenStorage();
 
   ExamScoreSummary _scoreSummary = ExamScoreSummary(score: 0.0);
-  String? _username;
   String? _userId;
+  String? _fullName;
+  String? _email;
 
   List<ExamCard> _events = [];
   List<TaskCard> _subjects = [];
@@ -47,10 +48,33 @@ class _DashboardViewState extends State<DashboardView> {
   @override
   void initState() {
     super.initState();
-    _loadSummary();
-    _loadMe();
-    _loadSubjects();
-    _loadEvents();
+    // Load from storage first for immediate display
+    _loadFromStorage().then((_) {
+      // Then load other data
+      _loadSummary();
+      _loadMe();
+      _loadSubjects();
+      _loadEvents();
+    });
+  }
+  
+  Future<void> _loadFromStorage() async {
+    try {
+      final storedFullName = await _tokenStorage.readFullName();
+      final storedEmail = await _tokenStorage.readEmail();
+      if (mounted) {
+        setState(() {
+          if (storedFullName != null && storedFullName.isNotEmpty) {
+            _fullName = storedFullName;
+          }
+          if (storedEmail != null && storedEmail.isNotEmpty) {
+            _email = storedEmail;
+          }
+        });
+      }
+    } catch (_) {
+      // ignore
+    }
   }
 
   Future<void> _loadSummary() async {
@@ -67,16 +91,48 @@ class _DashboardViewState extends State<DashboardView> {
 
   Future<void> _loadMe() async {
     try {
+      // Try to load from storage first (faster, available immediately after registration)
+      final storedFullName = await _tokenStorage.readFullName();
+      final storedEmail = await _tokenStorage.readEmail();
+      
+      if (storedFullName != null || storedEmail != null) {
+        if (mounted) {
+          setState(() {
+            _fullName = storedFullName;
+            _email = storedEmail;
+          });
+        }
+      }
+      
+      // Then fetch from API to get latest data
       final me = await _authService.me();
       if (!mounted || me == null) return;
       final data = me['data'] is Map ? (me['data'] as Map) : me;
+      final user = data['user'] is Map ? (data['user'] as Map) : data;
       setState(() {
-        _username = (data['name'] ?? data['full_name'] ?? data['email'])
+        _fullName = (user['full_name'] ?? user['fullName'] ?? user['name'] ?? data['full_name'] ?? data['fullName'] ?? data['name'] ?? _fullName)
             ?.toString();
-        _userId = (data['id'] ?? data['user_id'])?.toString();
+        _email = (user['email'] ?? data['email'] ?? _email)?.toString();
+        _userId = (user['id'] ?? user['user_id'] ?? data['id'] ?? data['user_id'])?.toString();
+        
+        // Store updated values back to storage (async, don't await to avoid blocking UI)
+        if (_fullName != null && _fullName!.isNotEmpty) {
+          _tokenStorage.writeFullName(_fullName!);
+        }
+        if (_email != null && _email!.isNotEmpty) {
+          _tokenStorage.writeEmail(_email!);
+        }
       });
     } catch (_) {
-      // ignore
+      // If API fails, use stored values if available
+      if (mounted) {
+        final storedFullName = await _tokenStorage.readFullName();
+        final storedEmail = await _tokenStorage.readEmail();
+        setState(() {
+          _fullName = storedFullName;
+          _email = storedEmail;
+        });
+      }
     }
   }
 
@@ -249,8 +305,9 @@ class _DashboardViewState extends State<DashboardView> {
           children: [
             // Header
             AppHeader(
-              username: _username,
               userId: _userId,
+              fullName: _fullName,
+              email: _email,
               trailing: IconButton(
                 icon: const Icon(Icons.notifications_outlined),
                 onPressed: () => Navigator.push(

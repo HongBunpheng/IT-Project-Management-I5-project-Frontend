@@ -9,6 +9,8 @@ class TimetableTaskModel {
   final String? room;
   final String? instructor;
   final String? dayOfWeek;
+  final String? groupName;
+  final String? subjectName;
 
   TimetableTaskModel({
     this.id,
@@ -21,6 +23,8 @@ class TimetableTaskModel {
     this.room,
     this.instructor,
     this.dayOfWeek,
+    this.groupName,
+    this.subjectName,
   });
 }
 

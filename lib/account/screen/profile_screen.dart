@@ -38,6 +38,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final TokenStorage _tokenStorage = TokenStorage();
 
   String? _name;
+  String? _fullName;
   String? _email;
   String? _userId;
   String? _groupId;
@@ -70,15 +71,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Future<void> _loadProfile() async {
     try {
+      // Try to load from storage first
       final storedUserId = await _tokenStorage.readUserId();
       final storedGroupId = await _tokenStorage.readGroupId();
+      final storedFullName = await _tokenStorage.readFullName();
+      final storedEmail = await _tokenStorage.readEmail();
+      
       if (mounted) {
         setState(() {
           _userId = storedUserId;
           _groupId = storedGroupId;
+          _fullName = storedFullName;
+          _email = storedEmail;
+          _name = storedFullName ?? storedEmail;
         });
       }
 
+      // Then fetch from API
       final decoded = await _authService.me();
       if (!mounted || decoded == null) return;
 
@@ -86,29 +95,48 @@ class _ProfileScreenState extends State<ProfileScreen> {
       final user = asMap(data['user']) ?? data;
 
       setState(() {
-        _name =
-            (readString(user, const ['name', 'full_name', 'fullName']) ??
-                    readString(user, const ['email']))
-                ?.toString();
-        _email = readString(user, const ['email']);
-        _userId =
-            readString(user, const ['id', 'user_id', 'userId']) ?? _userId;
-        _groupId =
-            readString(user, const ['group_id', 'groupId']) ?? _groupId;
-        _major =
-            readString(user, const [
-              'major',
-              'department',
-              'faculty',
-              'course',
-              'program',
-            ]);
+        _fullName = (readString(user, const ['full_name', 'fullName', 'name']) ?? 
+                    readString(data, const ['full_name', 'fullName', 'name']) ??
+                    _fullName)?.toString();
+        _email = readString(user, const ['email']) ?? 
+                 readString(data, const ['email']) ?? 
+                 _email;
+        _name = _fullName ?? _email ?? 'Student';
+        _userId = readString(user, const ['id', 'user_id', 'userId']) ?? 
+                  readString(data, const ['id', 'user_id', 'userId']) ?? 
+                  _userId;
+        _groupId = readString(user, const ['group_id', 'groupId']) ?? 
+                   readString(data, const ['group_id', 'groupId']) ?? 
+                   _groupId;
+        _major = readString(user, const [
+          'major',
+          'department',
+          'faculty',
+          'course',
+          'program',
+        ]) ?? readString(data, const [
+          'major',
+          'department',
+          'faculty',
+          'course',
+          'program',
+        ]);
       });
     } catch (_) {
       // ignore
     } finally {
       if (mounted) setState(() => _isLoadingMe = false);
     }
+  }
+  
+  String _capitalizeFullName(String? name) {
+    if (name == null || name.isEmpty) return '';
+    return name
+        .split(' ')
+        .map((word) => word.isEmpty
+            ? ''
+            : word[0].toUpperCase() + word.substring(1).toLowerCase())
+        .join(' ');
   }
 
   Future<void> _handleLogout() async {
@@ -539,32 +567,30 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ],
                     ),
                     const SizedBox(height: 20),
-                    // Name
+                    // Full Name (capitalized)
                     Text(
-                      _name ?? (_isLoadingMe ? 'Loading...' : 'Student'),
+                      _isLoadingMe 
+                        ? 'Loading...' 
+                        : (_fullName != null && _fullName!.isNotEmpty 
+                            ? _capitalizeFullName(_fullName) 
+                            : _name ?? 'Student Name'),
                       style: TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
-                        color: appColors.textPrimary,
+                        color: isDark ? Colors.white : AppColors.textPrimary,
                       ),
                     ),
-                    const SizedBox(height: 8),
-                    // ID and Major
-                    Text(
-                      'ID: ${_userId ?? '-'}',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: appColors.textSecondary,
+                    // Email
+                    if (_email != null && _email!.isNotEmpty) ...[
+                      const SizedBox(height: 8),
+                      Text(
+                        _email!,
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: isDark ? Colors.white70 : AppColors.textSecondary,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      _major ?? _email ?? (_groupId != null ? 'Group: $_groupId' : '-'),
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: appColors.textSecondary,
-                      ),
-                    ),
+                    ],
                     const SizedBox(height: 32),
                     // Divider
                     const Divider(height: 1),

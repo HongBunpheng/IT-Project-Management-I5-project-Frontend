@@ -47,6 +47,30 @@ class TaskCompletionDialog extends StatelessWidget {
               ),
             ),
             SizedBox(height: AppSizes.spacingXL),
+            // Subject Name
+            if (task.subjectName != null && task.subjectName!.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(bottom: AppSizes.spacingM),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.book,
+                      size: AppSizes.iconSizeM,
+                      color: AppColors.primaryBlue,
+                    ),
+                    SizedBox(width: AppSizes.spacingS),
+                    Expanded(
+                      child: Text(
+                        task.subjectName!,
+                        style: TextStyle(
+                          fontSize: AppSizes.fontSizeM,
+                          color: AppColors.primaryBlue,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             // Time
             if (task.time.isNotEmpty && task.time != '-')
               Padding(
@@ -158,6 +182,30 @@ class TaskCompletionDialog extends StatelessWidget {
                     Expanded(
                       child: Text(
                         task.dayOfWeek!,
+                        style: TextStyle(
+                          fontSize: AppSizes.fontSizeM,
+                          color: AppColors.primaryBlue,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            // Group Name
+            if (task.groupName != null && task.groupName!.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(bottom: AppSizes.spacingM),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.group,
+                      size: AppSizes.iconSizeM,
+                      color: AppColors.primaryBlue,
+                    ),
+                    SizedBox(width: AppSizes.spacingS),
+                    Expanded(
+                      child: Text(
+                        task.groupName!,
                         style: TextStyle(
                           fontSize: AppSizes.fontSizeM,
                           color: AppColors.primaryBlue,

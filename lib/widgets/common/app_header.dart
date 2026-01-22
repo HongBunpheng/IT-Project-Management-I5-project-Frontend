@@ -7,6 +7,8 @@ class AppHeader extends StatelessWidget {
   final String? profileImageUrl;
   final String? username;
   final String? userId;
+  final String? fullName;
+  final String? email;
   final VoidCallback? onNotificationTap;
   final String? title;
   final Widget? trailing;
@@ -16,10 +18,22 @@ class AppHeader extends StatelessWidget {
     this.profileImageUrl,
     this.username,
     this.userId,
+    this.fullName,
+    this.email,
     this.onNotificationTap,
     this.title,
     this.trailing,
   });
+  
+  String _capitalizeFullName(String? name) {
+    if (name == null || name.isEmpty) return '';
+    return name
+        .split(' ')
+        .map((word) => word.isEmpty
+            ? ''
+            : word[0].toUpperCase() + word.substring(1).toLowerCase())
+        .join(' ');
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -50,27 +64,32 @@ class AppHeader extends StatelessWidget {
                 : null,
           ),
           const SizedBox(width: AppSizes.spacingM),
-          // Username and ID
+          // Full Name and Email
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  title ?? username ?? 'Student Name',
-                  style: const TextStyle(
-                    fontSize: AppSizes.fontSizeXL,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimary,
+                // Full Name (first line) - only show if available
+                if (fullName != null && fullName!.isNotEmpty)
+                  Text(
+                    _capitalizeFullName(fullName),
+                    style: const TextStyle(
+                      fontSize: AppSizes.fontSizeXL,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.textPrimary,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'ID: ${userId ?? 'e20211580'}',
-                  style: const TextStyle(
-                    fontSize: AppSizes.fontSizeM,
-                    color: AppColors.textPrimary,
+                // Email (second line) - always show if available
+                if (email != null && email!.isNotEmpty) ...[
+                  if (fullName != null && fullName!.isNotEmpty) const SizedBox(height: 4),
+                  Text(
+                    email!,
+                    style: const TextStyle(
+                      fontSize: AppSizes.fontSizeM,
+                      color: AppColors.textPrimary,
+                    ),
                   ),
-                ),
+                ],
               ],
             ),
           ),

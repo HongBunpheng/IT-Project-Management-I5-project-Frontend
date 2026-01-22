@@ -46,7 +46,7 @@ class _LoginScreenState extends State<LoginScreen> {
     final statusCode = res['statusCode'];
     if (statusCode is int && statusCode >= 200 && statusCode < 300) {
       CustomSnackBar.success(
-        title: safeLocaleString(context, 'login_success', fallback: 'Login successful'),
+        title: safeLocaleString(context, 'login_successful', fallback: 'Login Successful!'),
       );
       Navigator.pushReplacement(
         context,
@@ -64,10 +64,11 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    
-    return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF121212) : Colors.white, // bottom should be white like Figma
+    // Always use light mode for login screen
+    return Theme(
+      data: ThemeData.light(),
+      child: Scaffold(
+        backgroundColor: Colors.white, // Always white background
       body: Stack(
         children: [
           ClipPath(
@@ -128,12 +129,12 @@ class _LoginScreenState extends State<LoginScreen> {
                         key: _formKey,
                         child: Column(
                           children: [
-                            // EMAIL / PHONE
+                            // EMAIL
                             Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  safeLocaleString(context, 'email_or_phone', fallback: 'Email or Phone number'),
+                                  safeLocaleString(context, 'email', fallback: 'Email'),
                                   style: const TextStyle(
                                     fontSize: 14,
                                     color: Colors.grey,
@@ -144,7 +145,8 @@ class _LoginScreenState extends State<LoginScreen> {
 
                                 TextFormField(
                                   controller: _emailOrPhoneController,
-                                  validator: Validators.validateEmailOrPhone,
+                                  keyboardType: TextInputType.emailAddress,
+                                  validator: Validators.validateEmail,
                                   decoration: InputDecoration(
                                     filled: true,
                                     fillColor: Colors.white,
@@ -297,11 +299,12 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ),
 
-                const SizedBox(height: 50),
+                const SizedBox(height: 50                ),
               ],
             ),
           ),
         ],
+      ),
       ),
     );
   }
