@@ -38,8 +38,9 @@ class _DashboardViewState extends State<DashboardView> {
   final TokenStorage _tokenStorage = TokenStorage();
 
   ExamScoreSummary _scoreSummary = ExamScoreSummary(score: 0.0);
-  String? _username;
   String? _userId;
+  String? _fullName;
+  String? _email;
 
   List<ExamCard> _events = [];
   List<TaskCard> _subjects = [];
@@ -47,10 +48,33 @@ class _DashboardViewState extends State<DashboardView> {
   @override
   void initState() {
     super.initState();
-    _loadSummary();
-    _loadMe();
-    _loadSubjects();
-    _loadEvents();
+    // Load from storage first for immediate display
+    _loadFromStorage().then((_) {
+      // Then load other data
+      _loadSummary();
+      _loadMe();
+      _loadSubjects();
+      _loadEvents();
+    });
+  }
+
+  Future<void> _loadFromStorage() async {
+    try {
+      final storedFullName = await _tokenStorage.readFullName();
+      final storedEmail = await _tokenStorage.readEmail();
+      if (mounted) {
+        setState(() {
+          if (storedFullName != null && storedFullName.isNotEmpty) {
+            _fullName = storedFullName;
+          }
+          if (storedEmail != null && storedEmail.isNotEmpty) {
+            _email = storedEmail;
+          }
+        });
+      }
+    } catch (_) {
+      // ignore
+    }
   }
 
   Future<void> _loadSummary() async {
@@ -69,14 +93,45 @@ class _DashboardViewState extends State<DashboardView> {
     try {
       final profile = await _accountService.getProfile();
       if (!mounted || profile == null) return;
-      
+
       final user = _accountService.extractUserData(profile);
+
+      final fullName = readString(user, const [
+        'full_name',
+        'fullName',
+        'name',
+        'user_name',
+        'username',
+      ]);
+      final email = readString(user, const ['email']);
+      final userId = readString(user, const ['id', 'user_id', 'userId']);
+
+      if (!mounted) return;
       setState(() {
-        _username = readString(user, const ['user_name', 'name', 'full_name', 'email'])?.toString();
-        _userId = readString(user, const ['id', 'user_id'])?.toString();
+        if (fullName != null && fullName.isNotEmpty) _fullName = fullName;
+        if (email != null && email.isNotEmpty) _email = email;
+        _userId = userId ?? _userId;
       });
+
+      if (fullName != null && fullName.isNotEmpty) {
+        await _tokenStorage.writeFullName(fullName);
+      }
+      if (email != null && email.isNotEmpty) {
+        await _tokenStorage.writeEmail(email);
+      }
+      if (userId != null && userId.isNotEmpty) {
+        await _tokenStorage.writeUserId(userId);
+      }
     } catch (_) {
-      // ignore
+      // If API fails, use stored values if available
+      if (mounted) {
+        final storedFullName = await _tokenStorage.readFullName();
+        final storedEmail = await _tokenStorage.readEmail();
+        setState(() {
+          _fullName = storedFullName;
+          _email = storedEmail;
+        });
+      }
     }
   }
 
@@ -251,8 +306,9 @@ class _DashboardViewState extends State<DashboardView> {
           children: [
             // Header
             AppHeader(
-              username: _username,
               userId: _userId,
+              fullName: _fullName,
+              email: _email,
               trailing: IconButton(
                 icon: const Icon(Icons.notifications_outlined),
                 onPressed: () => Navigator.push(

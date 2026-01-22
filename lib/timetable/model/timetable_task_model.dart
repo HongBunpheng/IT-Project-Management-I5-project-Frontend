@@ -5,6 +5,12 @@ class TimetableTaskModel {
   final String time;
   final bool isCompleted;
   final String? iconType; // 'info' or 'check'
+  final String? building;
+  final String? room;
+  final String? instructor;
+  final String? dayOfWeek;
+  final String? groupName;
+  final String? subjectName;
 
   TimetableTaskModel({
     this.id,
@@ -13,6 +19,12 @@ class TimetableTaskModel {
     required this.time,
     this.isCompleted = false,
     this.iconType = 'info',
+    this.building,
+    this.room,
+    this.instructor,
+    this.dayOfWeek,
+    this.groupName,
+    this.subjectName,
   });
 }
 

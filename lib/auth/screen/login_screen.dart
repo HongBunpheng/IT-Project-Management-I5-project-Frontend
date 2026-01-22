@@ -48,8 +48,8 @@ class _LoginScreenState extends State<LoginScreen> {
       CustomSnackBar.success(
         title: safeLocaleString(
           context,
-          'login_success',
-          fallback: 'Login successful',
+          'login_successful',
+          fallback: 'Login Successful!',
         ),
       );
       Navigator.pushReplacement(
@@ -142,7 +142,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         key: _formKey,
                         child: Column(
                           children: [
-                            // EMAIL / PHONE
+                            // EMAIL
                             Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
@@ -162,6 +162,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                                 TextFormField(
                                   controller: _emailOrPhoneController,
+                                  keyboardType: TextInputType.text,
                                   validator: Validators.validateEmailOrPhone,
                                   decoration: InputDecoration(
                                     filled: true,

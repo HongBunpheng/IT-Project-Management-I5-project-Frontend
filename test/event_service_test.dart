@@ -5,7 +5,7 @@ import 'package:cg_intern_project/services/event_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 
-class _FakeApiClient implements ApiClient {
+class _FakeApiClient extends ApiClient {
   _FakeApiClient(this._body);
 
   final String _body;
@@ -19,32 +19,6 @@ class _FakeApiClient implements ApiClient {
   }) async {
     lastPath = path;
     return http.Response(_body, 200);
-  }
-
-  @override
-  Future<http.Response> postJson(
-    String path, {
-    Map<String, String>? headers,
-    Map<String, dynamic>? body,
-  }) {
-    throw UnimplementedError();
-  }
-
-  @override
-  Future<http.Response> putJson(
-    String path, {
-    Map<String, String>? headers,
-    Map<String, dynamic>? body,
-  }) {
-    throw UnimplementedError();
-  }
-
-  @override
-  Future<http.Response> deleteJson(
-    String path, {
-    Map<String, String>? headers,
-  }) {
-    throw UnimplementedError();
   }
 }
 

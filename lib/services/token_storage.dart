@@ -9,6 +9,7 @@ class TokenStorage {
   static const _groupIdKey = 'group_id';
   static const _emailKey = 'user_email';
   static const _phoneKey = 'user_phone';
+  static const _fullNameKey = 'user_full_name';
   static const _rememberMeKey = 'remember_me';
   static const _lastLoginKey = 'last_login';
 
@@ -98,6 +99,7 @@ class TokenStorage {
     await _storage.delete(key: _groupIdKey);
     await _storage.delete(key: _emailKey);
     await _storage.delete(key: _phoneKey);
+    await _storage.delete(key: _fullNameKey);
     await _storage.delete(key: _rememberMeKey);
     await _storage.delete(key: _lastLoginKey);
   }
@@ -141,6 +143,27 @@ class TokenStorage {
       return EncryptionHelper.decrypt(encrypted);
     } catch (e) {
       return await _storage.read(key: _phoneKey);
+    }
+  }
+
+  /// Store user full name (encrypted)
+  Future<void> writeFullName(String fullName) async {
+    try {
+      final encrypted = EncryptionHelper.encrypt(fullName);
+      await _storage.write(key: _fullNameKey, value: encrypted);
+    } catch (e) {
+      await _storage.write(key: _fullNameKey, value: fullName);
+    }
+  }
+
+  /// Read user full name (decrypted)
+  Future<String?> readFullName() async {
+    try {
+      final encrypted = await _storage.read(key: _fullNameKey);
+      if (encrypted == null) return null;
+      return EncryptionHelper.decrypt(encrypted);
+    } catch (e) {
+      return await _storage.read(key: _fullNameKey);
     }
   }
 
