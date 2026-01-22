@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:adaptive_theme/adaptive_theme.dart';
@@ -15,6 +16,8 @@ import '../../auth/screen/login_screen.dart';
 import '../../auth/service/auth_service.dart';
 import '../../services/token_storage.dart';
 import '../../utils/json_utils.dart';
+import '../../utils/snackbar.dart';
+import '../service/account_service.dart';
 import 'personal_information_screen.dart';
 import 'academic_records_screen.dart';
 
@@ -33,15 +36,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
   bool _isScrolled = false;
   bool _isLoadingMe = true;
   bool _isLoggingOut = false;
+  bool _isUploadingImage = false;
 
   final AuthService _authService = AuthService();
   final TokenStorage _tokenStorage = TokenStorage();
+  final AccountService _accountService = AccountService();
 
   String? _name;
   String? _email;
   String? _userId;
   String? _groupId;
   String? _major;
+  String? _profileImageUrl;
 
   @override
   void initState() {
@@ -79,33 +85,37 @@ class _ProfileScreenState extends State<ProfileScreen> {
         });
       }
 
-      final decoded = await _authService.me();
-      if (!mounted || decoded == null) return;
+      // Use AccountService to get profile
+      final profileResponse = await _accountService.getProfile();
+      if (profileResponse == null || !mounted) {
+        if (mounted) setState(() => _isLoadingMe = false);
+        return;
+      }
 
-      final data = asMap(decoded['data']) ?? decoded;
-      final user = asMap(data['user']) ?? data;
+      // Extract avatar URL using service method
+      final avatarUrl = _accountService.extractAvatarUrl(profileResponse);
+      
+      // Extract user data
+      final user = _accountService.extractUserData(profileResponse);
 
-      setState(() {
-        _name =
-            (readString(user, const ['name', 'full_name', 'fullName']) ??
-                    readString(user, const ['email']))
-                ?.toString();
-        _email = readString(user, const ['email']);
-        _userId =
-            readString(user, const ['id', 'user_id', 'userId']) ?? _userId;
-        _groupId =
-            readString(user, const ['group_id', 'groupId']) ?? _groupId;
-        _major =
-            readString(user, const [
-              'major',
-              'department',
-              'faculty',
-              'course',
-              'program',
-            ]);
-      });
-    } catch (_) {
-      // ignore
+      if (mounted) {
+        setState(() {
+          _name = readString(user, const ['user_name', 'name', 'full_name', 'fullName']);
+          _email = readString(user, const ['email']);
+          _userId = readString(user, const ['id', 'user_id', 'userId']) ?? _userId;
+          _groupId = readString(user, const ['group_id', 'groupId']) ?? _groupId;
+          _major = readString(user, const ['major', 'department', 'faculty', 'course', 'program']);
+          // Only update if we got a valid full URL (starts with http)
+          if (avatarUrl != null && avatarUrl.isNotEmpty) {
+            _profileImageUrl = avatarUrl;
+          }
+          // Don't overwrite existing valid URL with null or invalid URL
+        });
+        
+        print('Loaded profile image URL: $_profileImageUrl');
+      }
+    } catch (e) {
+      print('Error loading profile: $e');
     } finally {
       if (mounted) setState(() => _isLoadingMe = false);
     }
@@ -175,18 +185,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       label: safeLocaleString(rowContext, 'gallery', fallback: 'Gallery'),
                       onTap: () async {
                         Navigator.pop(context);
-                        final ImagePicker picker = ImagePicker();
-                        final XFile? image = await picker.pickImage(
-                          source: ImageSource.gallery,
-                          maxWidth: 512,
-                          maxHeight: 512,
-                          imageQuality: 85,
-                        );
-                        if (image != null) {
-                          setState(() {
-                            _profileImage = File(image.path);
-                          });
-                        }
+                        await _selectAndUploadImage(ImageSource.gallery);
                       },
                     ),
                     _buildImageSourceOption(
@@ -194,21 +193,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       label: safeLocaleString(rowContext, 'camera', fallback: 'Camera'),
                       onTap: () async {
                         Navigator.pop(context);
-                        final ImagePicker picker = ImagePicker();
-                        final XFile? image = await picker.pickImage(
-                          source: ImageSource.camera,
-                          maxWidth: 512,
-                          maxHeight: 512,
-                          imageQuality: 85,
-                        );
-                        if (image != null) {
-                          setState(() {
-                            _profileImage = File(image.path);
-                          });
-                        }
+                        await _selectAndUploadImage(ImageSource.camera);
                       },
                     ),
-                    if (_profileImage != null)
+                    if (_profileImage != null || (_profileImageUrl != null && _profileImageUrl!.isNotEmpty))
                       _buildImageSourceOption(
                         icon: Icons.delete_outline,
                         label: safeLocaleString(rowContext, 'remove', fallback: 'Remove'),
@@ -216,6 +204,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           Navigator.pop(context);
                           setState(() {
                             _profileImage = null;
+                            _profileImageUrl = null;
                           });
                         },
                       ),
@@ -228,6 +217,144 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ),
       ),
     );
+  }
+
+  Future<void> _selectAndUploadImage(ImageSource source) async {
+    try {
+      final ImagePicker picker = ImagePicker();
+      final XFile? image = await picker.pickImage(
+        source: source,
+        maxWidth: 512,
+        maxHeight: 512,
+        imageQuality: 85,
+      );
+      
+      if (image != null) {
+        final file = File(image.path);
+        // Show local image immediately for better UX
+        setState(() {
+          _profileImage = file;
+        });
+
+        // Upload to backend
+        await _uploadProfileImage(file);
+      }
+    } catch (e) {
+      if (mounted) {
+        CustomSnackBar.error(
+          title: 'Error',
+          message: 'Failed to select image. Please try again.',
+        );
+        print('Error selecting image: $e');
+      }
+    }
+  }
+
+  Future<void> _uploadProfileImage(File imageFile) async {
+    if (!mounted) return;
+    
+    setState(() => _isUploadingImage = true);
+    
+    try {
+      // Use AccountService to upload avatar
+      final response = await _accountService.uploadAvatar(imageFile);
+      
+      if (response != null) {
+        final statusCode = response['statusCode'] as int? ?? 0;
+        
+        if (statusCode == 200) {
+          final body = response['body'];
+          if (body != null && body is Map<String, dynamic>) {
+            // Debug: Print the response to see what we're getting
+            print('Upload response: ${jsonEncode(body)}');
+            
+            // Extract avatar URL using service method
+            final avatarUrl = _accountService.extractAvatarUrl(body);
+            print('Extracted avatar URL: $avatarUrl');
+            
+            if (mounted) {
+              // Only update if we got a valid URL
+              if (avatarUrl != null && avatarUrl.isNotEmpty) {
+                setState(() {
+                  _profileImageUrl = avatarUrl;
+                  // Clear local image so it uses the URL from backend
+                  _profileImage = null;
+                  _isUploadingImage = false;
+                });
+                
+                CustomSnackBar.success(
+                  title: 'Success',
+                  message: 'Profile photo uploaded successfully',
+                );
+                
+                // Reload profile after a short delay to ensure backend has processed
+                Future.delayed(const Duration(milliseconds: 500), () {
+                  if (mounted) {
+                    _loadProfile();
+                  }
+                });
+              } else {
+                // No URL found, but upload was successful - reload profile
+                setState(() {
+                  _isUploadingImage = false;
+                });
+                
+                CustomSnackBar.success(
+                  title: 'Success',
+                  message: 'Profile photo uploaded successfully',
+                );
+                
+                // Reload profile to get the URL
+                Future.delayed(const Duration(milliseconds: 500), () {
+                  if (mounted) {
+                    _loadProfile();
+                  }
+                });
+              }
+            }
+          } else {
+            if (mounted) {
+              setState(() => _isUploadingImage = false);
+              CustomSnackBar.error(
+                title: 'Error',
+                message: 'Invalid response from server',
+              );
+            }
+          }
+        } else {
+          // Handle error
+          if (mounted) {
+            final body = response['body'];
+            final errorMessage = body is Map<String, dynamic>
+                ? (readString(body, const ['message', 'error']) ?? 'Failed to upload image')
+                : 'Failed to upload image';
+            setState(() => _isUploadingImage = false);
+            CustomSnackBar.error(
+              title: 'Upload Failed',
+              message: errorMessage,
+            );
+            print('Failed to upload image: $statusCode - $errorMessage');
+          }
+        }
+      } else {
+        if (mounted) {
+          setState(() => _isUploadingImage = false);
+          CustomSnackBar.error(
+            title: 'Error',
+            message: 'Failed to upload image. Please try again.',
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isUploadingImage = false);
+        CustomSnackBar.error(
+          title: 'Error',
+          message: 'Failed to upload image. Please try again.',
+        );
+        print('Error uploading image: $e');
+      }
+    }
   }
 
   Widget _buildImageSourceOption({
@@ -489,27 +616,89 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     Stack(
                       children: [
                         GestureDetector(
-                          onTap: _pickImage,
+                          onTap: _isUploadingImage ? null : _pickImage,
                           child: Container(
                             width: 120,
                             height: 120,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
                               color: appColors.lightGrey,
-                              image: _profileImage != null
-                                  ? DecorationImage(
-                                      image: FileImage(_profileImage!),
-                                      fit: BoxFit.cover,
-                                    )
-                                  : null,
                             ),
-                            child: _profileImage == null
-                                ? Icon(
-                                    Icons.person,
-                                    size: 60,
-                                    color: appColors.textSecondary,
-                                  )
-                                : null,
+                            child: Stack(
+                              fit: StackFit.expand,
+                              children: [
+                                // Image layer
+                                _profileImage != null
+                                    ? ClipOval(
+                                        child: Image.file(
+                                          _profileImage!,
+                                          fit: BoxFit.cover,
+                                          width: 120,
+                                          height: 120,
+                                        ),
+                                      )
+                                    : _profileImageUrl != null && _profileImageUrl!.isNotEmpty
+                                        ? ClipOval(
+                                            child: Image.network(
+                                              _profileImageUrl!,
+                                              fit: BoxFit.cover,
+                                              width: 120,
+                                              height: 120,
+                                              loadingBuilder: (context, child, loadingProgress) {
+                                                if (loadingProgress == null) return child;
+                                                return Center(
+                                                  child: CircularProgressIndicator(
+                                                    value: loadingProgress.expectedTotalBytes != null
+                                                        ? loadingProgress.cumulativeBytesLoaded /
+                                                            loadingProgress.expectedTotalBytes!
+                                                        : null,
+                                                    color: appColors.primaryBlue,
+                                                    strokeWidth: 2,
+                                                  ),
+                                                );
+                                              },
+                                              errorBuilder: (context, error, stackTrace) {
+                                                print('Error loading network image: $error');
+                                                print('Failed URL: $_profileImageUrl');
+                                                // Clear invalid URL
+                                                if (mounted) {
+                                                  Future.microtask(() {
+                                                    if (mounted) {
+                                                      setState(() {
+                                                        _profileImageUrl = null;
+                                                      });
+                                                    }
+                                                  });
+                                                }
+                                                return Icon(
+                                                  Icons.person,
+                                                  size: 60,
+                                                  color: appColors.textSecondary,
+                                                );
+                                              },
+                                            ),
+                                          )
+                                        : Icon(
+                                            Icons.person,
+                                            size: 60,
+                                            color: appColors.textSecondary,
+                                          ),
+                                // Loading overlay
+                                if (_isUploadingImage)
+                                  Container(
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      color: Colors.black.withValues(alpha: 0.3),
+                                    ),
+                                    child: Center(
+                                      child: CircularProgressIndicator(
+                                        color: AppColors.white,
+                                        strokeWidth: 2,
+                                      ),
+                                    ),
+                                  ),
+                              ],
+                            ),
                           ),
                         ),
                         Positioned(

@@ -3,14 +3,20 @@ import 'dart:convert';
 import '../../services/api_client.dart';
 import '../../services/token_storage.dart';
 import '../../utils/json_utils.dart';
+import '../../account/service/account_service.dart';
 
 class AuthService {
   final ApiClient _api;
   final TokenStorage _tokenStorage;
+  final AccountService _accountService;
 
-  AuthService({ApiClient? apiClient, TokenStorage? tokenStorage})
-    : _api = apiClient ?? ApiClient(),
-      _tokenStorage = tokenStorage ?? TokenStorage();
+  AuthService({
+    ApiClient? apiClient,
+    TokenStorage? tokenStorage,
+    AccountService? accountService,
+  })  : _api = apiClient ?? ApiClient(),
+        _tokenStorage = tokenStorage ?? TokenStorage(),
+        _accountService = accountService ?? AccountService();
 
   Future<Map<String, dynamic>> login({
     required String emailOrPhone,
@@ -136,28 +142,8 @@ class AuthService {
     }
   }
 
-  Future<Map<String, dynamic>?> me() async {
-    try {
-      final res = await _api.getJson('/auth/me');
-      final decoded = _safeJsonDecode(res.body);
-      if (decoded is Map<String, dynamic>) return decoded;
-    } catch (_) {
-      // ignore
-    }
-
-    try {
-      final res = await _api.getJson('/users/me');
-      final decoded = _safeJsonDecode(res.body);
-      if (decoded is Map<String, dynamic>) return decoded;
-    } catch (_) {
-      // ignore
-    }
-
-    return null;
-  }
-
   Future<void> _storeUserContext() async {
-    final decoded = await me();
+    final decoded = await _accountService.getProfile();
     if (decoded == null) return;
 
     final data = asMap(decoded['data']) ?? decoded;
