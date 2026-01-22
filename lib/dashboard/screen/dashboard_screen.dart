@@ -14,7 +14,7 @@ import '../model/dashboard_models.dart';
 import '../../notification/screen/notification_screen.dart';
 import '../../exam/screen/exam_scores_screen.dart';
 import '../../checkin/screen/checkin_screen.dart';
-import '../../auth/service/auth_service.dart';
+import '../../account/service/account_service.dart';
 import '../../exam/service/exam_service.dart';
 import '../../account/screen/profile_screen.dart';
 import '../../services/token_storage.dart';
@@ -31,7 +31,7 @@ class DashboardView extends StatefulWidget {
 class _DashboardViewState extends State<DashboardView> {
   int _currentBottomNavIndex = 0;
 
-  final AuthService _authService = AuthService();
+  final AccountService _accountService = AccountService();
   final ExamService _examService = ExamService();
   final TimetableService _timetableService = TimetableService();
   final EventService _eventService = EventService();
@@ -67,13 +67,13 @@ class _DashboardViewState extends State<DashboardView> {
 
   Future<void> _loadMe() async {
     try {
-      final me = await _authService.me();
-      if (!mounted || me == null) return;
-      final data = me['data'] is Map ? (me['data'] as Map) : me;
+      final profile = await _accountService.getProfile();
+      if (!mounted || profile == null) return;
+      
+      final user = _accountService.extractUserData(profile);
       setState(() {
-        _username = (data['name'] ?? data['full_name'] ?? data['email'])
-            ?.toString();
-        _userId = (data['id'] ?? data['user_id'])?.toString();
+        _username = readString(user, const ['user_name', 'name', 'full_name', 'email'])?.toString();
+        _userId = readString(user, const ['id', 'user_id'])?.toString();
       });
     } catch (_) {
       // ignore
