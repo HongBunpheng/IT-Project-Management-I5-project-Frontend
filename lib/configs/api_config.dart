@@ -7,6 +7,6 @@ class ApiConfig {
   /// - Physical device: `http://<your-lan-ip>:8000/api`
   static const String baseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'http://192.168.100.71:8000/api',
+    defaultValue: 'http://103.6.168.136/api',
   );
 }
