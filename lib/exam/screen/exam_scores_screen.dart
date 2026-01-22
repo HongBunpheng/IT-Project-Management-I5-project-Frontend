@@ -5,15 +5,15 @@ import '../../configs/app_theme_extension.dart';
 import '../../utils/localization_helper.dart';
 import '../model/exam_model.dart';
 import '../service/exam_service.dart';
-import '../../app_header.dart';
-import '../../custom_bottom_navigation_bar.dart';
+import '../../widgets/common/app_header.dart';
+import '../../widgets/common/custom_bottom_navigation_bar.dart';
 import '../../attendance/screen/attendance_screen.dart';
 import 'scores_summary_screen.dart';
 import 'exam_detail_screen.dart';
 import '../../dashboard/screen/dashboard_screen.dart';
 import '../../timetable/screen/timetable_screen.dart';
 import '../../checkin/screen/checkin_screen.dart';
-import '../../account/screen/profile_screen.dart'; // SettingsScreen is defined here
+import '../../account/screen/profile_screen.dart';
 
 class ExamScoresScreen extends StatefulWidget {
   const ExamScoresScreen({super.key});
@@ -25,6 +25,7 @@ class ExamScoresScreen extends StatefulWidget {
 class _ExamScoresScreenState extends State<ExamScoresScreen> {
   final ExamService _examService = ExamService();
   ExamSummary? _examSummary;
+  String? _errorMessage;
   int _currentBottomNavIndex = 2; // menu_book tab for exam scores
 
   @override
@@ -34,11 +35,18 @@ class _ExamScoresScreenState extends State<ExamScoresScreen> {
   }
 
   Future<void> _loadExamData() async {
-    // Load instantly without delay
-    final summary = await _examService.getExamResults();
-    if (mounted) {
+    try {
+      final summary = await _examService.getExamResults();
+      if (!mounted) return;
       setState(() {
         _examSummary = summary;
+        _errorMessage = null;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _examSummary = null;
+        _errorMessage = e.toString();
       });
     }
   }
@@ -52,10 +60,11 @@ class _ExamScoresScreenState extends State<ExamScoresScreen> {
         );
         break;
       case 1:
- Navigator.pushReplacement(
+        Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (_) => const CheckInScreen()),
-        );        break;
+        );
+        break;
       case 2:
         // Already on exam scores
         setState(() => _currentBottomNavIndex = 2);
@@ -69,7 +78,7 @@ class _ExamScoresScreenState extends State<ExamScoresScreen> {
       case 4:
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (_) => const SettingsScreen()),
+          MaterialPageRoute(builder: (_) => const ProfileScreen()),
         );
         break;
       default:
@@ -84,26 +93,57 @@ class _ExamScoresScreenState extends State<ExamScoresScreen> {
     
     return Scaffold(
       backgroundColor: isDark ? const Color(0xFF121212) : AppColors.white,
-      body: _examSummary == null
-          ? const Center(child: CircularProgressIndicator())
-          : Column(
-              children: [
-                const AppHeader(),
+      body: SafeArea(
+        child: _examSummary == null
+            ? Center(
+                child: _errorMessage == null
+                    ? const CircularProgressIndicator()
+                    : Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(_errorMessage!, textAlign: TextAlign.center),
+                            const SizedBox(height: 12),
+                            ElevatedButton(
+                              onPressed: _loadExamData,
+                              child: const Text('Retry'),
+                            ),
+                          ],
+                        ),
+                      ),
+              )
+            : Column(
+                children: [
+                  const AppHeader(),
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16.0,
+                      vertical: 12.0,
+                    ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        Text( safeLocaleString(context, 'exam_scores', fallback: 'Exam Scores'), style: TextStyle(
+                        Text(
+                          safeLocaleString(
+                            context,
+                            'exam_scores',
+                            fallback: 'Exam Scores',
+                          ),
+                          style: TextStyle(
                             fontSize: AppSizes.fontSizeM,
                             fontWeight: FontWeight.w600,
                             color: appColors.textPrimary,
-                          ),),
-                        Text( '${safeLocaleString(context, 'average_score', fallback: 'Average Score')}: ${_examSummary!.averageScore.toInt()}%', style: TextStyle(
+                          ),
+                        ),
+                        Text(
+                          '${safeLocaleString(context, 'average_score', fallback: 'Average Score')}: ${_examSummary!.averageScore.toInt()}%',
+                          style: TextStyle(
                             fontSize: AppSizes.fontSizeM,
                             fontWeight: FontWeight.w600,
                             color: appColors.textSecondary,
-                          ),),
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -122,7 +162,8 @@ class _ExamScoresScreenState extends State<ExamScoresScreen> {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (context) => const AttendanceScreen(),
+                                  builder: (context) =>
+                                      const AttendanceScreen(),
                                 ),
                               );
                             },
@@ -139,7 +180,8 @@ class _ExamScoresScreenState extends State<ExamScoresScreen> {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (context) => const ScoresSummaryScreen(),
+                                  builder: (context) =>
+                                      const ScoresSummaryScreen(),
                                 ),
                               );
                             },
@@ -235,15 +277,9 @@ class _ActionButton extends StatelessWidget {
           begin: Alignment.centerLeft,
           end: Alignment.centerRight,
         ).createShader(bounds),
-        child: Icon(
-          iconData,
-          color: Colors.white,
-          size: 32,
-        ),
+        child: Icon(iconData, color: Colors.white, size: 32),
       );
-    }
-
-    else {
+    } else {
       return Container(
         width: 32,
         height: 32,
@@ -255,13 +291,7 @@ class _ActionButton extends StatelessWidget {
           ),
           borderRadius: BorderRadius.circular(8),
         ),
-        child: Center(
-          child: Icon(
-            iconData,
-            color: Colors.white,
-            size: 20,
-          ),
-        ),
+        child: Center(child: Icon(iconData, color: Colors.white, size: 20)),
       );
     }
   }
@@ -281,10 +311,7 @@ class _ActionButton extends StatelessWidget {
         const Color(0xFF1DE9B6), // Lighter Teal
       ];
     }
-    return [
-      baseColor.withValues(alpha: 0.6),
-      baseColor,
-    ];
+    return [baseColor.withValues(alpha: 0.6), baseColor];
   }
 
   @override
@@ -323,7 +350,7 @@ class _ActionButton extends StatelessWidget {
                 ),
               ),
             ),
-            
+
             Padding(
               padding: const EdgeInsets.all(20.0),
               child: Column(
@@ -340,7 +367,7 @@ class _ActionButton extends StatelessWidget {
                     ),
                     child: Center(child: _buildIcon(icon, color)),
                   ),
-                  
+
                   // Texts
                   Flexible(
                     child: Column(
@@ -359,9 +386,17 @@ class _ActionButton extends StatelessWidget {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          title.startsWith(safeLocaleString(context, 'attendance', fallback: "Attendance")) 
-                              ? safeLocaleString(context, 'view_complete_history', fallback: "View complete history")
-                              : safeLocaleString(context, 'detailed_analytics', fallback: "Detailed analytics"),
+                          icon == Icons.bar_chart
+                              ? safeLocaleString(
+                                  context,
+                                  'view_complete_history',
+                                  fallback: "View complete history",
+                                )
+                              : safeLocaleString(
+                                  context,
+                                  'detailed_analytics',
+                                  fallback: "Detailed analytics",
+                                ),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
@@ -386,10 +421,7 @@ class _ExamResultCard extends StatelessWidget {
   final ExamResult exam;
   final VoidCallback onPreview;
 
-  const _ExamResultCard({
-    required this.exam,
-    required this.onPreview,
-  });
+  const _ExamResultCard({required this.exam, required this.onPreview});
 
   @override
   Widget build(BuildContext context) {
@@ -438,10 +470,12 @@ class _ExamResultCard extends StatelessWidget {
                   exam.statusText,
                   style: TextStyle(
                     fontSize: 12,
-                    color: exam.score < 50 
-                        ? Colors.red 
+                    color: exam.score < 50
+                        ? Colors.red
                         : const Color(0xFF4CAF50), // Green color for completed
-                    fontWeight: exam.score < 50 ? FontWeight.w600 : FontWeight.normal,
+                    fontWeight: exam.score < 50
+                        ? FontWeight.w600
+                        : FontWeight.normal,
                   ),
                 ),
               ],

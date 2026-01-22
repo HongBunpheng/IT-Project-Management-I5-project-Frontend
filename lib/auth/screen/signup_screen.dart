@@ -26,6 +26,15 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
   final AuthRepository _authRepo = AuthRepository();
 
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _emailController.dispose();
+    _phoneController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
   Future<void> _handleRegister() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -42,17 +51,32 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
     if (!mounted) return;
 
-    if (res["statusCode"] == 200) {
-      Helpers.showSnackBar(context, safeLocaleString(context, 'register_successful', fallback: "Register Successful!"));
+    final statusCode = res["statusCode"];
+    if (statusCode is int && statusCode >= 200 && statusCode < 300) {
+      Helpers.showSnackBar(
+        context,
+        safeLocaleString(
+          context,
+          'register_successful',
+          fallback: "Register Successful!",
+        ),
+      );
 
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (_) => const DashboardView()),
       );
     } else {
+      final body = res["body"];
+      final message = body is Map ? body["message"] : null;
       Helpers.showSnackBar(
         context,
-        res["body"]["message"] ?? safeLocaleString(context, 'registration_failed', fallback: "Registration failed"),
+        message?.toString() ??
+            safeLocaleString(
+              context,
+              'registration_failed',
+              fallback: "Registration failed",
+            ),
       );
     }
   }

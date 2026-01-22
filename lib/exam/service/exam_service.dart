@@ -1,158 +1,204 @@
+import 'dart:convert';
+
 import '../model/exam_model.dart';
+import '../../utils/json_utils.dart';
+import '../../services/api_client.dart';
+import '../../services/score_service.dart';
+import '../../services/token_storage.dart';
 
-/// Service class for handling exam score API calls
-/// This is structured to work with backend API when available
 class ExamService {
-  // TODO: Replace with actual API base URL when backend is ready
-  static const String baseUrl = 'https://api.example.com'; // Placeholder
+  final ApiClient _api;
+  final TokenStorage _tokenStorage;
+  final ScoreService _scores;
 
-  /// Fetch all exam results
-  /// When API is ready, replace with actual HTTP call
+  ExamService({
+    ApiClient? apiClient,
+    TokenStorage? tokenStorage,
+    ScoreService? scoreService,
+  }) : _api = apiClient ?? ApiClient(),
+       _tokenStorage = tokenStorage ?? TokenStorage(),
+       _scores = scoreService ?? ScoreService();
+
   Future<ExamSummary> getExamResults() async {
-    // No delay for mock data - instant response
-
-    // TODO: Replace with actual API call
-    // Example:
-    // final response = await http.get(Uri.parse('$baseUrl/api/exams'));
-    // if (response.statusCode == 200) {
-    //   return ExamSummary.fromJson(json.decode(response.body));
-    // } else {
-    //   throw Exception('Failed to load exam results');
-    // }
-
-    // Mock data for now
-    return ExamSummary(
-      averageScore: 85.0,
-      examResults: [
-        ExamResult(
-          subjectName: 'Network Security',
-          score: 70,
-          isCompleted: true,
-          examId: '1',
-          totalMark: 100,
-          maxScore: 100,
-          midtermScore: 100,
-          finalScore: 100,
-          examDate: '02/11/2025',
-          lecturers: ['Kim Jongun', 'Christopher', 'Olivia (TP)'],
-        ),
-        ExamResult(
-          subjectName: 'Data Mining',
-          score: 60,
-          isCompleted: true,
-          examId: '2',
-          totalMark: 100,
-          maxScore: 100,
-          midtermScore: 60,
-          finalScore: 60,
-          examDate: '15/10/2025',
-          lecturers: ['Dr. Smith'],
-        ),
-        ExamResult(
-          subjectName: 'Natural Language Processing',
-          score: 45,
-          isCompleted: true,
-          examId: '3',
-          totalMark: 100,
-          maxScore: 100,
-          midtermScore: 40,
-          finalScore: 50,
-          examDate: '20/10/2025',
-          lecturers: ['Prof. Johnson'],
-        ),
-        ExamResult(
-          subjectName: 'Information Security',
-          score: 80,
-          isCompleted: true,
-          examId: '4',
-          totalMark: 100,
-          maxScore: 100,
-          midtermScore: 85,
-          finalScore: 75,
-          examDate: '10/11/2025',
-          lecturers: ['Dr. Williams'],
-        ),
-      ],
-    );
-  }
-
-  /// Fetch detailed exam result for a specific subject
-  /// When API is ready, replace with actual HTTP call
-  Future<ExamResult> getExamDetail(String examId) async {
-    // Simulate API delay
-    await Future.delayed(const Duration(milliseconds: 500));
-
-    // TODO: Replace with actual API call
-    // Example:
-    // final response = await http.get(Uri.parse('$baseUrl/api/exams/$examId'));
-    // if (response.statusCode == 200) {
-    //   return ExamResult.fromJson(json.decode(response.body));
-    // } else {
-    //   throw Exception('Failed to load exam detail');
-    // }
-
-    // Mock data for now - return based on examId with detailed info
-    final allExams = await getExamResults();
-    final exam = allExams.examResults.firstWhere(
-      (exam) => exam.examId == examId,
-      orElse: () => ExamResult(
-        subjectName: 'Unknown',
-        score: 0,
-        isCompleted: false,
-        examId: examId,
-      ),
-    );
-    
-    // Return with all details
-    return exam;
-  }
-
-  /// Get scores summary with color mapping
-  Future<List<SubjectScore>> getScoresSummary() async {
-    // Color mapping for subjects (matching the design)
-    final colorMap = {
-      'Network Security': 0xFF00BCD4, // Teal/Cyan
-      'Data Mining': 0xFF9C27B0, // Purple
-      'Natural Language Processing': 0xFF2196F3, // Blue
-      'Information Security': 0xFFFF5252, // Red
-      'French': 0xFFFF9800, // Orange
-    };
-
-    // Based on design, use the scores shown in the summary table
-    // These appear to be weighted or normalized scores, not raw percentages
-    final summaryData = [
-      {'name': 'Network Security', 'score': 28, 'percentage': 62.5},
-      {'name': 'Natural Language Processing', 'score': 12, 'percentage': 25.0},
-      {'name': 'Data Mining', 'score': 6, 'percentage': 12.5},
-      {'name': 'Information Security', 'score': 6, 'percentage': 12.5},
-      {'name': 'French', 'score': 6, 'percentage': 12.5},
-      {'name': 'French', 'score': 6, 'percentage': 12.5},
-    ];
-
-    // Create list matching the design
-    final allSubjects = <SubjectScore>[];
-    
-    for (final data in summaryData) {
-      final subjectName = data['name'] as String;
-      final score = data['score'] as int;
-      final percentage = data['percentage'] as double;
-      
-      // Get color from map, or use default
-      int colorValue = colorMap[subjectName] ?? 0xFF9E9E9E;
-      
-      // Special handling for duplicate French entries
-      if (subjectName == 'French' && allSubjects.any((s) => s.subjectName == 'French')) {
-        colorValue = 0xFFFFEB3B; // Yellow for second French entry
-      }
-      
-      allSubjects.add(SubjectScore(
-        subjectName: subjectName,
-        score: score,
-        colorValue: colorValue,
-        percentage: percentage,
-      ));
+    final userId = await _tokenStorage.readUserId();
+    if (userId == null || userId.isEmpty) {
+      throw Exception('Missing user id. Please login again.');
     }
 
-    return allSubjects;
+    final scores = await _scores.byStudent(userId);
+
+    final results = scores.map(_mapScoreToExamResult).toList();
+    final average = results.isEmpty
+        ? 0.0
+        : results.map((e) => e.score).reduce((a, b) => a + b) / results.length;
+
+    return ExamSummary(averageScore: average, examResults: results);
+  }
+
+  Future<ExamResult> getExamDetail(String examId) async {
+    final res = await _api.getJson('/exams/$examId');
+    final decoded = _safeDecode(res.body);
+
+    final data = decoded is Map<String, dynamic>
+        ? (asMap(decoded['data']) ?? asMap(decoded['exam']) ?? decoded)
+        : null;
+
+    if (data == null) {
+      throw Exception('Invalid response');
+    }
+
+    return _mapExamToExamResult(data, fallbackId: examId);
+  }
+
+  Future<List<SubjectScore>> getScoresSummary() async {
+    final summary = await getExamResults();
+    final exams = summary.examResults;
+    final total = exams.fold<int>(0, (acc, e) => acc + e.score);
+
+    final subjectScores = <SubjectScore>[];
+    for (final exam in exams) {
+      final percentage = total == 0 ? 0.0 : (exam.score / total) * 100;
+      subjectScores.add(
+        SubjectScore(
+          subjectName: exam.subjectName,
+          score: exam.score,
+          colorValue: _colorForSubject(exam.subjectName),
+          percentage: percentage,
+        ),
+      );
+    }
+
+    return subjectScores;
+  }
+
+  ExamResult _mapScoreToExamResult(Map<String, dynamic> score) {
+    final exam = asMap(score['exam']);
+    final subject = asMap(exam?['subject']) ?? asMap(score['subject']);
+
+    final subjectName =
+        readString(subject ?? score, const [
+          'name',
+          'subject_name',
+          'subjectName',
+          'title',
+        ]) ??
+        'Unknown';
+
+    final examId =
+        readString(exam ?? score, const ['id', 'exam_id', 'examId']) ?? '';
+
+    final percentage =
+        readDouble(score, const [
+          'percentage',
+          'percentages',
+          'score',
+          'mark',
+        ]) ??
+        0.0;
+
+    final maxScore = readInt(score, const [
+      'max_score',
+      'maxScore',
+      'total_mark',
+      'totalMark',
+    ]);
+
+    final totalMark = readInt(score, const [
+      'total_mark',
+      'totalMark',
+      'max_score',
+      'maxScore',
+    ]);
+
+    final examDate = readString(exam ?? score, const [
+      'exam_date',
+      'date',
+      'examDate',
+    ]);
+
+    return ExamResult(
+      subjectName: subjectName,
+      score: percentage.round(),
+      isCompleted: true,
+      examId: examId,
+      totalMark: totalMark,
+      maxScore: maxScore,
+      examDate: examDate,
+      lecturers: _extractLecturers(exam),
+    );
+  }
+
+  ExamResult _mapExamToExamResult(
+    Map<String, dynamic> exam, {
+    String? fallbackId,
+  }) {
+    final subject = asMap(exam['subject']);
+    final subjectName =
+        readString(subject ?? exam, const [
+          'name',
+          'subject_name',
+          'subjectName',
+          'title',
+        ]) ??
+        'Unknown';
+
+    final examId =
+        readString(exam, const ['id', 'exam_id', 'examId']) ??
+        (fallbackId ?? '');
+
+    final totalMark = readInt(exam, const ['total_mark', 'totalMark']);
+    final duration = readString(exam, const ['duration']);
+
+    final scoreValue = readDouble(exam, const [
+      'percentage',
+      'percentages',
+      'score',
+    ]);
+
+    return ExamResult(
+      subjectName: subjectName,
+      score: (scoreValue ?? 0.0).round(),
+      isCompleted: true,
+      examId: examId,
+      totalMark: totalMark,
+      maxScore: totalMark,
+      midtermScore: null,
+      finalScore: null,
+      examDate:
+          readString(exam, const ['exam_date', 'date', 'examDate']) ?? duration,
+      lecturers: _extractLecturers(exam),
+    );
+  }
+
+  List<String>? _extractLecturers(Map<String, dynamic>? exam) {
+    if (exam == null) return null;
+    final lecturersValue =
+        exam['lecturers'] ?? exam['teachers'] ?? exam['users'];
+    final list = asList(lecturersValue);
+    if (list == null) return null;
+
+    final names = <String>[];
+    for (final item in list) {
+      final map = asMap(item);
+      final name = map == null
+          ? item?.toString()
+          : (readString(map, const ['name', 'full_name', 'email']) ??
+                map.toString());
+      if (name != null && name.isNotEmpty) names.add(name);
+    }
+    return names.isEmpty ? null : names;
+  }
+
+  int _colorForSubject(String subjectName) {
+    final hash = subjectName.hashCode & 0xFFFFFF;
+    return 0xFF000000 | hash;
+  }
+
+  dynamic _safeDecode(String body) {
+    try {
+      return jsonDecode(body);
+    } catch (_) {
+      return body;
+    }
   }
 }

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'configs/app_colors.dart';
-import 'configs/app_sizes.dart';
-import 'utils/responsive.dart';
+import '../../configs/app_colors.dart';
+import '../../configs/app_sizes.dart';
+import '../../utils/responsive.dart';
 
 class CustomBottomNavigationBar extends StatelessWidget {
   final int currentIndex;
@@ -16,9 +16,10 @@ class CustomBottomNavigationBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final margin = Responsive.getPadding(context);
-    
+
     return Container(
       margin: EdgeInsets.only(
+        top: margin,
         left: margin,
         right: margin,
         bottom: margin,
@@ -29,8 +30,8 @@ class CustomBottomNavigationBar extends StatelessWidget {
         borderRadius: BorderRadius.circular(AppSizes.radiusL),
       ),
       padding: EdgeInsets.symmetric(
-        horizontal: Responsive.isMobile(context) 
-            ? AppSizes.spacingS 
+        horizontal: Responsive.isMobile(context)
+            ? AppSizes.spacingS
             : AppSizes.spacingM,
         vertical: AppSizes.spacingS,
       ),
@@ -88,11 +89,7 @@ class CustomBottomNavigationBar extends StatelessWidget {
           color: isActive ? AppColors.black : Colors.transparent,
           shape: BoxShape.circle,
         ),
-        child: Icon(
-          icon,
-          color: AppColors.white,
-          size: AppSizes.iconSizeM,
-        ),
+        child: Icon(icon, color: AppColors.white, size: AppSizes.iconSizeM),
       ),
     );
   }

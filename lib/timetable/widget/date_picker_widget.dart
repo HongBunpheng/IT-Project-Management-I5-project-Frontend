@@ -20,7 +20,9 @@ class DatePickerWidget extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: EdgeInsets.symmetric(horizontal: Responsive.getPadding(context)),
+          padding: EdgeInsets.symmetric(
+            horizontal: Responsive.getPadding(context),
+          ),
           child: Text(
             'Today',
             style: TextStyle(
@@ -35,7 +37,9 @@ class DatePickerWidget extends StatelessWidget {
           height: 80,
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
-            padding: EdgeInsets.symmetric(horizontal: Responsive.getPadding(context)),
+            padding: EdgeInsets.symmetric(
+              horizontal: Responsive.getPadding(context),
+            ),
             itemCount: days.length,
             itemBuilder: (context, index) {
               final day = days[index];
@@ -48,8 +52,8 @@ class DatePickerWidget extends StatelessWidget {
                     color: AppColors.white,
                     borderRadius: BorderRadius.circular(AppSizes.radiusM),
                     border: Border.all(
-                      color: day.isSelected 
-                          ? AppColors.primaryBlue 
+                      color: day.isSelected
+                          ? AppColors.primaryBlue
                           : AppColors.borderLight,
                       width: day.isSelected ? 2 : 1,
                     ),
@@ -62,8 +66,8 @@ class DatePickerWidget extends StatelessWidget {
                         style: TextStyle(
                           fontSize: AppSizes.fontSizeL,
                           fontWeight: FontWeight.bold,
-                          color: day.isSelected 
-                              ? AppColors.primaryBlue 
+                          color: day.isSelected
+                              ? AppColors.primaryBlue
                               : AppColors.textSecondary,
                         ),
                       ),
@@ -72,8 +76,8 @@ class DatePickerWidget extends StatelessWidget {
                         day.dayAbbreviation,
                         style: TextStyle(
                           fontSize: AppSizes.fontSizeS,
-                          color: day.isSelected 
-                              ? AppColors.primaryBlue 
+                          color: day.isSelected
+                              ? AppColors.primaryBlue
                               : AppColors.textSecondary,
                         ),
                       ),

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../model/exam_model.dart';
 import '../service/exam_service.dart';
 import '../widget/single_score_donut_chart.dart';
-import '../../app_header.dart';
+import '../../widgets/common/app_header.dart';
 import '../../configs/app_colors.dart';
 import '../../configs/app_sizes.dart';
 
@@ -50,7 +50,6 @@ class _ExamDetailScreenState extends State<ExamDetailScreen> {
     }
   }
 
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -59,77 +58,79 @@ class _ExamDetailScreenState extends State<ExamDetailScreen> {
         child: _isLoading
             ? const Center(child: CircularProgressIndicator())
             : _examResult == null
-                ? const Center(child: Text('No data available'))
-                : SingleChildScrollView(
-                    physics: const BouncingScrollPhysics(),
-                    child: Column(
-                      children: [
-                        const SizedBox(height: 20),
-                        // Header
-                        AppHeader(
-                          title: widget.subjectName,
-                        ),
-                        const SizedBox(height: 35),
-                        // Donut Chart
-                        Center(
-                          child: SingleScoreDonutChart(
-                            score: _examResult!.score.toDouble(),
-                            scoreColor: const Color(0xFF2196F3), // Blue
-                            remainingColor: const Color(0xFFEEEEEE),
-                            size: 180,
-                            strokeWidth: 20,
+            ? const Center(child: Text('No data available'))
+            : SingleChildScrollView(
+                physics: const BouncingScrollPhysics(),
+                child: Column(
+                  children: [
+                    const SizedBox(height: 20),
+                    // Header
+                    AppHeader(title: widget.subjectName),
+                    const SizedBox(height: 35),
+                    // Donut Chart
+                    Center(
+                      child: SingleScoreDonutChart(
+                        score: _examResult!.score.toDouble(),
+                        scoreColor: const Color(0xFF2196F3), // Blue
+                        remainingColor: const Color(0xFFEEEEEE),
+                        size: 180,
+                        strokeWidth: 20,
+                      ),
+                    ),
+                    const SizedBox(height: 30),
+
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20.0),
+                      child: Column(
+                        children: [
+                          // Score Details Card
+                          _ScoreDetailsCard(result: _examResult!),
+                          const SizedBox(height: 16),
+
+                          // Exam Date Card
+                          _ExamDateCard(date: _examResult!.examDate ?? 'N/A'),
+                          const SizedBox(height: 16),
+
+                          // Lecturers Card
+                          _LecturersCard(
+                            lecturers: _examResult!.lecturers ?? [],
                           ),
-                        ),
-                        const SizedBox(height: 30),
-                        
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 20.0),
-                          child: Column(
-                            children: [
-                              // Score Details Card
-                              _ScoreDetailsCard(result: _examResult!),
-                              const SizedBox(height: 16),
-                              
-                              // Exam Date Card
-                              _ExamDateCard(date: _examResult!.examDate ?? 'N/A'),
-                              const SizedBox(height: 16),
-                              
-                              // Lecturers Card
-                              _LecturersCard(lecturers: _examResult!.lecturers ?? []),
-                            ],
-                          ),
-                        ),
-                        
-                        const SizedBox(height: 20),
-                        // Back Button
-                        Padding(
-                          padding: const EdgeInsets.all(16.0),
-                          child: SizedBox(
-                            width: double.infinity,
-                            height: 50,
-                            child: ElevatedButton(
-                              onPressed: () => Navigator.pop(context),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: AppColors.primaryBlue,
-                                foregroundColor: AppColors.white,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(AppSizes.radiusM),
-                                ),
-                              ),
-                              child: Text(
-                                'Back',
-                                style: TextStyle(
-                                  fontSize: AppSizes.fontSizeM,
-                                  fontWeight: FontWeight.w600,
-                                ),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: 20),
+                    // Back Button
+                    Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: SizedBox(
+                        width: double.infinity,
+                        height: 50,
+                        child: ElevatedButton(
+                          onPressed: () => Navigator.pop(context),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.primaryBlue,
+                            foregroundColor: AppColors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(
+                                AppSizes.radiusM,
                               ),
                             ),
                           ),
+                          child: const Text(
+                            'Back',
+                            style: TextStyle(
+                              fontSize: AppSizes.fontSizeM,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
                         ),
-                        const SizedBox(height: 20),
-                      ],
+                      ),
                     ),
-                  ),
+                    const SizedBox(height: 20),
+                  ],
+                ),
+              ),
       ),
     );
   }
@@ -171,7 +172,11 @@ class _ScoreDetailsCard extends StatelessWidget {
                   color: Color(0xFF2979FF), // Blue icon bg
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.verified, color: Colors.white, size: 20),
+                child: const Icon(
+                  Icons.verified,
+                  color: Colors.white,
+                  size: 20,
+                ),
               ),
               const SizedBox(width: 12),
               const Text(
@@ -185,19 +190,29 @@ class _ScoreDetailsCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 20),
-          _buildRow('Total Mark:', '${result.totalMark ?? 100}', const Color(0xFF2979FF)),
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 12.0),
-            child: Divider(height: 1, color: Color(0xFFEEEEEE)),
+          _buildRow(
+            'Total Mark:',
+            '${result.totalMark ?? 100}',
+            const Color(0xFF2979FF),
           ),
-          _buildRow('Max Score:', '${result.maxScore ?? 100}', const Color(0xFF2979FF)),
           const Padding(
             padding: EdgeInsets.symmetric(vertical: 12.0),
             child: Divider(height: 1, color: Color(0xFFEEEEEE)),
           ),
           _buildRow(
-            'Midterm Exam:', 
-            result.midtermScore != null ? '${result.midtermScore} (${result.midtermScore}%)' : 'N/A', 
+            'Max Score:',
+            '${result.maxScore ?? 100}',
+            const Color(0xFF2979FF),
+          ),
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 12.0),
+            child: Divider(height: 1, color: Color(0xFFEEEEEE)),
+          ),
+          _buildRow(
+            'Midterm Exam:',
+            result.midtermScore != null
+                ? '${result.midtermScore} (${result.midtermScore}%)'
+                : 'N/A',
             const Color(0xFF00C853), // Green for exam scores
           ),
           const Padding(
@@ -205,8 +220,10 @@ class _ScoreDetailsCard extends StatelessWidget {
             child: Divider(height: 1, color: Color(0xFFEEEEEE)),
           ),
           _buildRow(
-            'Final Exam:', 
-            result.finalScore != null ? '${result.finalScore} (${result.finalScore}%)' : 'N/A', 
+            'Final Exam:',
+            result.finalScore != null
+                ? '${result.finalScore} (${result.finalScore}%)'
+                : 'N/A',
             const Color(0xFF00C853), // Green
           ),
         ],
@@ -218,13 +235,7 @@ class _ScoreDetailsCard extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 14,
-            color: Colors.grey[600],
-          ),
-        ),
+        Text(label, style: TextStyle(fontSize: 14, color: Colors.grey[600])),
         Text(
           value,
           style: TextStyle(
@@ -260,7 +271,11 @@ class _ExamDateCard extends StatelessWidget {
               color: Color(0xFFEC407A), // Pink icon bg
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.calendar_today, color: Colors.white, size: 20),
+            child: const Icon(
+              Icons.calendar_today,
+              color: Colors.white,
+              size: 20,
+            ),
           ),
           const SizedBox(width: 16),
           Column(
@@ -268,10 +283,7 @@ class _ExamDateCard extends StatelessWidget {
             children: [
               Text(
                 'Exam Date',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey[700],
-                ),
+                style: TextStyle(fontSize: 12, color: Colors.grey[700]),
               ),
               const SizedBox(height: 4),
               Text(
@@ -336,7 +348,10 @@ class _LecturersCard extends StatelessWidget {
             runSpacing: 8.0,
             children: lecturers.map((lecturer) {
               return Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(20),

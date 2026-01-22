@@ -24,9 +24,13 @@ class AttendanceToggleButton extends StatelessWidget {
         children: [
           AnimatedAlign(
             duration: const Duration(milliseconds: 200),
-            alignment: isMonthView ? Alignment.centerLeft : Alignment.centerRight,
+            alignment: isMonthView
+                ? Alignment.centerLeft
+                : Alignment.centerRight,
             child: Container(
-              width: MediaQuery.of(context).size.width * 0.45, // Roughly half minus padding
+              width:
+                  MediaQuery.of(context).size.width *
+                  0.45, // Roughly half minus padding
               decoration: BoxDecoration(
                 color: AppColors.primaryBlue,
                 borderRadius: BorderRadius.circular(25),

@@ -7,10 +7,7 @@ import '../model/dashboard_models.dart';
 class TaskCardItem extends StatelessWidget {
   final TaskCard task;
 
-  const TaskCardItem({
-    super.key,
-    required this.task,
-  });
+  const TaskCardItem({super.key, required this.task});
 
   @override
   Widget build(BuildContext context) {
@@ -81,11 +78,7 @@ class TaskCardItem extends StatelessWidget {
               ),
               borderRadius: BorderRadius.circular(AppSizes.radiusS),
             ),
-            child: Icon(
-              iconData,
-              color: iconColor,
-              size: AppSizes.iconSizeM,
-            ),
+            child: Icon(iconData, color: iconColor, size: AppSizes.iconSizeM),
           ),
           SizedBox(width: AppSizes.spacingM),
           Expanded(

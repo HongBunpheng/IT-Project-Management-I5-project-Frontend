@@ -4,10 +4,7 @@ class AuthRepository {
   final AuthService _auth = AuthService();
 
   Future<Map<String, dynamic>> login(String emailOrPhone, String password) {
-    return _auth.login(
-      emailOrPhone: emailOrPhone,
-      password: password,
-    );
+    return _auth.login(emailOrPhone: emailOrPhone, password: password);
   }
 
   Future<Map<String, dynamic>> register({

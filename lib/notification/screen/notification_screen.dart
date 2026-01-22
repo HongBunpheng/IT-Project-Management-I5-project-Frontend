@@ -4,6 +4,8 @@ import '../../configs/app_sizes.dart';
 import '../../configs/app_theme_extension.dart';
 import '../../utils/responsive.dart';
 import '../../utils/localization_helper.dart';
+import '../../services/notification_service.dart';
+import '../../utils/json_utils.dart';
 import '../widget/notification_item.dart';
 import '../model/notification_model.dart';
 
@@ -17,37 +19,52 @@ class NotificationView extends StatefulWidget {
 class _NotificationViewState extends State<NotificationView> {
   String _selectedFilter = 'All'; // All, Unread, Read
 
-  final List<NotificationModel> _allNotifications = [
-    NotificationModel(
-      id: '1',
-      senderName: 'Kadorukuriki',
-      message: 'you have time schedule for today',
-      timestamp: 'Last Wednesday at 9:42 AM',
-      isRead: false,
-      hasActions: true,
-    ),
-    NotificationModel(
-      id: '2',
-      senderName: 'Kadorukuriki',
-      message: 'scan successful!!!',
-      timestamp: 'Last Wednesday at 9:42 AM',
-      isRead: true,
-    ),
-    NotificationModel(
-      id: '3',
-      senderName: 'Kadorukuriki',
-      message: 'attached a file to submit',
-      timestamp: 'Last Wednesday at 9:42 AM',
-      isRead: true,
-    ),
-    NotificationModel(
-      id: '4',
-      senderName: 'Kadorukuriki',
-      message: 'attached a file to submit',
-      timestamp: 'Last Wednesday at 9:42 AM',
-      isRead: false,
-    ),
-  ];
+  final NotificationService _notificationService = NotificationService();
+  bool _isLoading = true;
+  List<NotificationModel> _allNotifications = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadNotifications();
+  }
+
+  Future<void> _loadNotifications() async {
+    setState(() => _isLoading = true);
+    try {
+      final raw = await _notificationService.list();
+      if (!mounted) return;
+      setState(() {
+        _allNotifications = raw.map(_mapToModel).toList();
+        _isLoading = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+    }
+  }
+
+  NotificationModel _mapToModel(Map<String, dynamic> json) {
+    final id = readString(json, const ['id']) ?? '';
+    final title = readString(json, const ['title', 'type']) ?? 'Notification';
+    final message = readString(json, const ['message', 'body']) ?? '';
+    final isRead =
+        (json['is_read'] == true) ||
+        (json['isRead'] == true) ||
+        (readInt(json, const ['is_read']) ?? 0) == 1;
+
+    final timestamp =
+        readString(json, const ['created_at', 'createdAt', 'date']) ?? '';
+
+    return NotificationModel(
+      id: id,
+      senderName: title,
+      message: message,
+      timestamp: timestamp,
+      isRead: isRead,
+      hasActions: false,
+    );
+  }
 
   List<NotificationModel> get _filteredNotifications {
     switch (_selectedFilter) {
@@ -59,7 +76,6 @@ class _NotificationViewState extends State<NotificationView> {
         return _allNotifications;
     }
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -121,38 +137,56 @@ class _NotificationViewState extends State<NotificationView> {
             ),
             SizedBox(height: AppSizes.spacingM),
             Expanded(
-              child: ListView.builder(
-                itemCount: _filteredNotifications.length,
-                itemBuilder: (context, index) {
-                  final notification = _filteredNotifications[index];
-                  return NotificationItem(
-                    notification: notification,
-                    onDelete: () {
-                      setState(() {
-                        _allNotifications.removeWhere((n) => n.id == notification.id);
-                      });
-                    },
-                    onDecline: () {
-                      // Simple mark as read/declined
-                      setState(() {
-                        _allNotifications[index] = NotificationModel(
-                          id: notification.id,
-                          senderName: notification.senderName,
-                          message: notification.message,
-                          timestamp: notification.timestamp,
-                          isRead: true,
-                          hasActions: notification.hasActions,
-                        );
-                      });
-                    },
-                  );
-                },
-              ),
+              child: _isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : RefreshIndicator(
+                      onRefresh: _loadNotifications,
+                      child: ListView.builder(
+                        itemCount: _filteredNotifications.length,
+                        itemBuilder: (context, index) {
+                          final notification = _filteredNotifications[index];
+                          return NotificationItem(
+                            notification: notification,
+                            onDelete: () {
+                              setState(() {
+                                _allNotifications.removeWhere(
+                                  (n) => n.id == notification.id,
+                                );
+                              });
+                            },
+                            onDecline: () async {
+                              try {
+                                await _notificationService.markAsRead(
+                                  notification.id,
+                                );
+                              } catch (_) {
+                                // ignore
+                              }
+                              if (!mounted) return;
+                              setState(() {
+                                final idx = _allNotifications.indexWhere(
+                                  (n) => n.id == notification.id,
+                                );
+                                if (idx != -1) {
+                                  _allNotifications[idx] = NotificationModel(
+                                    id: notification.id,
+                                    senderName: notification.senderName,
+                                    message: notification.message,
+                                    timestamp: notification.timestamp,
+                                    isRead: true,
+                                    hasActions: notification.hasActions,
+                                  );
+                                }
+                              });
+                            },
+                          );
+                        },
+                      ),
+                    ),
             ),
           ],
         ),
       ),
-
     );
   }
 
@@ -172,7 +206,9 @@ class _NotificationViewState extends State<NotificationView> {
             style: TextStyle(
               fontSize: AppSizes.fontSizeM,
               fontWeight: FontWeight.w600,
-              color: isSelected ? AppColors.primaryBlue : AppColors.textSecondary,
+              color: isSelected
+                  ? AppColors.primaryBlue
+                  : AppColors.textSecondary,
             ),
           ),
           const SizedBox(height: AppSizes.spacingXS),

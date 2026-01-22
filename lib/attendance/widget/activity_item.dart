@@ -30,10 +30,17 @@ class ActivityItemWidget extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                type == "checkin" 
+                type == "checkin"
                     ? safeLocaleString(context, 'check_in', fallback: 'Check In')
-                    : safeLocaleString(context, 'check_out', fallback: 'Check Out'),
-                style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500)
+                    : safeLocaleString(
+                        context,
+                        'check_out',
+                        fallback: 'Check Out',
+                      ),
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
               Text(date, style: const TextStyle(color: Colors.grey)),
             ],
@@ -42,7 +49,13 @@ class ActivityItemWidget extends StatelessWidget {
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              Text(time, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+              Text(
+                time,
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
               Text(statusMessage, style: const TextStyle(color: Colors.grey)),
             ],
           ),

@@ -4,6 +4,7 @@ import '../../configs/app_sizes.dart';
 import '../../configs/app_theme_extension.dart';
 import '../../utils/responsive.dart';
 import 'leave_request_detail_screen.dart';
+import '../../services/leave_request_service.dart';
 
 class ApplyLeaveScreen extends StatefulWidget {
   const ApplyLeaveScreen({super.key});
@@ -17,6 +18,8 @@ class _ApplyLeaveScreenState extends State<ApplyLeaveScreen> {
   DateTime? _endDate;
   final TextEditingController _reasonController = TextEditingController();
   bool _isHalfDay = false;
+  bool _isSubmitting = false;
+  final LeaveRequestService _leaveService = LeaveRequestService();
 
   @override
   void initState() {
@@ -24,6 +27,12 @@ class _ApplyLeaveScreenState extends State<ApplyLeaveScreen> {
     // Pre-fill dates as per screenshot for demo
     _startDate = DateTime(2025, 1, 2);
     _endDate = DateTime(2025, 1, 2);
+  }
+
+  @override
+  void dispose() {
+    _reasonController.dispose();
+    super.dispose();
   }
 
   Future<void> _selectDate(bool isStart) async {
@@ -37,7 +46,9 @@ class _ApplyLeaveScreenState extends State<ApplyLeaveScreen> {
 
     final DateTime? picked = await showDatePicker(
       context: context,
-      initialDate: isStart ? (_startDate ?? DateTime.now()) : (_endDate ?? DateTime.now()),
+      initialDate: isStart
+          ? (_startDate ?? DateTime.now())
+          : (_endDate ?? DateTime.now()),
       firstDate: DateTime(2020),
       lastDate: DateTime(2030),
       builder: (context, child) {
@@ -45,7 +56,6 @@ class _ApplyLeaveScreenState extends State<ApplyLeaveScreen> {
         return Theme(
           data: baseTheme.copyWith(
             colorScheme: colorScheme,
-            dialogBackgroundColor: AppColors.white,
             datePickerTheme: DatePickerThemeData(
               backgroundColor: AppColors.white,
               headerBackgroundColor: AppColors.primaryBlue,
@@ -55,9 +65,16 @@ class _ApplyLeaveScreenState extends State<ApplyLeaveScreen> {
                     ? AppColors.white
                     : AppColors.textPrimary,
               ),
-              yearForegroundColor: WidgetStateProperty.all(AppColors.textPrimary),
-              todayForegroundColor: WidgetStateProperty.all(AppColors.primaryBlue),
-              todayBorder: const BorderSide(color: AppColors.primaryBlue, width: 1),
+              yearForegroundColor: WidgetStateProperty.all(
+                AppColors.textPrimary,
+              ),
+              todayForegroundColor: WidgetStateProperty.all(
+                AppColors.primaryBlue,
+              ),
+              todayBorder: const BorderSide(
+                color: AppColors.primaryBlue,
+                width: 1,
+              ),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(AppSizes.radiusL),
               ),
@@ -71,6 +88,7 @@ class _ApplyLeaveScreenState extends State<ApplyLeaveScreen> {
                 ),
               ),
             ),
+            dialogTheme: DialogThemeData(backgroundColor: AppColors.white),
           ),
           child: child ?? const SizedBox.shrink(),
         );
@@ -89,8 +107,28 @@ class _ApplyLeaveScreenState extends State<ApplyLeaveScreen> {
 
   String _formatDate(DateTime? date) {
     if (date == null) return "Select Date";
-    final months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+    final months = [
+      'January',
+      'February',
+      'March',
+      'April',
+      'May',
+      'June',
+      'July',
+      'August',
+      'September',
+      'October',
+      'November',
+      'December',
+    ];
     return '${date.day} ${months[date.month - 1]} ${date.year}';
+  }
+
+  String? _isoDate(DateTime? date) {
+    if (date == null) return null;
+    final mm = date.month.toString().padLeft(2, '0');
+    final dd = date.day.toString().padLeft(2, '0');
+    return '${date.year}-$mm-$dd';
   }
 
   @override
@@ -98,6 +136,7 @@ class _ApplyLeaveScreenState extends State<ApplyLeaveScreen> {
     final horizontalPadding = Responsive.getPadding(context);
     final appColors = context.appColors;
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
 
     return Scaffold(
       backgroundColor: isDark ? const Color(0xFF121212) : AppColors.white,
@@ -138,202 +177,314 @@ class _ApplyLeaveScreenState extends State<ApplyLeaveScreen> {
         centerTitle: false,
       ),
       body: SafeArea(
-        child: Padding(
-          padding: EdgeInsets.symmetric(
-            horizontal: horizontalPadding,
-            vertical: AppSizes.spacingL,
+        child: AnimatedPadding(
+          duration: const Duration(milliseconds: 150),
+          curve: Curves.easeOut,
+          padding: EdgeInsets.only(
+            left: horizontalPadding,
+            right: horizontalPadding,
+            top: AppSizes.spacingL,
+            bottom: AppSizes.spacingL + bottomInset,
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Start Date
-              const Text(
-                'Start Date',
-                style: TextStyle(
-                  fontSize: AppSizes.fontSizeS,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-              const SizedBox(height: 8),
-              GestureDetector(
-                onTap: () => _selectDate(true),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                  decoration: BoxDecoration(
-                    border: Border.all(color: Colors.grey.shade300),
-                    borderRadius: BorderRadius.circular(AppSizes.radiusS),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              Expanded(
+                child: SingleChildScrollView(
+                  keyboardDismissBehavior:
+                      ScrollViewKeyboardDismissBehavior.onDrag,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        _formatDate(_startDate),
-                        style: const TextStyle(fontSize: AppSizes.fontSizeM, color: AppColors.textPrimary),
+                      // Start Date
+                      const Text(
+                        'Start Date',
+                        style: TextStyle(
+                          fontSize: AppSizes.fontSizeS,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textPrimary,
+                        ),
                       ),
-                      Icon(Icons.calendar_today_outlined, size: AppSizes.iconSizeM, color: Colors.grey.shade400),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              // End Date
-              const Text(
-                'End Date',
-                style: TextStyle(
-                  fontSize: AppSizes.fontSizeS,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-              const SizedBox(height: 8),
-              GestureDetector(
-                onTap: () => _selectDate(false),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                  decoration: BoxDecoration(
-                    border: Border.all(color: Colors.grey.shade300),
-                    borderRadius: BorderRadius.circular(AppSizes.radiusS),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        _formatDate(_endDate),
-                        style: const TextStyle(fontSize: AppSizes.fontSizeM, color: AppColors.textPrimary),
-                      ),
-                      Icon(Icons.calendar_today_outlined, size: AppSizes.iconSizeM, color: Colors.grey.shade400),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              // Reason
-              const Text(
-                'Reason for leave',
-                style: TextStyle(
-                  fontSize: AppSizes.fontSizeS,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Container(
-                 height: 150,
-                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                 decoration: BoxDecoration(
-                    border: Border.all(color: Colors.grey.shade300),
-                    borderRadius: BorderRadius.circular(AppSizes.radiusS),
-                  ),
-                 child: TextField(
-                   controller: _reasonController,
-                   maxLines: null,
-                   decoration: const InputDecoration(
-                     border: InputBorder.none,
-                     hintText: 'Enter reason...',
-                     hintStyle: TextStyle(color: Colors.grey),
-                   ),
-                 ),
-              ),
-              const SizedBox(height: 16),
-              
-              // Half Day Checkbox
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    'Is half day leave?',
-                    style: TextStyle(
-                      fontSize: AppSizes.fontSizeM,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                   SizedBox(
-                    height: 24,
-                    width: 24,
-                     child: Checkbox(
-                      value: _isHalfDay,
-                      onChanged: (val) {
-                        setState(() => _isHalfDay = val ?? false);
-                      },
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
-                      side: BorderSide(color: Colors.grey.shade400),
-                     ),
-                   )
-                ],
-              ),
-              
-              const Spacer(),
-
-              // Buttons
-              Row(
-                children: [
-                   Expanded(
-                     child: SizedBox(
-                       height: 50,
-                       child: OutlinedButton(
-                         onPressed: () => Navigator.pop(context),
-                         style: OutlinedButton.styleFrom(
-                           side: BorderSide(color: Colors.grey.shade300),
-                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppSizes.radiusM)),
-                         ),
-                         child: const Text(
-                           'Cancel',
-                           style: TextStyle(
-                             color: AppColors.textPrimary,
-                             fontWeight: FontWeight.w600,
-                             fontSize: AppSizes.fontSizeM,
-                           ),
-                         ),
-                       ),
-                     ),
-                   ),
-                   const SizedBox(width: 16),
-                   Expanded(
-                     child: SizedBox(
-                        height: 50,
-                        child: ElevatedButton(
-                          onPressed: () {
-                            showModalBottomSheet(
-                              context: context,
-                              isScrollControlled: true,
-                              backgroundColor: Colors.transparent,
-                              builder: (context) {
-                                return FractionallySizedBox(
-                                  heightFactor: 0.7, // 70% height sheet
-                                  child: ClipRRect(
-                                    borderRadius: const BorderRadius.vertical(top: Radius.circular(AppSizes.radiusL)),
-                                    child: LeaveRequestDetailScreen(
-                                      startDate: _formatDate(_startDate),
-                                      endDate: _formatDate(_endDate),
-                                      reason: _reasonController.text.isNotEmpty
-                                          ? _reasonController.text
-                                          : "I am not able to join due i have a bad health.",
-                                      isHalfDay: _isHalfDay,
-                                    ),
-                                  ),
-                                );
-                              },
-                            );
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primaryBlue, // Dark Blue
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppSizes.radiusM)),
+                      const SizedBox(height: 8),
+                      GestureDetector(
+                        onTap: () => _selectDate(true),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 14,
                           ),
-                          child: const Text(
-                            'Apply',
+                          decoration: BoxDecoration(
+                            border: Border.all(color: Colors.grey.shade300),
+                            borderRadius: BorderRadius.circular(
+                              AppSizes.radiusS,
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                _formatDate(_startDate),
+                                style: const TextStyle(
+                                  fontSize: AppSizes.fontSizeM,
+                                  color: AppColors.textPrimary,
+                                ),
+                              ),
+                              Icon(
+                                Icons.calendar_today_outlined,
+                                size: AppSizes.iconSizeM,
+                                color: Colors.grey.shade400,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+
+                      // End Date
+                      const Text(
+                        'End Date',
+                        style: TextStyle(
+                          fontSize: AppSizes.fontSizeS,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      GestureDetector(
+                        onTap: () => _selectDate(false),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 14,
+                          ),
+                          decoration: BoxDecoration(
+                            border: Border.all(color: Colors.grey.shade300),
+                            borderRadius: BorderRadius.circular(
+                              AppSizes.radiusS,
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                _formatDate(_endDate),
+                                style: const TextStyle(
+                                  fontSize: AppSizes.fontSizeM,
+                                  color: AppColors.textPrimary,
+                                ),
+                              ),
+                              Icon(
+                                Icons.calendar_today_outlined,
+                                size: AppSizes.iconSizeM,
+                                color: Colors.grey.shade400,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Reason
+                      const Text(
+                        'Reason for leave',
+                        style: TextStyle(
+                          fontSize: AppSizes.fontSizeS,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Container(
+                        constraints: const BoxConstraints(minHeight: 120),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 12,
+                        ),
+                        decoration: BoxDecoration(
+                          border: Border.all(color: Colors.grey.shade300),
+                          borderRadius: BorderRadius.circular(AppSizes.radiusS),
+                        ),
+                        child: TextField(
+                          controller: _reasonController,
+                          minLines: 3,
+                          maxLines: 6,
+                          decoration: const InputDecoration(
+                            border: InputBorder.none,
+                            hintText: 'Enter reason...',
+                            hintStyle: TextStyle(color: Colors.grey),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Half Day Checkbox
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text(
+                            'Is half day leave?',
                             style: TextStyle(
-                              color: AppColors.white,
-                              fontWeight: FontWeight.w600,
                               fontSize: AppSizes.fontSizeM,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                          SizedBox(
+                            height: 24,
+                            width: 24,
+                            child: Checkbox(
+                              value: _isHalfDay,
+                              onChanged: (val) {
+                                setState(() => _isHalfDay = val ?? false);
+                              },
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              side: BorderSide(color: Colors.grey.shade400),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+                  ),
+                ),
+              ),
+
+              // Buttons (fixed at bottom; scroll when keyboard opens)
+              Row(
+                children: [
+                  Expanded(
+                    child: SizedBox(
+                      height: 50,
+                      child: OutlinedButton(
+                        onPressed: () => Navigator.pop(context),
+                        style: OutlinedButton.styleFrom(
+                          side: BorderSide(color: Colors.grey.shade300),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(
+                              AppSizes.radiusM,
                             ),
                           ),
                         ),
-                     ),
-                   ),
+                        child: const Text(
+                          'Cancel',
+                          style: TextStyle(
+                            color: AppColors.textPrimary,
+                            fontWeight: FontWeight.w600,
+                            fontSize: AppSizes.fontSizeM,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: SizedBox(
+                      height: 50,
+                      child: ElevatedButton(
+                        onPressed: _isSubmitting
+                            ? null
+                            : () async {
+                                final startIso = _isoDate(_startDate);
+                                final endIso = _isoDate(_endDate);
+                                final reason = _reasonController.text.trim();
+
+                                if (startIso == null || endIso == null) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Please select dates'),
+                                    ),
+                                  );
+                                  return;
+                                }
+                                if (reason.isEmpty) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Please enter a reason'),
+                                    ),
+                                  );
+                                  return;
+                                }
+
+                                setState(() => _isSubmitting = true);
+                                final res = await _leaveService.create(
+                                  reason: reason,
+                                  startDateIso: startIso,
+                                  endDateIso: endIso,
+                                );
+                                if (!context.mounted) return;
+                                setState(() => _isSubmitting = false);
+                                if (!context.mounted) return;
+
+                                final statusCode = res['statusCode'];
+                                if (statusCode is int &&
+                                    statusCode >= 200 &&
+                                    statusCode < 300) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Leave request submitted'),
+                                    ),
+                                  );
+                                } else {
+                                  final body = res['body'];
+                                  final message = body is Map
+                                      ? (body['message']?.toString() ??
+                                            'Failed to submit')
+                                      : 'Failed to submit';
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(content: Text(message)),
+                                  );
+                                }
+
+                                if (!context.mounted) return;
+                                showModalBottomSheet(
+                                  context: context,
+                                  isScrollControlled: true,
+                                  backgroundColor: Colors.transparent,
+                                  builder: (context) {
+                                    return FractionallySizedBox(
+                                      heightFactor: 0.7, // 70% height sheet
+                                      child: ClipRRect(
+                                        borderRadius:
+                                            const BorderRadius.vertical(
+                                              top: Radius.circular(
+                                                AppSizes.radiusL,
+                                              ),
+                                            ),
+                                        child: LeaveRequestDetailScreen(
+                                          startDate: _formatDate(_startDate),
+                                          endDate: _formatDate(_endDate),
+                                          reason:
+                                              _reasonController.text.isNotEmpty
+                                              ? _reasonController.text
+                                              : "I am not able to join due i have a bad health.",
+                                          isHalfDay: _isHalfDay,
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                );
+                              },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primaryBlue, // Dark Blue
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(
+                              AppSizes.radiusM,
+                            ),
+                          ),
+                        ),
+                        child: const Text(
+                          'Apply',
+                          style: TextStyle(
+                            color: AppColors.white,
+                            fontWeight: FontWeight.w600,
+                            fontSize: AppSizes.fontSizeM,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
                 ],
               ),
               const SizedBox(height: 16),

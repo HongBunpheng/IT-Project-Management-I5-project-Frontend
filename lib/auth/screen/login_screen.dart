@@ -4,6 +4,8 @@ import '../../utils/validators.dart';
 import '../../utils/localization_helper.dart';
 import 'signup_screen.dart';
 import '../../dashboard/screen/dashboard_screen.dart';
+import '../repository/auth_repository.dart';
+import '../../utils/helpers.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -16,36 +18,44 @@ class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailOrPhoneController = TextEditingController();
   final _passwordController = TextEditingController();
-  // bool _isLoading = false;
+  bool _isLoading = false;
   bool _hidePassword = true;
 
-  // final AuthRepository _authRepo = AuthRepository();
+  final AuthRepository _authRepo = AuthRepository();
 
-  // Future<void> _handleLogin() async {
-  //   if (!_formKey.currentState!.validate()) return;
+  @override
+  void dispose() {
+    _emailOrPhoneController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
 
-  //   setState(() => _isLoading = true);
+  Future<void> _handleLogin() async {
+    if (!_formKey.currentState!.validate()) return;
 
-  //   final res = await _authRepo.login(
-  //     _emailOrPhoneController.text.trim(),
-  //     _passwordController.text.trim(),
-  //   );
+    setState(() => _isLoading = true);
 
-  //   setState(() => _isLoading = false);
+    final res = await _authRepo.login(
+      _emailOrPhoneController.text.trim(),
+      _passwordController.text.trim(),
+    );
 
-  //   if (!mounted) return;
+    if (!mounted) return;
+    setState(() => _isLoading = false);
 
-  //   if (res["statusCode"] == 200) {
-  //     Helpers.showSnackBar(context, "Login Successful!");
-
-  //     Navigator.pushReplacement(
-  //       context,
-  //       MaterialPageRoute(builder: (_) => const DashboardView()),
-  //     );
-  //   } else {
-  //     Helpers.showSnackBar(context, res["body"]["message"] ?? "Login failed");
-  //   }
-  // }
+    final statusCode = res['statusCode'];
+    if (statusCode is int && statusCode >= 200 && statusCode < 300) {
+      Helpers.showSnackBar(context, "Login Successful!");
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const DashboardView()),
+      );
+    } else {
+      final body = res['body'];
+      final message = body is Map ? body['message'] : null;
+      Helpers.showSnackBar(context, message?.toString() ?? "Login failed");
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -224,28 +234,29 @@ class _LoginScreenState extends State<LoginScreen> {
                               width: double.infinity,
                               height: 50,
                               child: ElevatedButton(
-                                onPressed: () {
-                                  Navigator.pushReplacement(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (_) => const DashboardView(),
-                                    ),
-                                  );
-                                },
+                                onPressed: _isLoading ? null : _handleLogin,
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: AppColors.primaryBlue,
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(12),
                                   ),
                                 ),
-                                child: Text(
-                                  safeLocaleString(context, 'log_in', fallback: 'Log In'),
-                                  style: const TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.w600,
-                                    color: Colors.white,
-                                  ),
-                                ),
+                                child: _isLoading
+                                    ? const CircularProgressIndicator(
+                                        color: Colors.white,
+                                      )
+                                    : Text(
+                                        safeLocaleString(
+                                          context,
+                                          'log_in',
+                                          fallback: 'Log In',
+                                        ),
+                                        style: const TextStyle(
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.w600,
+                                          color: Colors.white,
+                                        ),
+                                      ),
                               ),
                             ),
 

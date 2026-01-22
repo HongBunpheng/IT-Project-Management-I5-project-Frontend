@@ -11,26 +11,61 @@ class AttendanceHistoryScreen extends StatefulWidget {
   const AttendanceHistoryScreen({super.key});
 
   @override
-  State<AttendanceHistoryScreen> createState() => _AttendanceHistoryScreenState();
+  State<AttendanceHistoryScreen> createState() =>
+      _AttendanceHistoryScreenState();
 }
 
 class _AttendanceHistoryScreenState extends State<AttendanceHistoryScreen> {
   bool _isMonthView = true;
   DateTime _focusedDate = DateTime(2025, 10, 1); // Mock start date as Oct 2025
-  
+
   // Mock Data for Month View
   final List<String> _weekDays = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
   final List<CalendarDay> _monthData = [];
 
   // Mock Data for Week View
   final List<WeeklyAttendanceRecord> _weekData = [
-    WeeklyAttendanceRecord(date: "01/6", status: AttendanceStatus.present, timeRange: "8:00 - 17:00"),
-    WeeklyAttendanceRecord(date: "02/6", status: AttendanceStatus.present, timeRange: "8:00 - 17:00", additionalInfo: "HC"),
-    WeeklyAttendanceRecord(date: "03/6", status: AttendanceStatus.present, timeRange: "8:00 - 17:00", additionalInfo: "HC"),
-    WeeklyAttendanceRecord(date: "04/6", status: AttendanceStatus.absent, timeRange: "8:00 - 17:00", additionalInfo: "HC"),
-    WeeklyAttendanceRecord(date: "05/6", status: AttendanceStatus.absent, timeRange: "8:00 - 17:00", additionalInfo: "HC"),
-    WeeklyAttendanceRecord(date: "06/6", status: AttendanceStatus.absent, timeRange: "8:00 - 17:00", additionalInfo: "HC"),
-    WeeklyAttendanceRecord(date: "07/6", status: AttendanceStatus.nonWorking, timeRange: "8:00 - 17:00", additionalInfo: "HC"),
+    WeeklyAttendanceRecord(
+      date: "01/6",
+      status: AttendanceStatus.present,
+      timeRange: "8:00 - 17:00",
+    ),
+    WeeklyAttendanceRecord(
+      date: "02/6",
+      status: AttendanceStatus.present,
+      timeRange: "8:00 - 17:00",
+      additionalInfo: "HC",
+    ),
+    WeeklyAttendanceRecord(
+      date: "03/6",
+      status: AttendanceStatus.present,
+      timeRange: "8:00 - 17:00",
+      additionalInfo: "HC",
+    ),
+    WeeklyAttendanceRecord(
+      date: "04/6",
+      status: AttendanceStatus.absent,
+      timeRange: "8:00 - 17:00",
+      additionalInfo: "HC",
+    ),
+    WeeklyAttendanceRecord(
+      date: "05/6",
+      status: AttendanceStatus.absent,
+      timeRange: "8:00 - 17:00",
+      additionalInfo: "HC",
+    ),
+    WeeklyAttendanceRecord(
+      date: "06/6",
+      status: AttendanceStatus.absent,
+      timeRange: "8:00 - 17:00",
+      additionalInfo: "HC",
+    ),
+    WeeklyAttendanceRecord(
+      date: "07/6",
+      status: AttendanceStatus.nonWorking,
+      timeRange: "8:00 - 17:00",
+      additionalInfo: "HC",
+    ),
   ];
 
   @override
@@ -43,20 +78,26 @@ class _AttendanceHistoryScreenState extends State<AttendanceHistoryScreen> {
     // Generate some mock data similar to the screenshot
     // Starting with empty cells for offset
     for (int i = 0; i < 2; i++) {
-        // Placeholder for offset
-        _monthData.add(CalendarDay(date: DateTime(2025, 10, 0), status: AttendanceStatus.noData)); 
+      // Placeholder for offset
+      _monthData.add(
+        CalendarDay(
+          date: DateTime(2025, 10, 0),
+          status: AttendanceStatus.noData,
+        ),
+      );
     }
-    
+
     // Days 1-31
     for (int i = 1; i <= 31; i++) {
       AttendanceStatus status = AttendanceStatus.present;
-      if (i % 7 == 0 || i % 7 == 6) status = AttendanceStatus.nonWorking; // Weekend
-      if (i == 16 || i == 17 || i == 18 || i == 24) status = AttendanceStatus.absent;
-      
-      _monthData.add(CalendarDay(
-        date: DateTime(2025, 10, i),
-        status: status,
-      ));
+      if (i % 7 == 0 || i % 7 == 6) {
+        status = AttendanceStatus.nonWorking; // Weekend
+      }
+      if (i == 16 || i == 17 || i == 18 || i == 24) {
+        status = AttendanceStatus.absent;
+      }
+
+      _monthData.add(CalendarDay(date: DateTime(2025, 10, i), status: status));
     }
   }
 
@@ -82,9 +123,11 @@ class _AttendanceHistoryScreenState extends State<AttendanceHistoryScreen> {
       initialDate: _focusedDate,
       firstDate: DateTime(2020),
       lastDate: DateTime(2030),
-      initialDatePickerMode: _isMonthView ? DatePickerMode.year : DatePickerMode.day,
+      initialDatePickerMode: _isMonthView
+          ? DatePickerMode.year
+          : DatePickerMode.day,
     );
-    
+
     if (picked != null && picked != _focusedDate) {
       setState(() {
         _focusedDate = picked;
@@ -95,20 +138,48 @@ class _AttendanceHistoryScreenState extends State<AttendanceHistoryScreen> {
   String _getDateRangeText() {
     if (_isMonthView) {
       // Format: "October 2025"
-      final months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+      final months = [
+        'January',
+        'February',
+        'March',
+        'April',
+        'May',
+        'June',
+        'July',
+        'August',
+        'September',
+        'October',
+        'November',
+        'December',
+      ];
       return '${months[_focusedDate.month - 1]}    ${_focusedDate.year}';
     } else {
       // Format: "Week of Oct 1/6 - 7/6"
       // Calculate week start (Monday) and end (Sunday)
       // For simplicity just using focusedDate as mock "start of week" logic or just static string with date
-      final start = _focusedDate.subtract(Duration(days: _focusedDate.weekday - 1));
+      final start = _focusedDate.subtract(
+        Duration(days: _focusedDate.weekday - 1),
+      );
       final end = start.add(const Duration(days: 6));
       return 'Week of ${_getMonthShort(start.month)} ${start.day}/${start.month} - ${end.day}/${end.month}';
     }
   }
 
   String _getMonthShort(int month) {
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
     return months[month - 1];
   }
 
@@ -171,13 +242,16 @@ class _AttendanceHistoryScreenState extends State<AttendanceHistoryScreen> {
                 },
               ),
               const SizedBox(height: 24),
-              
+
               // Date Navigation Header
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   IconButton(
-                    icon: const Icon(Icons.arrow_back_ios, size: 14), // Smaller icon
+                    icon: const Icon(
+                      Icons.arrow_back_ios,
+                      size: 14,
+                    ), // Smaller icon
                     onPressed: () => _changeDate(navBack: true),
                     padding: EdgeInsets.zero,
                     constraints: const BoxConstraints(),
@@ -187,7 +261,10 @@ class _AttendanceHistoryScreenState extends State<AttendanceHistoryScreen> {
                     child: GestureDetector(
                       onTap: _handleDateSelection,
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6), // Reduced padding
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 6,
+                        ), // Reduced padding
                         decoration: BoxDecoration(
                           color: Colors.grey[100],
                           borderRadius: BorderRadius.circular(8),
@@ -207,7 +284,10 @@ class _AttendanceHistoryScreenState extends State<AttendanceHistoryScreen> {
                   ),
                   const SizedBox(width: 8), // Reduced spacing
                   IconButton(
-                    icon: const Icon(Icons.arrow_forward_ios, size: 14), // Smaller icon
+                    icon: const Icon(
+                      Icons.arrow_forward_ios,
+                      size: 14,
+                    ), // Smaller icon
                     onPressed: () => _changeDate(navBack: false),
                     padding: EdgeInsets.zero,
                     constraints: const BoxConstraints(),
@@ -215,7 +295,7 @@ class _AttendanceHistoryScreenState extends State<AttendanceHistoryScreen> {
                 ],
               ),
               const SizedBox(height: 24),
-              
+
               // Content
               Expanded(
                 child: _isMonthView ? _buildMonthView() : _buildWeekView(),
@@ -259,10 +339,17 @@ class _AttendanceHistoryScreenState extends State<AttendanceHistoryScreen> {
         // Weekday Headers
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: _weekDays.map((day) => Text(
-            day,
-            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-          )).toList(),
+          children: _weekDays
+              .map(
+                (day) => Text(
+                  day,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
+                ),
+              )
+              .toList(),
         ),
         const SizedBox(height: 16),
         // Divider
@@ -280,7 +367,9 @@ class _AttendanceHistoryScreenState extends State<AttendanceHistoryScreen> {
             ),
             itemBuilder: (context, index) {
               final day = _monthData[index];
-              if (day.status == AttendanceStatus.noData) return const SizedBox.shrink();
+              if (day.status == AttendanceStatus.noData) {
+                return const SizedBox.shrink();
+              }
               return CalendarDayCell(day: day);
             },
           ),
@@ -288,7 +377,10 @@ class _AttendanceHistoryScreenState extends State<AttendanceHistoryScreen> {
         const SizedBox(height: 10),
         const Align(
           alignment: Alignment.centerLeft,
-          child: Text("Frame", style: TextStyle(color: Colors.grey, fontSize: 16)),
+          child: Text(
+            "Frame",
+            style: TextStyle(color: Colors.grey, fontSize: 16),
+          ),
         ),
       ],
     );

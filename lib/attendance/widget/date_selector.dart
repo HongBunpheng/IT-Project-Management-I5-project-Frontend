@@ -33,7 +33,9 @@ class DateSelector extends StatelessWidget {
                 color: isActive ? AppColors.primaryBlue : Colors.white,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  color: isActive ? AppColors.primaryBlue : Colors.grey.shade300,
+                  color: isActive
+                      ? AppColors.primaryBlue
+                      : Colors.grey.shade300,
                 ),
               ),
               child: Column(

@@ -4,21 +4,25 @@ import '../model/exam_model.dart';
 class SubjectScoreRow extends StatelessWidget {
   final SubjectScore subject;
 
-  const SubjectScoreRow({
-    super.key,
-    required this.subject,
-  });
+  const SubjectScoreRow({super.key, required this.subject});
 
   @override
   Widget build(BuildContext context) {
     // Determine status color based on score
     final bool isPassed = subject.score >= 50;
-    final Color statusColor = isPassed ? const Color(0xFF4CAF50) : const Color(0xFFE53935);
-    final Color statusBgColor = isPassed ? const Color(0xFFE8F5E9) : const Color(0xFFFFEBEE);
+    final Color statusColor = isPassed
+        ? const Color(0xFF4CAF50)
+        : const Color(0xFFE53935);
+    final Color statusBgColor = isPassed
+        ? const Color(0xFFE8F5E9)
+        : const Color(0xFFFFEBEE);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12.0),
-      padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 16.0), // Reduced vertical padding
+      padding: const EdgeInsets.symmetric(
+        horizontal: 20.0,
+        vertical: 16.0,
+      ), // Reduced vertical padding
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
@@ -73,7 +77,9 @@ class SubjectScoreRow extends StatelessWidget {
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
                   color: statusBgColor,
-                  borderRadius: BorderRadius.circular(8), // Reduced radius slightly
+                  borderRadius: BorderRadius.circular(
+                    8,
+                  ), // Reduced radius slightly
                 ),
                 child: Text(
                   _calculateGrade(subject.score),
