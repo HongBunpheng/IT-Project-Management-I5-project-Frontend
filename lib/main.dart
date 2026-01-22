@@ -4,6 +4,8 @@ import 'package:flutter_locales/flutter_locales.dart';
 import 'configs/app_colors.dart';
 import 'configs/app_theme_extension.dart';
 import 'auth/screen/login_screen.dart';
+import 'dashboard/screen/dashboard_screen.dart';
+import 'services/token_storage.dart';
 import 'utils/snackbar.dart';
 
 void main() async {
@@ -70,10 +72,60 @@ class _MyAppState extends State<MyApp> {
               Locale('km', ''),
             ],
             localizationsDelegates: Locales.delegates,
-            home: const LoginScreen(),
+            home: const AuthCheckScreen(),
             debugShowCheckedModeBanner: false,
           );
         },
+      ),
+    );
+  }
+}
+
+/// Screen that checks if user is already logged in
+class AuthCheckScreen extends StatefulWidget {
+  const AuthCheckScreen({super.key});
+
+  @override
+  State<AuthCheckScreen> createState() => _AuthCheckScreenState();
+}
+
+class _AuthCheckScreenState extends State<AuthCheckScreen> {
+  final TokenStorage _tokenStorage = TokenStorage();
+
+  @override
+  void initState() {
+    super.initState();
+    _checkAuthStatus();
+  }
+
+  Future<void> _checkAuthStatus() async {
+    final token = await _tokenStorage.readToken();
+    
+    if (!mounted) return;
+
+    // If token exists, user is logged in - go to dashboard
+    // Otherwise, show login screen
+    if (token != null && token.isNotEmpty) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const DashboardView()),
+      );
+    } else {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const LoginScreen()),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppColors.primaryBlue,
+      body: const Center(
+        child: CircularProgressIndicator(
+          color: AppColors.white,
+        ),
       ),
     );
   }

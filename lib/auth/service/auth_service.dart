@@ -44,6 +44,13 @@ class AuthService {
       final token = _extractToken(decoded);
       if (token != null && token.isNotEmpty) {
         await _tokenStorage.writeToken(token);
+        // Store email/phone securely for remember me functionality
+        if (identifier.contains('@')) {
+          await _tokenStorage.writeEmail(identifier);
+        } else {
+          await _tokenStorage.writePhone(identifier);
+        }
+        await _tokenStorage.writeLastLogin(DateTime.now());
         final storedFromResponse = await _storeUserContextFromDecoded(decoded);
         if (!storedFromResponse) {
           await _storeUserContext();
@@ -99,6 +106,10 @@ class AuthService {
       final token = _extractToken(decoded);
       if (token != null && token.isNotEmpty) {
         await _tokenStorage.writeToken(token);
+        // Store email/phone securely for remember me functionality
+        await _tokenStorage.writeEmail(emailTrimmed);
+        await _tokenStorage.writePhone(phoneTrimmed);
+        await _tokenStorage.writeLastLogin(DateTime.now());
         final storedFromResponse = await _storeUserContextFromDecoded(decoded);
         if (!storedFromResponse) {
           await _storeUserContext();
@@ -120,8 +131,8 @@ class AuthService {
     } catch (_) {
       // ignore
     } finally {
-      await _tokenStorage.clearToken();
-      await _tokenStorage.clearUserContext();
+      // Clear all secure storage on logout
+      await _tokenStorage.clearAll();
     }
   }
 
