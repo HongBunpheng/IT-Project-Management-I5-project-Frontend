@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../../configs/app_colors.dart';
 import '../../configs/app_sizes.dart';
 import '../../utils/responsive.dart';
-import '../../custom_bottom_navigation_bar.dart';
+import '../../widgets/common/custom_bottom_navigation_bar.dart';
 import '../../dashboard/screen/dashboard_screen.dart';
 import '../../exam/screen/exam_scores_screen.dart';
 import '../../timetable/screen/timetable_screen.dart';
@@ -10,6 +10,7 @@ import 'qr_scanner_screen.dart';
 import '../../services/attendance_service.dart';
 import '../../services/token_storage.dart';
 import '../../utils/json_utils.dart';
+import '../../account/screen/profile_screen.dart';
 
 class CheckInScreen extends StatefulWidget {
   const CheckInScreen({super.key});
@@ -196,6 +197,10 @@ class _CheckInScreenState extends State<CheckInScreen> {
               );
               break;
             case 4:
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (_) => const ProfileScreen()),
+              );
               break;
           }
         },

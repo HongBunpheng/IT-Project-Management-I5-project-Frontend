@@ -4,7 +4,7 @@ import '../../configs/app_sizes.dart';
 import '../widget/date_selector.dart';
 import '../widget/stat_card.dart';
 import '../widget/activity_item.dart';
-import '../../app_header.dart';
+import '../../widgets/common/app_header.dart';
 import '../../services/attendance_service.dart';
 import '../../services/token_storage.dart';
 import '../../utils/json_utils.dart';

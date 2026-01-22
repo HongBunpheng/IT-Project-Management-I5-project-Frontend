@@ -3,14 +3,15 @@ import '../../configs/app_colors.dart';
 import '../../configs/app_sizes.dart';
 import '../model/exam_model.dart';
 import '../service/exam_service.dart';
-import '../../app_header.dart';
-import '../../custom_bottom_navigation_bar.dart';
+import '../../widgets/common/app_header.dart';
+import '../../widgets/common/custom_bottom_navigation_bar.dart';
 import '../../attendance/screen/attendance_screen.dart';
 import 'scores_summary_screen.dart';
 import 'exam_detail_screen.dart';
 import '../../dashboard/screen/dashboard_screen.dart';
 import '../../timetable/screen/timetable_screen.dart';
 import '../../checkin/screen/checkin_screen.dart';
+import '../../account/screen/profile_screen.dart';
 
 class ExamScoresScreen extends StatefulWidget {
   const ExamScoresScreen({super.key});
@@ -72,12 +73,12 @@ class _ExamScoresScreenState extends State<ExamScoresScreen> {
           MaterialPageRoute(builder: (_) => const TimetableView()),
         );
         break;
-      // case 4:
-      //   Navigator.pushReplacement(
-      //     context,
-      //     MaterialPageRoute(builder: (_) => const SettingsScreen()),
-      //   );
-      //   break;
+      case 4:
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const ProfileScreen()),
+        );
+        break;
       default:
         break;
     }

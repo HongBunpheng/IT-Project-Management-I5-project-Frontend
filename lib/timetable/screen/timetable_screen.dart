@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../configs/app_colors.dart';
 import '../../configs/app_sizes.dart';
-import '../../custom_bottom_navigation_bar.dart';
+import '../../widgets/common/custom_bottom_navigation_bar.dart';
 import '../../dashboard/screen/dashboard_screen.dart';
 import '../widget/date_picker_widget.dart';
 import '../widget/intake_progress_widget.dart';
@@ -13,6 +13,7 @@ import '../../checkin/screen/checkin_screen.dart';
 import '../../services/timetable_service.dart';
 import '../../services/token_storage.dart';
 import '../../utils/json_utils.dart';
+import '../../account/screen/profile_screen.dart';
 
 class TimetableView extends StatefulWidget {
   const TimetableView({super.key});
@@ -188,12 +189,12 @@ class _TimetableViewState extends State<TimetableView> {
         // Already on timetable
         setState(() => _currentBottomNavIndex = 3);
         break;
-      // case 4:
-      //   Navigator.pushReplacement(
-      //     context,
-      //     MaterialPageRoute(builder: (_) => const SettingsScreen()),
-      //   );
-      //   break;
+      case 4:
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const ProfileScreen()),
+        );
+        break;
     }
   }
 

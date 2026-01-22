@@ -4,7 +4,7 @@ import '../service/exam_service.dart';
 import '../widget/rounded_donut_chart.dart';
 import '../widget/subject_score_row.dart';
 import '../widget/scores_table_header.dart';
-import '../../app_header.dart';
+import '../../widgets/common/app_header.dart';
 import '../../configs/app_colors.dart';
 import '../../configs/app_sizes.dart';
 

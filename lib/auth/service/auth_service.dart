@@ -44,7 +44,10 @@ class AuthService {
       final token = _extractToken(decoded);
       if (token != null && token.isNotEmpty) {
         await _tokenStorage.writeToken(token);
-        await _storeUserContext();
+        final storedFromResponse = await _storeUserContextFromDecoded(decoded);
+        if (!storedFromResponse) {
+          await _storeUserContext();
+        }
       }
 
       return {'statusCode': res.statusCode, 'body': decoded};
@@ -96,7 +99,10 @@ class AuthService {
       final token = _extractToken(decoded);
       if (token != null && token.isNotEmpty) {
         await _tokenStorage.writeToken(token);
-        await _storeUserContext();
+        final storedFromResponse = await _storeUserContextFromDecoded(decoded);
+        if (!storedFromResponse) {
+          await _storeUserContext();
+        }
       }
 
       return {'statusCode': res.statusCode, 'body': decoded};
@@ -155,6 +161,29 @@ class AuthService {
     if (groupId != null) {
       await _tokenStorage.writeGroupId(groupId);
     }
+  }
+
+  Future<bool> _storeUserContextFromDecoded(dynamic decoded) async {
+    final map = asMap(decoded);
+    if (map == null) return false;
+
+    final data = asMap(map['data']) ?? map;
+    final user = asMap(data['user']) ?? asMap(map['user']) ?? data;
+
+    final userId = readString(user, const ['id', 'user_id', 'userId']);
+    final groupId = readString(user, const ['group_id', 'groupId']);
+
+    var wroteAny = false;
+    if (userId != null && userId.isNotEmpty) {
+      await _tokenStorage.writeUserId(userId);
+      wroteAny = true;
+    }
+    if (groupId != null && groupId.isNotEmpty) {
+      await _tokenStorage.writeGroupId(groupId);
+      wroteAny = true;
+    }
+
+    return wroteAny;
   }
 
   dynamic _safeJsonDecode(String body) {

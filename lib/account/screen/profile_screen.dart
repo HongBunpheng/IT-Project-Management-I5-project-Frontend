@@ -2,34 +2,49 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../configs/app_colors.dart';
-import '../../custom_bottom_navigation_bar.dart';
+import '../../widgets/common/custom_bottom_navigation_bar.dart';
 import '../../dashboard/screen/dashboard_screen.dart';
 import '../../checkin/screen/checkin_screen.dart';
 import '../../exam/screen/exam_scores_screen.dart';
 import '../../timetable/screen/timetable_screen.dart';
 import '../../auth/screen/login_screen.dart';
+import '../../auth/service/auth_service.dart';
+import '../../services/token_storage.dart';
+import '../../utils/json_utils.dart';
 import 'personal_information_screen.dart';
 import 'academic_records_screen.dart';
 
-class SettingsScreen extends StatefulWidget {
-  const SettingsScreen({super.key});
+class ProfileScreen extends StatefulWidget {
+  const ProfileScreen({super.key});
 
   @override
-  State<SettingsScreen> createState() => _SettingsScreenState();
+  State<ProfileScreen> createState() => _ProfileScreenState();
 }
 
-class _SettingsScreenState extends State<SettingsScreen> {
-  int _currentBottomNavIndex = 4; // Settings is index 4
+class _ProfileScreenState extends State<ProfileScreen> {
+  int _currentBottomNavIndex = 4; // Profile is index 4
   bool _notificationsEnabled = true;
   bool _darkModeEnabled = false;
   File? _profileImage;
   final ScrollController _scrollController = ScrollController();
   bool _isScrolled = false;
+  bool _isLoadingMe = true;
+  bool _isLoggingOut = false;
+
+  final AuthService _authService = AuthService();
+  final TokenStorage _tokenStorage = TokenStorage();
+
+  String? _name;
+  String? _email;
+  String? _userId;
+  String? _groupId;
+  String? _major;
 
   @override
   void initState() {
     super.initState();
     _scrollController.addListener(_onScroll);
+    _loadProfile();
   }
 
   @override
@@ -48,6 +63,66 @@ class _SettingsScreenState extends State<SettingsScreen> {
         });
       }
     }
+  }
+
+  Future<void> _loadProfile() async {
+    try {
+      final storedUserId = await _tokenStorage.readUserId();
+      final storedGroupId = await _tokenStorage.readGroupId();
+      if (mounted) {
+        setState(() {
+          _userId = storedUserId;
+          _groupId = storedGroupId;
+        });
+      }
+
+      final decoded = await _authService.me();
+      if (!mounted || decoded == null) return;
+
+      final data = asMap(decoded['data']) ?? decoded;
+      final user = asMap(data['user']) ?? data;
+
+      setState(() {
+        _name =
+            (readString(user, const ['name', 'full_name', 'fullName']) ??
+                    readString(user, const ['email']))
+                ?.toString();
+        _email = readString(user, const ['email']);
+        _userId =
+            readString(user, const ['id', 'user_id', 'userId']) ?? _userId;
+        _groupId =
+            readString(user, const ['group_id', 'groupId']) ?? _groupId;
+        _major =
+            readString(user, const [
+              'major',
+              'department',
+              'faculty',
+              'course',
+              'program',
+            ]);
+      });
+    } catch (_) {
+      // ignore
+    } finally {
+      if (mounted) setState(() => _isLoadingMe = false);
+    }
+  }
+
+  Future<void> _handleLogout() async {
+    if (_isLoggingOut) return;
+    setState(() => _isLoggingOut = true);
+    try {
+      await _authService.logout();
+    } finally {
+      if (mounted) setState(() => _isLoggingOut = false);
+    }
+
+    if (!mounted) return;
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (_) => const LoginScreen()),
+      (route) => false,
+    );
   }
 
   Future<void> _pickImage() async {
@@ -330,9 +405,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                     const SizedBox(height: 20),
                     // Name
-                    const Text(
-                      'Sok Dara',
-                      style: TextStyle(
+                    Text(
+                      _name ?? (_isLoadingMe ? 'Loading...' : 'Student'),
+                      style: const TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
                         color: AppColors.textPrimary,
@@ -341,7 +416,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     const SizedBox(height: 8),
                     // ID and Major
                     Text(
-                      'ID: ITC-2024-001',
+                      'ID: ${_userId ?? '-'}',
                       style: TextStyle(
                         fontSize: 14,
                         color: AppColors.textSecondary,
@@ -349,7 +424,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'Computer Science - Year 3',
+                      _major ?? _email ?? (_groupId != null ? 'Group: $_groupId' : '-'),
                       style: TextStyle(
                         fontSize: 14,
                         color: AppColors.textSecondary,
@@ -649,16 +724,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       const SizedBox(width: 12),
                       Expanded(
                         child: ElevatedButton(
-                          onPressed: () {
-                            Navigator.pop(context); // Close dialog
-                            Navigator.pushAndRemoveUntil(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => const LoginScreen(),
-                              ),
-                              (route) => false, // Remove all previous routes
-                            );
-                          },
+                          onPressed: _isLoggingOut
+                              ? null
+                              : () {
+                                  Navigator.pop(context);
+                                  _handleLogout();
+                                },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppColors.error,
                             foregroundColor: AppColors.white,
@@ -667,9 +738,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               borderRadius: BorderRadius.circular(12),
                             ),
                           ),
-                          child: const Text(
-                            'Logout',
-                            style: TextStyle(
+                          child: Text(
+                            _isLoggingOut ? 'Logging out...' : 'Logout',
+                            style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w600,
                             ),
