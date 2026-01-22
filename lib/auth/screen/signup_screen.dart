@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../configs/app_colors.dart';
+import '../../utils/localization_helper.dart';
 import 'login_screen.dart';
 import '../repository/auth_repository.dart';
 import '../../utils/helpers.dart';
@@ -42,7 +43,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
     if (!mounted) return;
 
     if (res["statusCode"] == 200) {
-      Helpers.showSnackBar(context, "Register Successful!");
+      Helpers.showSnackBar(context, safeLocaleString(context, 'register_successful', fallback: "Register Successful!"));
 
       Navigator.pushReplacement(
         context,
@@ -51,7 +52,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
     } else {
       Helpers.showSnackBar(
         context,
-        res["body"]["message"] ?? "Registration failed",
+        res["body"]["message"] ?? safeLocaleString(context, 'registration_failed', fallback: "Registration failed"),
       );
     }
   }
@@ -108,7 +109,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       // TITLE
                       Center(
                         child: Text(
-                          "Sign Up",
+                          safeLocaleString(context, 'signup', fallback: 'Sign Up'),
                           style: TextStyle(
                             fontSize: 26,
                             fontWeight: FontWeight.bold,
@@ -125,33 +126,33 @@ class _SignUpScreenState extends State<SignUpScreen> {
                           children: [
                             // FULL NAME FIELD
                             buildField(
-                              label: "Full Name",
+                              label: safeLocaleString(context, 'full_name', fallback: 'Full Name'),
                               controller: _nameController,
-                              hint: "Enter your name",
+                              hint: safeLocaleString(context, 'enter_your_name', fallback: 'Enter your name'),
                               validator: Validators.validateName,
                             ),
 
                             // EMAIL
                             buildField(
-                              label: "Email",
+                              label: safeLocaleString(context, 'email', fallback: 'Email'),
                               controller: _emailController,
-                              hint: "Enter your email",
+                              hint: safeLocaleString(context, 'enter_your_email', fallback: 'Enter your email'),
                               validator: Validators.validateEmail,
                             ),
 
                             // PHONE
                             buildField(
-                              label: "Phone Number",
+                              label: safeLocaleString(context, 'phone_number', fallback: 'Phone Number'),
                               controller: _phoneController,
-                              hint: "Enter your phone",
+                              hint: safeLocaleString(context, 'enter_your_phone', fallback: 'Enter your phone'),
                               validator: Validators.validatePhone,
                             ),
 
                             // PASSWORD
                             buildField(
-                              label: "Set Password",
+                              label: safeLocaleString(context, 'password', fallback: 'Password'),
                               controller: _passwordController,
-                              hint: "Enter your password",
+                              hint: safeLocaleString(context, 'enter_password', fallback: 'Enter your password'),
                               obscure: _hidePassword,
                               validator: Validators.validatePassword,
                               toggle: () {
@@ -177,9 +178,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                     ? const CircularProgressIndicator(
                                         color: Colors.white,
                                       )
-                                    : const Text(
-                                        "Register",
-                                        style: TextStyle(
+                                    : Text(
+                                        safeLocaleString(context, 'sign_up', fallback: 'Register'),
+                                        style: const TextStyle(
                                           fontSize: 18,
                                           fontWeight: FontWeight.w600,
                                           color: Colors.white,
@@ -194,7 +195,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                             Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                const Text("Already have an account? "),
+                                Text(safeLocaleString(context, 'already_have_account', fallback: "Already have an account? ")),
                                 TextButton(
                                   onPressed: () {
                                     Navigator.push(
@@ -204,9 +205,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                       ),
                                     );
                                   },
-                                  child: const Text(
-                                    "Login",
-                                    style: TextStyle(
+                                  child: Text(
+                                    safeLocaleString(context, 'login', fallback: 'Login'),
+                                    style: const TextStyle(
                                       color: AppColors.primaryBlue,
                                     ),
                                   ),

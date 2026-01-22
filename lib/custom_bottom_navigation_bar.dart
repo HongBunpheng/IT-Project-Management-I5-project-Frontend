@@ -19,7 +19,6 @@ class CustomBottomNavigationBar extends StatelessWidget {
     
     return Container(
       margin: EdgeInsets.only(
-        top: margin,
         left: margin,
         right: margin,
         bottom: margin,

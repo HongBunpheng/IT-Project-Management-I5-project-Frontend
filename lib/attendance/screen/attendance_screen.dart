@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../configs/app_colors.dart';
 import '../../configs/app_sizes.dart';
+import '../../utils/localization_helper.dart';
 import '../widget/date_selector.dart';
 import '../widget/stat_card.dart';
 import '../widget/activity_item.dart';
@@ -28,15 +29,16 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
     return Scaffold(
-      backgroundColor: Colors.white,
-      body: SafeArea(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const AppHeader(
-              
-            ),
+      backgroundColor: isDark ? const Color(0xFF121212) : Colors.white,
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const AppHeader(
+            
+          ),
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.all(24.0),
@@ -63,10 +65,10 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                         padding: const EdgeInsets.symmetric(vertical: 4.0, horizontal: 8.0),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
-                          children: const [
+                          children: [
                             Text(
-                              "Attendance sheet",
-                              style: TextStyle(
+                              safeLocaleString(context, 'attendance_sheet', fallback: "Attendance sheet"),
+                              style: const TextStyle(
                                 fontSize: 16, // Adjusted to fit both
                                 fontWeight: FontWeight.bold,
                                 color: Color(0xFF154888), // Dark Blue
@@ -101,10 +103,10 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                         padding: const EdgeInsets.symmetric(vertical: 4.0, horizontal: 8.0),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
-                          children: const [
+                          children: [
                             Text(
-                              "Leave Request",
-                              style: TextStyle(
+                              safeLocaleString(context, 'leave_request', fallback: "Leave Request"),
+                              style: const TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
                                 color: Colors.red,
@@ -135,9 +137,9 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
               ),
                     const SizedBox(height: 30),
 
-                    const Text(
-                      "Check in today",
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+                    Text(
+                      safeLocaleString(context, 'check_in_today', fallback: "Check in today"),
+                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
                     ),
                     const SizedBox(height: 20),
 
@@ -157,10 +159,10 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                                 ),
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
-                                  children: const [
-                                    Icon(Icons.login, size: 18, color: Colors.blue),
-                                    SizedBox(width: 8),
-                                    Text("Check In", style: TextStyle(fontWeight: FontWeight.w500)),
+                                  children: [
+                                    const Icon(Icons.login, size: 18, color: Colors.blue),
+                                    const SizedBox(width: 8),
+                                    Text(safeLocaleString(context, 'check_in', fallback: "Check In"), style: const TextStyle(fontWeight: FontWeight.w500)),
                                   ],
                                 ),
                               ),
@@ -190,10 +192,10 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                                 ),
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
-                                  children: const [
-                                    Icon(Icons.logout, size: 18, color: Colors.blue),
-                                    SizedBox(width: 8),
-                                    Text("Check Out", style: TextStyle(fontWeight: FontWeight.w500)),
+                                  children: [
+                                    const Icon(Icons.logout, size: 18, color: Colors.blue),
+                                    const SizedBox(width: 8),
+                                    Text(safeLocaleString(context, 'check_out', fallback: "Check Out"), style: const TextStyle(fontWeight: FontWeight.w500)),
                                   ],
                                 ),
                               ),
@@ -203,9 +205,9 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                               ),
                               const SizedBox(height: 4),
-                              const Text(
-                                "On time",
-                                style: TextStyle(color: Colors.grey, fontSize: 13),
+                              Text(
+                                safeLocaleString(context, 'on_time', fallback: "On time"),
+                                style: const TextStyle(color: Colors.grey, fontSize: 13),
                               ),
                             ],
                           ),
@@ -216,19 +218,19 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
 
                     // Stats Row
                     Row(
-                      children: const [
+                      children: [
                         StatCard(
-                          title: "Attendance",
+                          title: safeLocaleString(context, 'attendance', fallback: "Attendance"),
                           value: "28",
-                          subtitle: "day of month",
+                          subtitle: safeLocaleString(context, 'day_of_month', fallback: "day of month"),
                           icon: Icons.calendar_today,
                           iconColor: Colors.blue,
                         ),
-                        SizedBox(width: 16),
+                        const SizedBox(width: 16),
                         StatCard(
-                          title: "Total number day\nof month",
+                          title: safeLocaleString(context, 'total_number_day_of_month', fallback: "Total number day\nof month"),
                           value: "22",
-                          subtitle: "day of month",
+                          subtitle: safeLocaleString(context, 'day_of_month', fallback: "day of month"),
                           icon: Icons.calendar_month,
                           iconColor: Colors.blue,
                         ),
@@ -240,9 +242,9 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text(
-                          "Your activity",
-                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                        Text(
+                          safeLocaleString(context, 'your_activity', fallback: "Your activity"),
+                          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                         ),
                         TextButton(
                           onPressed: () {
@@ -251,7 +253,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                               MaterialPageRoute(builder: (context) => const AttendanceHistoryScreen()),
                             );
                           },
-                          child: const Text("See All"),
+                          child: Text(safeLocaleString(context, 'see_all', fallback: "See All")),
                         ),
                       ],
                     ),
@@ -285,7 +287,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                                   ),
                                 ),
                                 child: Text(
-                                  'Back',
+                                  safeLocaleString(context, 'back', fallback: 'Back'),
                                   style: TextStyle(
                                     fontSize: AppSizes.fontSizeM,
                                     fontWeight: FontWeight.w600,
@@ -300,7 +302,6 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
             ),
           ],
         ),
-      ),
     );
   }
 }

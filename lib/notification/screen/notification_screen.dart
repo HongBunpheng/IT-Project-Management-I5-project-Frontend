@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import '../../configs/app_colors.dart';
 import '../../configs/app_sizes.dart';
+import '../../configs/app_theme_extension.dart';
 import '../../utils/responsive.dart';
+import '../../utils/localization_helper.dart';
 import '../widget/notification_item.dart';
 import '../model/notification_model.dart';
 
@@ -62,9 +64,11 @@ class _NotificationViewState extends State<NotificationView> {
   @override
   Widget build(BuildContext context) {
     final horizontalPadding = Responsive.getPadding(context);
+    final appColors = context.appColors;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: AppColors.white,
+      backgroundColor: isDark ? const Color(0xFF121212) : AppColors.white,
       body: SafeArea(
         child: Column(
           children: [
@@ -76,27 +80,27 @@ class _NotificationViewState extends State<NotificationView> {
               child: Row(
                 children: [
                   IconButton(
-                    icon: const Icon(
+                    icon: Icon(
                       Icons.arrow_back_ios,
                       size: AppSizes.iconSizeM,
-                      color: AppColors.black,
+                      color: appColors.textPrimary,
                     ),
                     onPressed: () => Navigator.pop(context),
                   ),
                   Expanded(
                     child: Text(
-                      'Notifications',
+                      safeLocaleString(context, 'notifications', fallback: 'Notifications'),
                       style: TextStyle(
                         fontSize: AppSizes.fontSizeXL,
                         fontWeight: FontWeight.bold,
-                        color: AppColors.textPrimary,
+                        color: appColors.textPrimary,
                       ),
                     ),
                   ),
                   IconButton(
-                    icon: const Icon(
+                    icon: Icon(
                       Icons.more_vert,
-                      color: AppColors.textPrimary,
+                      color: appColors.textPrimary,
                     ),
                     onPressed: () {},
                   ),
@@ -154,6 +158,7 @@ class _NotificationViewState extends State<NotificationView> {
 
   Widget _buildFilterTab(String filter) {
     final isSelected = _selectedFilter == filter;
+    final filterKey = filter.toLowerCase();
     return GestureDetector(
       onTap: () {
         setState(() {
@@ -163,7 +168,7 @@ class _NotificationViewState extends State<NotificationView> {
       child: Column(
         children: [
           Text(
-            filter,
+            safeLocaleString(context, filterKey, fallback: filter),
             style: TextStyle(
               fontSize: AppSizes.fontSizeM,
               fontWeight: FontWeight.w600,

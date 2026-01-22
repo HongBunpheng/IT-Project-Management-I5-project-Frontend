@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../configs/app_colors.dart';
 import '../../configs/app_sizes.dart';
 import '../../utils/responsive.dart';
+import '../../utils/localization_helper.dart';
 import '../model/timetable_task_model.dart';
 
 class TaskCompletionDialog extends StatelessWidget {
@@ -63,7 +64,7 @@ class TaskCompletionDialog extends StatelessWidget {
             // Question
             Center(
               child: Text(
-                'Did you complete your schedule?',
+                safeLocaleString(context, 'did_you_complete_schedule', fallback: 'Did you complete your schedule?'),
                 style: TextStyle(
                   fontSize: AppSizes.fontSizeL,
                   fontWeight: FontWeight.w600,
@@ -97,7 +98,7 @@ class TaskCompletionDialog extends StatelessWidget {
                 SizedBox(width: AppSizes.spacingS),
                 Expanded(
                   child: Text(
-                    'Scheduled for ${task.time}, Wednesday',
+                    '${safeLocaleString(context, 'scheduled_for', fallback: 'Scheduled for')} ${task.time}, Wednesday',
                     style: TextStyle(
                       fontSize: AppSizes.fontSizeM,
                       color: AppColors.primaryBlue,
@@ -145,7 +146,7 @@ class TaskCompletionDialog extends StatelessWidget {
                       ),
                     ),
                     child: Text(
-                      'Yes',
+                      safeLocaleString(context, 'yes', fallback: 'Yes'),
                       style: TextStyle(
                         fontSize: AppSizes.fontSizeM,
                         fontWeight: FontWeight.w600,
@@ -168,7 +169,7 @@ class TaskCompletionDialog extends StatelessWidget {
                       ),
                     ),
                     child: Text(
-                      'No',
+                      safeLocaleString(context, 'no', fallback: 'No'),
                       style: TextStyle(
                         fontSize: AppSizes.fontSizeM,
                         fontWeight: FontWeight.w600,

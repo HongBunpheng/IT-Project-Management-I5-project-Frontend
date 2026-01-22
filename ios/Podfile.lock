@@ -55,11 +55,15 @@ PODS:
   - nanopb/decode (2.30910.0)
   - nanopb/encode (2.30910.0)
   - PromisesObjC (2.4.0)
+  - shared_preferences_foundation (0.0.1):
+    - Flutter
+    - FlutterMacOS
 
 DEPENDENCIES:
   - Flutter (from `Flutter`)
   - image_picker_ios (from `.symlinks/plugins/image_picker_ios/ios`)
   - mobile_scanner (from `.symlinks/plugins/mobile_scanner/ios`)
+  - shared_preferences_foundation (from `.symlinks/plugins/shared_preferences_foundation/darwin`)
 
 SPEC REPOS:
   trunk:
@@ -83,6 +87,8 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/image_picker_ios/ios"
   mobile_scanner:
     :path: ".symlinks/plugins/mobile_scanner/ios"
+  shared_preferences_foundation:
+    :path: ".symlinks/plugins/shared_preferences_foundation/darwin"
 
 SPEC CHECKSUMS:
   Flutter: cabc95a1d2626b1b06e7179b784ebcf0c0cde467
@@ -100,6 +106,7 @@ SPEC CHECKSUMS:
   mobile_scanner: 92e8812bf22a8f84131e2a7f9d0f44dad1a4742b
   nanopb: 438bc412db1928dac798aa6fd75726007be04262
   PromisesObjC: f5707f49cb48b9636751c5b2e7d227e43fba9f47
+  shared_preferences_foundation: 7036424c3d8ec98dfe75ff1667cb0cd531ec82bb
 
 PODFILE CHECKSUM: 3c63482e143d1b91d2d2560aee9fb04ecc74ac7e
 

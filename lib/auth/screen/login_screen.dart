@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../configs/app_colors.dart';
 import '../../utils/validators.dart';
+import '../../utils/localization_helper.dart';
 import 'signup_screen.dart';
 import '../../dashboard/screen/dashboard_screen.dart';
 
@@ -48,8 +49,10 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
     return Scaffold(
-      backgroundColor: Colors.white, // bottom should be white like Figma
+      backgroundColor: isDark ? const Color(0xFF121212) : Colors.white, // bottom should be white like Figma
       body: Stack(
         children: [
           ClipPath(
@@ -95,7 +98,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     children: [
                       Center(
                         child: Text(
-                          "Login",
+                          safeLocaleString(context, 'login', fallback: 'Login'),
                           style: TextStyle(
                             fontSize: 26,
                             fontWeight: FontWeight.bold,
@@ -114,9 +117,9 @@ class _LoginScreenState extends State<LoginScreen> {
                             Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Text(
-                                  "Email or Phone number",
-                                  style: TextStyle(
+                                Text(
+                                  safeLocaleString(context, 'email_or_phone', fallback: 'Email or Phone number'),
+                                  style: const TextStyle(
                                     fontSize: 14,
                                     color: Colors.grey,
                                     fontWeight: FontWeight.w500,
@@ -161,9 +164,9 @@ class _LoginScreenState extends State<LoginScreen> {
                             Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Text(
-                                  "Password",
-                                  style: TextStyle(
+                                Text(
+                                  safeLocaleString(context, 'password', fallback: 'Password'),
+                                  style: const TextStyle(
                                     fontSize: 14,
                                     color: Colors.grey,
                                     fontWeight: FontWeight.w500,
@@ -235,9 +238,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                     borderRadius: BorderRadius.circular(12),
                                   ),
                                 ),
-                                child: const Text(
-                                  "Log In",
-                                  style: TextStyle(
+                                child: Text(
+                                  safeLocaleString(context, 'log_in', fallback: 'Log In'),
+                                  style: const TextStyle(
                                     fontSize: 18,
                                     fontWeight: FontWeight.w600,
                                     color: Colors.white,
@@ -251,7 +254,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                const Text("Don't have an account? "),
+                                Text(safeLocaleString(context, 'dont_have_account', fallback: "Don't have an account? ")),
                                 TextButton(
                                   onPressed: () {
                                     Navigator.push(
@@ -262,9 +265,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                     );
                                   },
 
-                                  child: const Text(
-                                    "Sign Up",
-                                    style: TextStyle(
+                                  child: Text(
+                                    safeLocaleString(context, 'sign_up', fallback: 'Sign Up'),
+                                    style: const TextStyle(
                                       color: AppColors.primaryBlue,
                                     ),
                                   ),

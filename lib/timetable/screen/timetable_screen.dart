@@ -196,8 +196,10 @@ Navigator.pushReplacement(
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
     return Scaffold(
-      backgroundColor: AppColors.white,
+      backgroundColor: isDark ? const Color(0xFF121212) : AppColors.white,
       body: SafeArea(
         child: Column(
           children: [

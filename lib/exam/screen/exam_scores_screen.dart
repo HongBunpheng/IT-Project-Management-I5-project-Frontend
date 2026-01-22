@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../configs/app_colors.dart';
 import '../../configs/app_sizes.dart';
+import '../../configs/app_theme_extension.dart';
+import '../../utils/localization_helper.dart';
 import '../model/exam_model.dart';
 import '../service/exam_service.dart';
 import '../../app_header.dart';
@@ -77,28 +79,30 @@ class _ExamScoresScreenState extends State<ExamScoresScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final appColors = context.appColors;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
     return Scaffold(
-      backgroundColor: AppColors.white,
-      body: SafeArea(
-        child: _examSummary == null
-            ? const Center(child: CircularProgressIndicator())
-            : Column(
-                children: [
-                  const AppHeader(),
+      backgroundColor: isDark ? const Color(0xFF121212) : AppColors.white,
+      body: _examSummary == null
+          ? const Center(child: CircularProgressIndicator())
+          : Column(
+              children: [
+                const AppHeader(),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        Text( 'Exam Scores', style: TextStyle(
+                        Text( safeLocaleString(context, 'exam_scores', fallback: 'Exam Scores'), style: TextStyle(
                             fontSize: AppSizes.fontSizeM,
                             fontWeight: FontWeight.w600,
-                            color: AppColors.textPrimary,
+                            color: appColors.textPrimary,
                           ),),
-                        Text( 'Average Score: ${_examSummary!.averageScore.toInt()}%', style: const TextStyle(
+                        Text( '${safeLocaleString(context, 'average_score', fallback: 'Average Score')}: ${_examSummary!.averageScore.toInt()}%', style: TextStyle(
                             fontSize: AppSizes.fontSizeM,
                             fontWeight: FontWeight.w600,
-                            color: AppColors.textSecondary,
+                            color: appColors.textSecondary,
                           ),),
                       ],
                     ),
@@ -110,7 +114,7 @@ class _ExamScoresScreenState extends State<ExamScoresScreen> {
                       children: [
                         Expanded(
                           child: _ActionButton(
-                            title: 'Attendance and Leave Request',
+                            title: safeLocaleString(context, 'attendance_and_leave_request', fallback: 'Attendance and Leave Request'),
                             icon: Icons.bar_chart,
                             color: const Color(0xFF42A5F5),
                             gradient: true,
@@ -127,7 +131,7 @@ class _ExamScoresScreenState extends State<ExamScoresScreen> {
                         const SizedBox(width: 12),
                         Expanded(
                           child: _ActionButton(
-                            title: 'Score Summary',
+                            title: safeLocaleString(context, 'score_summary', fallback: 'Score Summary'),
                             icon: Icons.description_outlined,
                             color: const Color(0xFF66BB6A),
                             gradient: true,
@@ -150,16 +154,16 @@ class _ExamScoresScreenState extends State<ExamScoresScreen> {
                     child: Align(
                       alignment: Alignment.centerLeft,
                       child: Row(
-                        children: const [
-                          Icon(
+                        children: [
+                          const Icon(
                             Icons.workspace_premium,
                             color: Color(0xFF5C6BC0),
                             size: 24,
                           ),
-                          SizedBox(width: 8),
+                          const SizedBox(width: 8),
                           Text(
-                            'Exam Results',
-                            style: TextStyle(
+                            safeLocaleString(context, 'exam_results', fallback: 'Exam Results'),
+                            style: const TextStyle(
                               fontSize: 15,
                               fontWeight: FontWeight.bold,
                               color: Color(0xFF1A1F36),
@@ -195,7 +199,6 @@ class _ExamScoresScreenState extends State<ExamScoresScreen> {
                   ),
                 ],
               ),
-      ),
       bottomNavigationBar: CustomBottomNavigationBar(
         currentIndex: _currentBottomNavIndex,
         onTap: _onBottomNavTap,
@@ -356,7 +359,9 @@ class _ActionButton extends StatelessWidget {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          title.startsWith("Attendance") ? "View complete history" : "Detailed analytics",
+                          title.startsWith(safeLocaleString(context, 'attendance', fallback: "Attendance")) 
+                              ? safeLocaleString(context, 'view_complete_history', fallback: "View complete history")
+                              : safeLocaleString(context, 'detailed_analytics', fallback: "Detailed analytics"),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
@@ -455,9 +460,9 @@ class _ExamResultCard extends StatelessWidget {
               elevation: 0,
               minimumSize: const Size(70, 32),
             ),
-            child: const Text(
-              'Preview',
-              style: TextStyle(
+            child: Text(
+              safeLocaleString(context, 'preview', fallback: 'Preview'),
+              style: const TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
               ),

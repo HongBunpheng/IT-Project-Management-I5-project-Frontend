@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import '../../configs/app_colors.dart';
 import '../../configs/app_sizes.dart';
+import '../../configs/app_theme_extension.dart';
 import '../../utils/responsive.dart';
+import '../../utils/localization_helper.dart';
 import '../../app_header.dart';
 import '../../custom_bottom_navigation_bar.dart';
 import '../../timetable/screen/timetable_screen.dart';
@@ -107,14 +109,15 @@ class _DashboardViewState extends State<DashboardView> {
   @override
   Widget build(BuildContext context) {
     final horizontalPadding = Responsive.getPadding(context);
+    final appColors = context.appColors;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: AppColors.white,
-      body: SafeArea(
-        child: Column(
-          children: [
-            // Header
-            AppHeader(
+      backgroundColor: isDark ? const Color(0xFF121212) : AppColors.white,
+      body: Column(
+        children: [
+          // Header
+          AppHeader(
               trailing: IconButton(
                 icon: const Icon(Icons.notifications_outlined),
                 onPressed: () => Navigator.push(
@@ -141,11 +144,11 @@ class _DashboardViewState extends State<DashboardView> {
                       child: Row(
                         children: [
                           Text(
-                            'Exam',
+                            safeLocaleString(context, 'exam', fallback: 'Exam'),
                             style: TextStyle(
                               fontSize: AppSizes.fontSizeXL,
                               fontWeight: FontWeight.bold,
-                              color: AppColors.textPrimary,
+                              color: appColors.textPrimary,
                             ),
                           ),
                           SizedBox(width: AppSizes.spacingS),
@@ -193,11 +196,11 @@ class _DashboardViewState extends State<DashboardView> {
                       child: Row(
                         children: [
                           Text(
-                            'Task',
+                            safeLocaleString(context, 'task', fallback: 'Task'),
                             style: TextStyle(
                               fontSize: AppSizes.fontSizeXL,
                               fontWeight: FontWeight.bold,
-                              color: AppColors.textPrimary,
+                              color: appColors.textPrimary,
                             ),
                           ),
                           SizedBox(width: AppSizes.spacingS),
@@ -241,7 +244,6 @@ class _DashboardViewState extends State<DashboardView> {
             ),
           ],
         ),
-      ),
       bottomNavigationBar: CustomBottomNavigationBar(
         currentIndex: _currentBottomNavIndex,
         onTap: _onBottomNavTap,

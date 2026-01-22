@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'configs/app_colors.dart';
 import 'configs/app_sizes.dart';
+import 'configs/app_theme_extension.dart';
+import 'utils/localization_helper.dart';
 import 'notification/screen/notification_screen.dart';
 
 class AppHeader extends StatelessWidget {
@@ -23,12 +25,30 @@ class AppHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final appColors = context.appColors;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final statusBarHeight = MediaQuery.of(context).padding.top;
+    
     return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSizes.spacingM,
-        vertical: AppSizes.spacingM,
+      padding: EdgeInsets.only(
+        left: AppSizes.spacingM,
+        right: AppSizes.spacingM,
+        bottom: AppSizes.spacingM,
+        top: statusBarHeight + AppSizes.spacingM,
       ),
-      color: AppColors.white,
+      decoration: BoxDecoration(
+        color: isDark 
+            ? AppColors.primaryBlue.withValues(alpha: 0.2)
+            : AppColors.white,
+        border: isDark
+            ? Border(
+                bottom: BorderSide(
+                  color: AppColors.primaryBlue.withValues(alpha: 0.3),
+                  width: 1,
+                ),
+              )
+            : null,
+      ),
       child: Row(
         children: [
           // Profile Picture
@@ -37,7 +57,7 @@ class AppHeader extends StatelessWidget {
             height: 60,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: AppColors.lightGrey,
+              color: appColors.lightGrey,
               image: profileImageUrl != null
                   ? DecorationImage(
                       image: NetworkImage(profileImageUrl!),
@@ -49,7 +69,7 @@ class AppHeader extends StatelessWidget {
                 ? Icon(
                     Icons.person,
                     size: 30,
-                    color: AppColors.textSecondary,
+                    color: appColors.textSecondary,
                   )
                 : null,
           ),
@@ -60,19 +80,19 @@ class AppHeader extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  title ?? username ?? 'Student Name',
-                  style: const TextStyle(
+                  title ?? username ?? safeLocaleString(context, 'student_name', fallback: 'Student Name'),
+                  style: TextStyle(
                     fontSize: AppSizes.fontSizeXL,
                     fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimary,
+                    color: appColors.textPrimary,
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   'ID: ${userId ?? 'e20211580'}',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: AppSizes.fontSizeM,
-                    color: AppColors.textPrimary,
+                    color: appColors.textSecondary,
                   ),
                 ),
               ],
@@ -84,17 +104,21 @@ class AppHeader extends StatelessWidget {
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color: AppColors.lightGrey,
+                  color: isDark
+                      ? AppColors.primaryBlue.withValues(alpha: 0.3)
+                      : appColors.lightGrey,
                   borderRadius: BorderRadius.circular(AppSizes.radiusS),
                   border: Border.all(
-                    color: AppColors.borderLight,
+                    color: isDark
+                        ? AppColors.primaryBlue.withValues(alpha: 0.5)
+                        : appColors.borderLight,
                     width: 1,
                   ),
                 ),
                 child: IconButton(
-                  icon: const Icon(
+                  icon: Icon(
                     Icons.notifications_outlined,
-                    color: AppColors.textPrimary,
+                    color: appColors.textPrimary,
                   ),
                   onPressed: onNotificationTap ??
                       () => Navigator.push(

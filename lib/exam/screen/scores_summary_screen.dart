@@ -53,13 +53,12 @@ class _ScoresSummaryScreenState extends State<ScoresSummaryScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      body: SafeArea(
-        child: _isLoading
-            ? const Center(child: CircularProgressIndicator())
-            : Column(
-                children: [
-                  const AppHeader(
-                    ),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : Column(
+              children: [
+                const AppHeader(
+                  ),
                   Expanded(
                     child: SingleChildScrollView(
                       physics: const BouncingScrollPhysics(),
@@ -118,7 +117,6 @@ class _ScoresSummaryScreenState extends State<ScoresSummaryScreen> {
                   ),
                 ],
               ),
-      ),
     );
   }
 }

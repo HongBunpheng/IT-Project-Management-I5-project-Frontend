@@ -1,7 +1,11 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:adaptive_theme/adaptive_theme.dart';
+import 'package:flutter_locales/flutter_locales.dart';
 import '../../configs/app_colors.dart';
+import '../../configs/app_theme_extension.dart';
+import '../../utils/localization_helper.dart';
 import '../../custom_bottom_navigation_bar.dart';
 import '../../dashboard/screen/dashboard_screen.dart';
 import '../../checkin/screen/checkin_screen.dart';
@@ -21,7 +25,6 @@ class SettingsScreen extends StatefulWidget {
 class _SettingsScreenState extends State<SettingsScreen> {
   int _currentBottomNavIndex = 4; // Settings is index 4
   bool _notificationsEnabled = true;
-  bool _darkModeEnabled = false;
   File? _profileImage;
   final ScrollController _scrollController = ScrollController();
   bool _isScrolled = false;
@@ -51,13 +54,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _pickImage() async {
+    final appColors = context.appColors;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        decoration: const BoxDecoration(
-          color: AppColors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      builder: (builderContext) => Container(
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF1E1E1E) : AppColors.white,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
         ),
         child: SafeArea(
           child: Column(
@@ -69,73 +75,77 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: AppColors.textSecondary.withOpacity(0.3),
+                  color: appColors.textSecondary.withOpacity(0.3),
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
               const SizedBox(height: 20),
-              const Text(
-                'Select Profile Photo',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
+              Builder(
+                builder: (textContext) => Text(
+                  safeLocaleString(textContext, 'select_profile_photo', fallback: 'Select Profile Photo'),
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: appColors.textPrimary,
+                  ),
                 ),
               ),
               const SizedBox(height: 24),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  _buildImageSourceOption(
-                    icon: Icons.photo_library,
-                    label: 'Gallery',
-                    onTap: () async {
-                      Navigator.pop(context);
-                      final ImagePicker picker = ImagePicker();
-                      final XFile? image = await picker.pickImage(
-                        source: ImageSource.gallery,
-                        maxWidth: 512,
-                        maxHeight: 512,
-                        imageQuality: 85,
-                      );
-                      if (image != null) {
-                        setState(() {
-                          _profileImage = File(image.path);
-                        });
-                      }
-                    },
-                  ),
-                  _buildImageSourceOption(
-                    icon: Icons.camera_alt,
-                    label: 'Camera',
-                    onTap: () async {
-                      Navigator.pop(context);
-                      final ImagePicker picker = ImagePicker();
-                      final XFile? image = await picker.pickImage(
-                        source: ImageSource.camera,
-                        maxWidth: 512,
-                        maxHeight: 512,
-                        imageQuality: 85,
-                      );
-                      if (image != null) {
-                        setState(() {
-                          _profileImage = File(image.path);
-                        });
-                      }
-                    },
-                  ),
-                  if (_profileImage != null)
+              Builder(
+                builder: (rowContext) => Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
                     _buildImageSourceOption(
-                      icon: Icons.delete_outline,
-                      label: 'Remove',
-                      onTap: () {
+                      icon: Icons.photo_library,
+                      label: safeLocaleString(rowContext, 'gallery', fallback: 'Gallery'),
+                      onTap: () async {
                         Navigator.pop(context);
-                        setState(() {
-                          _profileImage = null;
-                        });
+                        final ImagePicker picker = ImagePicker();
+                        final XFile? image = await picker.pickImage(
+                          source: ImageSource.gallery,
+                          maxWidth: 512,
+                          maxHeight: 512,
+                          imageQuality: 85,
+                        );
+                        if (image != null) {
+                          setState(() {
+                            _profileImage = File(image.path);
+                          });
+                        }
                       },
                     ),
-                ],
+                    _buildImageSourceOption(
+                      icon: Icons.camera_alt,
+                      label: safeLocaleString(rowContext, 'camera', fallback: 'Camera'),
+                      onTap: () async {
+                        Navigator.pop(context);
+                        final ImagePicker picker = ImagePicker();
+                        final XFile? image = await picker.pickImage(
+                          source: ImageSource.camera,
+                          maxWidth: 512,
+                          maxHeight: 512,
+                          imageQuality: 85,
+                        );
+                        if (image != null) {
+                          setState(() {
+                            _profileImage = File(image.path);
+                          });
+                        }
+                      },
+                    ),
+                    if (_profileImage != null)
+                      _buildImageSourceOption(
+                        icon: Icons.delete_outline,
+                        label: safeLocaleString(rowContext, 'remove', fallback: 'Remove'),
+                        onTap: () {
+                          Navigator.pop(context);
+                          setState(() {
+                            _profileImage = null;
+                          });
+                        },
+                      ),
+                  ],
+                ),
               ),
               const SizedBox(height: 20),
             ],
@@ -158,21 +168,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
             width: 70,
             height: 70,
             decoration: BoxDecoration(
-              color: AppColors.primaryBlueLight.withOpacity(0.1),
+              color: context.appColors.primaryBlueLight.withOpacity(0.1),
               shape: BoxShape.circle,
             ),
             child: Icon(
               icon,
               size: 32,
-              color: AppColors.primaryBlue,
+              color: context.appColors.primaryBlue,
             ),
           ),
           const SizedBox(height: 8),
           Text(
             label,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 14,
-              color: AppColors.textPrimary,
+              color: context.appColors.textPrimary,
             ),
           ),
         ],
@@ -243,23 +253,147 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  String _getCurrentLanguageName(BuildContext context) {
+    final currentLocale = Locales.currentLocale(context);
+    if (currentLocale?.languageCode == 'km') {
+      return safeLocaleString(context, 'khmer', fallback: 'Khmer');
+    }
+    return safeLocaleString(context, 'english', fallback: 'English');
+  }
+
+  void _showLanguagePicker() {
+    final appColors = context.appColors;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    // Store the widget's context for locale changes
+    final widgetContext = context;
+    
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) {
+        final currentLocale = Locales.currentLocale(sheetContext);
+        final currentLangCode = currentLocale?.languageCode ?? 'en';
+        
+        return Container(
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF1E1E1E) : AppColors.white,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          child: SafeArea(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Handle bar
+                Container(
+                  margin: const EdgeInsets.only(top: 12),
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: appColors.textSecondary.withOpacity(0.3),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Text(
+                  safeLocaleString(sheetContext, 'language', fallback: 'Language'),
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: appColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                // English option
+                ListTile(
+                  leading: const Icon(Icons.language),
+                  title: Text(
+                    safeLocaleString(sheetContext, 'english', fallback: 'English'),
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: appColors.textPrimary,
+                    ),
+                  ),
+                  trailing: currentLangCode == 'en'
+                      ? Icon(Icons.check, color: appColors.primaryBlue)
+                      : null,
+                  onTap: () async {
+                    Navigator.pop(sheetContext);
+                    // Change locale using the widget's context
+                    await Locales.change(widgetContext, 'en');
+                    if (mounted) {
+                      setState(() {});
+                    }
+                  },
+                ),
+                // Khmer option
+                ListTile(
+                  leading: const Icon(Icons.language),
+                  title: Text(
+                    safeLocaleString(sheetContext, 'khmer', fallback: 'Khmer'),
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: appColors.textPrimary,
+                    ),
+                  ),
+                  trailing: currentLangCode == 'km'
+                      ? Icon(Icons.check, color: appColors.primaryBlue)
+                      : null,
+                  onTap: () async {
+                    Navigator.pop(sheetContext);
+                    // Change locale using the widget's context
+                    await Locales.change(widgetContext, 'km');
+                    if (mounted) {
+                      setState(() {});
+                    }
+                  },
+                ),
+                const SizedBox(height: 20),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final appColors = context.appColors;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
     return Scaffold(
-      backgroundColor: AppColors.white,
+      backgroundColor: isDark ? const Color(0xFF121212) : AppColors.white,
       appBar: AppBar(
-        backgroundColor: AppColors.white,
+        backgroundColor: isDark 
+            ? AppColors.primaryBlue.withValues(alpha: 0.2)
+            : AppColors.white,
         elevation: _isScrolled ? 4 : 0,
-        shadowColor: _isScrolled ? AppColors.grey.withOpacity(0.3) : Colors.transparent,
+        shadowColor: _isScrolled 
+            ? (isDark 
+                ? AppColors.primaryBlue.withValues(alpha: 0.3)
+                : AppColors.grey.withOpacity(0.3)) 
+            : Colors.transparent,
         surfaceTintColor: Colors.transparent,
+        flexibleSpace: isDark
+            ? Container(
+                decoration: BoxDecoration(
+                  border: Border(
+                    bottom: BorderSide(
+                      color: AppColors.primaryBlue.withValues(alpha: 0.3),
+                      width: 1,
+                    ),
+                  ),
+                ),
+              )
+            : null,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, color: AppColors.textPrimary, size: 20),
+          icon: Icon(Icons.arrow_back_ios, color: appColors.textPrimary, size: 20),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
-          'My Profile',
+        title: Text(
+          safeLocaleString(context, 'my_profile', fallback: 'My Profile'),
           style: TextStyle(
-            color: AppColors.textPrimary,
+            color: appColors.textPrimary,
             fontSize: 20,
             fontWeight: FontWeight.bold,
           ),
@@ -286,7 +420,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             height: 120,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              color: AppColors.lightGrey,
+                              color: appColors.lightGrey,
                               image: _profileImage != null
                                   ? DecorationImage(
                                       image: FileImage(_profileImage!),
@@ -295,10 +429,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                   : null,
                             ),
                             child: _profileImage == null
-                                ? const Icon(
+                                ? Icon(
                                     Icons.person,
                                     size: 60,
-                                    color: AppColors.textSecondary,
+                                    color: appColors.textSecondary,
                                   )
                                 : null,
                           ),
@@ -312,14 +446,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               width: 36,
                               height: 36,
                               decoration: BoxDecoration(
-                                color: AppColors.primaryBlue,
+                                color: appColors.primaryBlue,
                                 shape: BoxShape.circle,
                                 border: Border.all(
-                                  color: AppColors.white,
+                                  color: isDark ? const Color(0xFF1E1E1E) : AppColors.white,
                                   width: 3,
                                 ),
                               ),
-                              child: const Icon(
+                              child: Icon(
                                 Icons.camera_alt,
                                 size: 18,
                                 color: AppColors.white,
@@ -331,12 +465,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                     const SizedBox(height: 20),
                     // Name
-                    const Text(
+                    Text(
                       'Sok Dara',
                       style: TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
-                        color: AppColors.textPrimary,
+                        color: appColors.textPrimary,
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -345,7 +479,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       'ID: ITC-2024-001',
                       style: TextStyle(
                         fontSize: 14,
-                        color: AppColors.textSecondary,
+                        color: appColors.textSecondary,
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -353,33 +487,36 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       'Computer Science - Year 3',
                       style: TextStyle(
                         fontSize: 14,
-                        color: AppColors.textSecondary,
+                        color: appColors.textSecondary,
                       ),
                     ),
                     const SizedBox(height: 32),
                     // Divider
                     const Divider(height: 1),
                     // Account Section
-                    _buildSectionHeader('Account'),
+                    _buildSectionHeader(safeLocaleString(context, 'account', fallback: 'Account'), context),
                     _buildAccountItem(
+                      context: context,
                       icon: Icons.person_outline,
-                      iconColor: AppColors.primaryBlueLight,
-                      label: 'Personal Information',
+                      iconColor: appColors.primaryBlueLight,
+                      label: safeLocaleString(context, 'personal_information', fallback: 'Personal Information'),
                       onTap: _showPersonalInformation,
                     ),
                     _buildAccountItem(
+                      context: context,
                       icon: Icons.school_outlined,
-                      iconColor: AppColors.primaryBlueLight,
-                      label: 'Academic Records',
+                      iconColor: appColors.primaryBlueLight,
+                      label: safeLocaleString(context, 'academic_records', fallback: 'Academic Records'),
                       onTap: _showAcademicRecords,
                     ),
                     const Divider(height: 1),
                     // Settings Section
-                    _buildSectionHeader('Settings'),
+                    _buildSectionHeader(safeLocaleString(context, 'settings', fallback: 'Settings'), context),
                     _buildSettingsItemWithToggle(
+                      context: context,
                       icon: Icons.notifications_outlined,
-                      iconColor: AppColors.primaryBlueLight,
-                      label: 'Notifications',
+                      iconColor: appColors.primaryBlueLight,
+                      label: safeLocaleString(context, 'notifications', fallback: 'Notifications'),
                       value: _notificationsEnabled,
                       onChanged: (value) {
                         setState(() {
@@ -388,22 +525,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       },
                     ),
                     _buildSettingsItemWithToggle(
+                      context: context,
                       icon: Icons.dark_mode_outlined,
-                      iconColor: AppColors.primaryBlueLight,
-                      label: 'Dark Mode',
-                      value: _darkModeEnabled,
+                      iconColor: appColors.primaryBlueLight,
+                      label: safeLocaleString(context, 'dark_mode', fallback: 'Dark Mode'),
+                      value: AdaptiveTheme.of(context).mode == AdaptiveThemeMode.dark,
                       onChanged: (value) {
-                        setState(() {
-                          _darkModeEnabled = value;
-                        });
+                        AdaptiveTheme.of(context).setThemeMode(
+                          value ? AdaptiveThemeMode.dark : AdaptiveThemeMode.light,
+                        );
                       },
                     ),
                     _buildSettingsItemWithSubtitle(
+                      context: context,
                       icon: Icons.language_outlined,
-                      iconColor: AppColors.primaryBlueLight,
-                      label: 'Language',
-                      subtitle: 'English',
-                      onTap: () {},
+                      iconColor: appColors.primaryBlueLight,
+                      label: safeLocaleString(context, 'language', fallback: 'Language'),
+                      subtitle: _getCurrentLanguageName(context),
+                      onTap: _showLanguagePicker,
                     ),
                     const Divider(height: 1),
                     // Logout
@@ -423,7 +562,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  Widget _buildSectionHeader(String title) {
+  Widget _buildSectionHeader(String title, BuildContext context) {
+    final appColors = context.appColors;
     return Padding(
       padding: const EdgeInsets.symmetric(
         horizontal: 20,
@@ -433,10 +573,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
         alignment: Alignment.centerLeft,
         child: Text(
           title,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.bold,
-            color: AppColors.textPrimary,
+            color: appColors.textPrimary,
           ),
         ),
       ),
@@ -444,11 +584,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Widget _buildAccountItem({
+    required BuildContext context,
     required IconData icon,
     required Color iconColor,
     required String label,
     required VoidCallback onTap,
   }) {
+    final appColors = context.appColors;
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
       leading: Container(
@@ -466,15 +608,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ),
       title: Text(
         label,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 16,
           fontWeight: FontWeight.w500,
-          color: AppColors.textPrimary,
+          color: appColors.textPrimary,
         ),
       ),
-      trailing: const Icon(
+      trailing: Icon(
         Icons.chevron_right,
-        color: AppColors.textSecondary,
+        color: appColors.textSecondary,
         size: 20,
       ),
       onTap: onTap,
@@ -482,12 +624,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Widget _buildSettingsItemWithToggle({
+    required BuildContext context,
     required IconData icon,
     required Color iconColor,
     required String label,
     required bool value,
     required ValueChanged<bool> onChanged,
   }) {
+    final appColors = context.appColors;
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
       leading: Container(
@@ -505,27 +649,29 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ),
       title: Text(
         label,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 16,
           fontWeight: FontWeight.w500,
-          color: AppColors.textPrimary,
+          color: appColors.textPrimary,
         ),
       ),
       trailing: Switch(
         value: value,
         onChanged: onChanged,
-        activeColor: AppColors.primaryBlue,
+        activeColor: appColors.primaryBlue,
       ),
     );
   }
 
   Widget _buildSettingsItemWithSubtitle({
+    required BuildContext context,
     required IconData icon,
     required Color iconColor,
     required String label,
     required String subtitle,
     required VoidCallback onTap,
   }) {
+    final appColors = context.appColors;
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
       leading: Container(
@@ -543,22 +689,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ),
       title: Text(
         label,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 16,
           fontWeight: FontWeight.w500,
-          color: AppColors.textPrimary,
+          color: appColors.textPrimary,
         ),
       ),
       subtitle: Text(
         subtitle,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 14,
-          color: AppColors.textSecondary,
+          color: appColors.textSecondary,
         ),
       ),
-      trailing: const Icon(
+      trailing: Icon(
         Icons.chevron_right,
-        color: AppColors.textSecondary,
+        color: appColors.textSecondary,
         size: 20,
       ),
       onTap: onTap,
@@ -581,9 +727,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
           size: 22,
         ),
       ),
-      title: const Text(
-        'Logout',
-        style: TextStyle(
+      title: Text(
+        safeLocaleString(context, 'logout', fallback: 'Logout'),
+        style: const TextStyle(
           fontSize: 16,
           fontWeight: FontWeight.w500,
           color: AppColors.error,
@@ -596,11 +742,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ),
       onTap: () {
         // Handle logout
+        final dialogColors = context.appColors;
+        final isDark = Theme.of(context).brightness == Brightness.dark;
         showDialog(
           context: context,
           barrierColor: Colors.black.withOpacity(0.5),
           builder: (context) => Dialog(
-            backgroundColor: AppColors.white,
+            backgroundColor: isDark ? const Color(0xFF1E1E1E) : AppColors.white,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(20),
             ),
@@ -625,22 +773,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                   const SizedBox(height: 20),
                   // Title
-                  const Text(
-                    'Logout',
+                  Text(
+                    safeLocaleString(context, 'logout', fallback: 'Logout'),
                     style: TextStyle(
                       fontSize: 22,
                       fontWeight: FontWeight.bold,
-                      color: AppColors.textPrimary,
+                      color: dialogColors.textPrimary,
                     ),
                   ),
                   const SizedBox(height: 12),
                   // Message
-                  const Text(
-                    'Are you sure you want to logout?',
+                  Text(
+                    safeLocaleString(context, 'logout_confirmation', fallback: 'Are you sure you want to logout?'),
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 16,
-                      color: AppColors.textSecondary,
+                      color: dialogColors.textSecondary,
                     ),
                   ),
                   const SizedBox(height: 24),
@@ -652,17 +800,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           onPressed: () => Navigator.pop(context),
                           style: OutlinedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 14),
-                            side: const BorderSide(color: AppColors.borderLight),
+                            side: BorderSide(color: dialogColors.borderLight),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
                           ),
-                          child: const Text(
-                            'Cancel',
+                          child: Text(
+                            safeLocaleString(context, 'cancel', fallback: 'Cancel'),
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w600,
-                              color: AppColors.textPrimary,
+                              color: dialogColors.textPrimary,
                             ),
                           ),
                         ),
@@ -686,9 +834,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               borderRadius: BorderRadius.circular(12),
                             ),
                           ),
-                          child: const Text(
-                            'Logout',
-                            style: TextStyle(
+                          child: Text(
+                            safeLocaleString(context, 'logout', fallback: 'Logout'),
+                            style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w600,
                             ),

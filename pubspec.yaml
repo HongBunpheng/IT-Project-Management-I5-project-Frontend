@@ -37,6 +37,8 @@ dependencies:
   http: ^1.2.0
   mobile_scanner: ^5.2.3
   image_picker: ^1.0.7
+  adaptive_theme: ^3.7.2
+  flutter_locales: ^3.0.3
 
 dev_dependencies:
   flutter_test:
@@ -62,6 +64,8 @@ flutter:
 
   assets:
     - assets/images/logo.png
+    - assets/locales/
+    - lib/locales/
 
   # To add assets to your application, add an assets section, like this:
   # assets:

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../configs/app_colors.dart';
 import '../../configs/app_sizes.dart';
+import '../../configs/app_theme_extension.dart';
 import '../../utils/responsive.dart';
 import 'leave_request_detail_screen.dart';
 
@@ -95,20 +96,41 @@ class _ApplyLeaveScreenState extends State<ApplyLeaveScreen> {
   @override
   Widget build(BuildContext context) {
     final horizontalPadding = Responsive.getPadding(context);
+    final appColors = context.appColors;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: AppColors.white,
+      backgroundColor: isDark ? const Color(0xFF121212) : AppColors.white,
       appBar: AppBar(
-        backgroundColor: AppColors.white,
+        backgroundColor: isDark 
+            ? AppColors.primaryBlue.withValues(alpha: 0.2)
+            : AppColors.white,
         elevation: 0,
+        surfaceTintColor: Colors.transparent,
+        flexibleSpace: isDark
+            ? Container(
+                decoration: BoxDecoration(
+                  border: Border(
+                    bottom: BorderSide(
+                      color: AppColors.primaryBlue.withValues(alpha: 0.3),
+                      width: 1,
+                    ),
+                  ),
+                ),
+              )
+            : null,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, size: AppSizes.iconSizeM, color: AppColors.black),
+          icon: Icon(
+            Icons.arrow_back_ios,
+            size: AppSizes.iconSizeM,
+            color: appColors.textPrimary,
+          ),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
+        title: Text(
           'Apply Leave',
           style: TextStyle(
-            color: AppColors.primaryBlue,
+            color: appColors.textPrimary,
             fontSize: AppSizes.fontSizeL,
             fontWeight: FontWeight.bold,
           ),

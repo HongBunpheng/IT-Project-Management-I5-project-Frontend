@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../configs/app_colors.dart';
 import '../../configs/app_sizes.dart';
+import '../../configs/app_theme_extension.dart';
 import '../model/dashboard_models.dart';
 
 class TaskCardItem extends StatelessWidget {
@@ -13,6 +14,9 @@ class TaskCardItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final appColors = context.appColors;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
     Color iconColor;
     Color progressColor;
     IconData iconData;
@@ -43,12 +47,25 @@ class TaskCardItem extends StatelessWidget {
       margin: EdgeInsets.only(bottom: AppSizes.spacingM),
       padding: EdgeInsets.all(AppSizes.spacingM),
       decoration: BoxDecoration(
-        color: AppColors.white,
+        color: isDark 
+            ? AppColors.primaryBlue.withValues(alpha: 0.15)
+            : AppColors.white,
         borderRadius: BorderRadius.circular(AppSizes.radiusM),
         border: Border.all(
-          color: AppColors.borderLight,
+          color: isDark 
+              ? AppColors.primaryBlue.withValues(alpha: 0.3)
+              : AppColors.primaryBlue.withValues(alpha: 0.1),
           width: 1,
         ),
+        boxShadow: isDark
+            ? null
+            : [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.05),
+                  blurRadius: 4,
+                  offset: const Offset(0, 2),
+                ),
+              ],
       ),
       child: Row(
         children: [
@@ -80,7 +97,7 @@ class TaskCardItem extends StatelessWidget {
                   style: TextStyle(
                     fontSize: AppSizes.fontSizeM,
                     fontWeight: FontWeight.w600,
-                    color: AppColors.textPrimary,
+                    color: appColors.textPrimary,
                   ),
                 ),
                 SizedBox(height: AppSizes.spacingXS),
@@ -88,7 +105,7 @@ class TaskCardItem extends StatelessWidget {
                   '${task.taskCount ?? 0} Tasks',
                   style: TextStyle(
                     fontSize: AppSizes.fontSizeS,
-                    color: AppColors.textSecondary,
+                    color: appColors.textSecondary,
                   ),
                 ),
               ],
@@ -103,7 +120,9 @@ class TaskCardItem extends StatelessWidget {
                 child: CircularProgressIndicator(
                   value: task.progress ?? 0.0,
                   strokeWidth: 4,
-                  backgroundColor: AppColors.lightGrey,
+                  backgroundColor: isDark
+                      ? appColors.lightGrey.withValues(alpha: 0.3)
+                      : appColors.lightGrey,
                   valueColor: AlwaysStoppedAnimation<Color>(progressColor),
                 ),
               ),
@@ -112,7 +131,7 @@ class TaskCardItem extends StatelessWidget {
                 style: TextStyle(
                   fontSize: AppSizes.fontSizeXS,
                   fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
+                  color: appColors.textPrimary,
                 ),
               ),
             ],

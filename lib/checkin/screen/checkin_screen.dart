@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import '../../configs/app_colors.dart';
 import '../../configs/app_sizes.dart';
+import '../../configs/app_theme_extension.dart';
 import '../../utils/responsive.dart';
+import '../../utils/localization_helper.dart';
 import '../../custom_bottom_navigation_bar.dart';
 import '../../dashboard/screen/dashboard_screen.dart';
 import '../../exam/screen/exam_scores_screen.dart';
@@ -14,8 +16,11 @@ class CheckInScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final horizontalPadding = Responsive.getPadding(context);
+    final appColors = context.appColors;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
     return Scaffold(
-      backgroundColor: AppColors.white,
+      backgroundColor: isDark ? const Color(0xFF121212) : AppColors.white,
       body: SafeArea(
         child: SingleChildScrollView(
           padding: EdgeInsets.symmetric(
@@ -26,12 +31,12 @@ class CheckInScreen extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               const SizedBox(height: AppSizes.spacingL),
-              const Text(
-                'Click QR Code for Scan',
+              Text(
+                safeLocaleString(context, 'click_qr_code', fallback: 'Click QR Code for Scan'),
                 style: TextStyle(
                   fontSize: AppSizes.fontSizeXL,
                   fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
+                  color: appColors.textPrimary,
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -45,7 +50,7 @@ class CheckInScreen extends StatelessWidget {
                   if (!context.mounted) return;
                   if (result != null && result.isNotEmpty) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Scanned: $result')),
+                      SnackBar(content: Text('${safeLocaleString(context, 'scanned', fallback: 'Scanned')}: $result')),
                     );
                   }
                 },
@@ -65,13 +70,13 @@ class CheckInScreen extends StatelessWidget {
                         width: 220,
                         height: 220,
                         decoration: BoxDecoration(
-                          color: AppColors.white,
+                          color: isDark ? const Color(0xFF1E1E1E) : AppColors.white,
                           borderRadius: BorderRadius.circular(AppSizes.radiusM),
                         ),
-                        child: const Icon(
+                        child: Icon(
                           Icons.qr_code_2,
                           size: 220,
-                          color: Colors.black,
+                          color: isDark ? AppColors.white : Colors.black,
                         ),
                       ),
                     ],
@@ -79,12 +84,12 @@ class CheckInScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: AppSizes.spacingS),
-              const Text(
-                'Click me',
+              Text(
+                safeLocaleString(context, 'click_me', fallback: 'Click me'),
                 style: TextStyle(
                   fontSize: AppSizes.fontSizeL,
                   fontWeight: FontWeight.w700,
-                  color: Colors.green,
+                  color: AppColors.success,
                 ),
               ),
               const SizedBox(height: AppSizes.spacingXL),
@@ -93,19 +98,19 @@ class CheckInScreen extends StatelessWidget {
               Align(
                 alignment: Alignment.centerLeft,
                 child: Text(
-                  'Recent Scan',
+                  safeLocaleString(context, 'recent_scan', fallback: 'Recent Scan'),
                   style: TextStyle(
                     fontSize: AppSizes.fontSizeM,
                     fontWeight: FontWeight.w700,
-                    color: const Color(0xFF0A74DA),
+                    color: appColors.primaryBlue,
                   ),
                 ),
               ),
               const SizedBox(height: AppSizes.spacingS),
-              _ScanRow(code: 'CL3', date: '05-29-2022', inTime: '10:30', outTime: '12:00'),
-              _ScanRow(code: 'CL1', date: '06-29-2022', inTime: '10:30', outTime: '12:00'),
-              _ScanRow(code: 'CL5', date: '05-29-2022', inTime: '10:30', outTime: '12:00'),
-              _ScanRow(code: 'CL1', date: '06-29-2022', inTime: '10:30', outTime: '12:00'),
+              _ScanRow(context: context, code: 'CL3', date: '05-29-2022', inTime: '10:30', outTime: '12:00'),
+              _ScanRow(context: context, code: 'CL1', date: '06-29-2022', inTime: '10:30', outTime: '12:00'),
+              _ScanRow(context: context, code: 'CL5', date: '05-29-2022', inTime: '10:30', outTime: '12:00'),
+              _ScanRow(context: context, code: 'CL1', date: '06-29-2022', inTime: '10:30', outTime: '12:00'),
             ],
           ),
         ),
@@ -155,9 +160,9 @@ class _SummaryCards extends StatelessWidget {
           padding: EdgeInsets.symmetric(horizontal: padding),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: const [
+            children: [
               Text(
-                'ROOMS',
+                safeLocaleString(context, 'rooms', fallback: 'ROOMS').toUpperCase(),
                 style: TextStyle(
                   fontSize: AppSizes.fontSizeS,
                   fontWeight: FontWeight.w600,
@@ -165,7 +170,7 @@ class _SummaryCards extends StatelessWidget {
                 ),
               ),
               Text(
-                'View Rooms',
+                safeLocaleString(context, 'view_rooms', fallback: 'View Rooms'),
                 style: TextStyle(
                   fontSize: AppSizes.fontSizeM,
                   fontWeight: FontWeight.w600,
@@ -184,7 +189,7 @@ class _SummaryCards extends StatelessWidget {
                 child: _buildSummaryCard(
                   context: context,
                   number: totalRooms.toString(),
-                  label: 'Rooms',
+                  label: safeLocaleString(context, 'rooms', fallback: 'Rooms'),
                   icon: Icons.grid_view,
                 ),
               ),
@@ -193,7 +198,7 @@ class _SummaryCards extends StatelessWidget {
                 child: _buildSummaryCard(
                   context: context,
                   number: totalCheckedIns.toString(),
-                  label: 'Checked-ins',
+                  label: safeLocaleString(context, 'checked_ins', fallback: 'Checked-ins'),
                   icon: Icons.people,
                 ),
               ),
@@ -213,11 +218,14 @@ class _SummaryCards extends StatelessWidget {
     final cardPadding = Responsive.isMobile(context) ? AppSizes.spacingS : AppSizes.spacingM;
     final numberFontSize = Responsive.isMobile(context) ? AppSizes.fontSizeXXL : AppSizes.fontSizeXXXL;
     final labelFontSize = Responsive.isMobile(context) ? AppSizes.fontSizeS : AppSizes.fontSizeM;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Container(
       padding: EdgeInsets.all(cardPadding),
       decoration: BoxDecoration(
-        color: AppColors.success.withValues(alpha: 0.15),
+        color: isDark 
+            ? AppColors.success.withValues(alpha: 0.2)
+            : AppColors.success.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(AppSizes.radiusL),
       ),
       child: Column(
@@ -262,12 +270,14 @@ class _SummaryCards extends StatelessWidget {
 }
 
 class _ScanRow extends StatelessWidget {
+  final BuildContext context;
   final String code;
   final String date;
   final String inTime;
   final String outTime;
 
   const _ScanRow({
+    required this.context,
     required this.code,
     required this.date,
     required this.inTime,
@@ -276,61 +286,87 @@ class _ScanRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final appColors = context.appColors;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final accentColor = isDark ? Colors.pinkAccent.shade200 : Colors.pinkAccent;
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: AppSizes.spacingS),
-      child: Row(
-        children: [
-          Container(
-            width: 3,
-            height: 32,
-            decoration: BoxDecoration(
-              color: Colors.pinkAccent,
-              borderRadius: BorderRadius.circular(2),
-            ),
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSizes.spacingM,
+          vertical: AppSizes.spacingS,
+        ),
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF1E1E1E) : AppColors.white,
+          borderRadius: BorderRadius.circular(AppSizes.radiusM),
+          border: Border.all(
+            color: isDark ? const Color(0xFF2E2E2E) : AppColors.borderLight,
+            width: 1,
           ),
-          const SizedBox(width: AppSizes.spacingM),
-          Text(
-            code,
-            style: const TextStyle(
-              fontSize: AppSizes.fontSizeM,
-              fontWeight: FontWeight.w600,
-              color: Colors.pinkAccent,
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 3,
+              height: 32,
+              decoration: BoxDecoration(
+                color: accentColor,
+                borderRadius: BorderRadius.circular(2),
+              ),
             ),
-          ),
-          const SizedBox(width: AppSizes.spacingM),
-          Expanded(
-            child: Text(
-              date,
-              style: const TextStyle(
+            const SizedBox(width: AppSizes.spacingM),
+            Text(
+              code,
+              style: TextStyle(
                 fontSize: AppSizes.fontSizeM,
-                color: AppColors.textPrimary,
+                fontWeight: FontWeight.w600,
+                color: accentColor,
               ),
             ),
-          ),
-          Row(
-            children: [
-              const Icon(Icons.access_time, size: 16, color: Colors.blue),
-              const SizedBox(width: 4),
-              Text(
-                inTime,
-                style: const TextStyle(
-                  fontSize: AppSizes.fontSizeS,
-                  color: Colors.blue,
+            const SizedBox(width: AppSizes.spacingM),
+            Expanded(
+              child: Text(
+                date,
+                style: TextStyle(
+                  fontSize: AppSizes.fontSizeM,
+                  color: appColors.textPrimary,
                 ),
               ),
-              const SizedBox(width: AppSizes.spacingS),
-              const Icon(Icons.access_time, size: 16, color: Colors.red),
-              const SizedBox(width: 4),
-              Text(
-                outTime,
-                style: const TextStyle(
-                  fontSize: AppSizes.fontSizeS,
-                  color: Colors.red,
+            ),
+            Row(
+              children: [
+                Icon(
+                  Icons.access_time,
+                  size: 16,
+                  color: isDark ? Colors.blue.shade300 : Colors.blue,
                 ),
-              ),
-            ],
-          ),
-        ],
+                const SizedBox(width: 4),
+                Text(
+                  inTime,
+                  style: TextStyle(
+                    fontSize: AppSizes.fontSizeS,
+                    color: isDark ? Colors.blue.shade300 : Colors.blue,
+                  ),
+                ),
+                const SizedBox(width: AppSizes.spacingS),
+                Icon(
+                  Icons.access_time,
+                  size: 16,
+                  color: isDark ? Colors.red.shade300 : Colors.red,
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  outTime,
+                  style: TextStyle(
+                    fontSize: AppSizes.fontSizeS,
+                    color: isDark ? Colors.red.shade300 : Colors.red,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

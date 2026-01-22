@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../model/attendance_model.dart';
 import '../../configs/app_colors.dart';
 import '../../configs/app_sizes.dart';
+import '../../configs/app_theme_extension.dart';
 import '../widget/attendance_toggle_button.dart';
 import '../widget/calendar_day_cell.dart';
 import '../widget/week_record_item.dart';
@@ -113,18 +114,44 @@ class _AttendanceHistoryScreenState extends State<AttendanceHistoryScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final appColors = context.appColors;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: isDark ? const Color(0xFF121212) : AppColors.white,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: isDark 
+            ? AppColors.primaryBlue.withValues(alpha: 0.2)
+            : AppColors.white,
         elevation: 0,
+        surfaceTintColor: Colors.transparent,
+        flexibleSpace: isDark
+            ? Container(
+                decoration: BoxDecoration(
+                  border: Border(
+                    bottom: BorderSide(
+                      color: AppColors.primaryBlue.withValues(alpha: 0.3),
+                      width: 1,
+                    ),
+                  ),
+                ),
+              )
+            : null,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, size: 20, color: Colors.black),
+          icon: Icon(
+            Icons.arrow_back_ios,
+            size: 20,
+            color: appColors.textPrimary,
+          ),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
+        title: Text(
           'Attendance sheet',
-          style: TextStyle( color: Colors.black, fontSize: 18, fontWeight: FontWeight.bold),
+          style: TextStyle(
+            color: appColors.textPrimary,
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+          ),
         ),
         centerTitle: false,
       ),
