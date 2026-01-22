@@ -4,11 +4,13 @@ class AppSizes {
   static const double spacingM = 16.0;
   static const double spacingL = 24.0;
   static const double spacingXL = 32.0;
+  static const double spacingXXL = 48.0;
 
   static const double radiusS = 8.0;
   static const double radiusM = 12.0;
   static const double radiusL = 16.0;
   static const double radiusXL = 24.0;
+  static const double radiusRound = 50.0;
 
   static const double fontSizeXS = 10.0;
   static const double fontSizeS = 12.0;
@@ -21,4 +23,12 @@ class AppSizes {
   static const double iconSizeS = 16.0;
   static const double iconSizeM = 24.0;
   static const double iconSizeL = 32.0;
+  static const double iconSizeXL = 48.0;
+
+  // Heights / Layout helpers (used across some screens/widgets)
+  static const double buttonHeight = 50.0;
+  static const double buttonHeightSmall = 40.0;
+  static const double inputHeight = 50.0;
+  static const double logoSize = 100.0;
+  static const double cardPadding = 20.0;
 }

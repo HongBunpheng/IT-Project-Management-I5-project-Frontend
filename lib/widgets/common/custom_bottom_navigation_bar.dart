@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../configs/app_colors.dart';
+import '../../configs/app_sizes.dart';
+import '../../utils/responsive.dart';
 
 class CustomBottomNavigationBar extends StatelessWidget {
   final int currentIndex;
@@ -13,41 +15,82 @@ class CustomBottomNavigationBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BottomNavigationBar(
-      currentIndex: currentIndex,
-      onTap: onTap,
-      type: BottomNavigationBarType.fixed,
-      selectedItemColor: AppColors.purple,
-      unselectedItemColor: Colors.grey,
-      showSelectedLabels: false,
-      showUnselectedLabels: false,
-      items: const [
-        BottomNavigationBarItem(
-          icon: Icon(Icons.dashboard_outlined),
-          activeIcon: Icon(Icons.dashboard),
-          label: 'Dashboard',
+    final margin = Responsive.getPadding(context);
+
+    return Container(
+      margin: EdgeInsets.only(
+        top: margin,
+        left: margin,
+        right: margin,
+        bottom: margin,
+      ),
+      height: 70,
+      decoration: BoxDecoration(
+        color: AppColors.primaryBlue,
+        borderRadius: BorderRadius.circular(AppSizes.radiusL),
+      ),
+      padding: EdgeInsets.symmetric(
+        horizontal: Responsive.isMobile(context)
+            ? AppSizes.spacingS
+            : AppSizes.spacingM,
+        vertical: AppSizes.spacingS,
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: [
+          _buildNavItem(
+            context,
+            icon: Icons.home,
+            index: 0,
+            isActive: currentIndex == 0,
+          ),
+          _buildNavItem(
+            context,
+            icon: Icons.qr_code_scanner,
+            index: 1,
+            isActive: currentIndex == 1,
+          ),
+          _buildNavItem(
+            context,
+            icon: Icons.menu_book,
+            index: 2,
+            isActive: currentIndex == 2,
+          ),
+          _buildNavItem(
+            context,
+            icon: Icons.schedule,
+            index: 3,
+            isActive: currentIndex == 3,
+          ),
+          _buildNavItem(
+            context,
+            icon: Icons.person,
+            index: 4,
+            isActive: currentIndex == 4,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNavItem(
+    BuildContext context, {
+    required IconData icon,
+    required int index,
+    required bool isActive,
+  }) {
+    return GestureDetector(
+      onTap: () => onTap(index),
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        width: 48,
+        height: 48,
+        decoration: BoxDecoration(
+          color: isActive ? AppColors.black : Colors.transparent,
+          shape: BoxShape.circle,
         ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.check_circle_outline),
-          activeIcon: Icon(Icons.check_circle),
-          label: 'Check In',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.calendar_today_outlined),
-          activeIcon: Icon(Icons.calendar_today),
-          label: 'Timetable',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.notifications_none),
-          activeIcon: Icon(Icons.notifications),
-          label: 'Notifications',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.settings_outlined),
-          activeIcon: Icon(Icons.settings),
-          label: 'Settings',
-        ),
-      ],
+        child: Icon(icon, color: AppColors.white, size: AppSizes.iconSizeM),
+      ),
     );
   }
 }
