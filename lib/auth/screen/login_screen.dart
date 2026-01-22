@@ -46,7 +46,11 @@ class _LoginScreenState extends State<LoginScreen> {
     final statusCode = res['statusCode'];
     if (statusCode is int && statusCode >= 200 && statusCode < 300) {
       CustomSnackBar.success(
-        title: safeLocaleString(context, 'login_success', fallback: 'Login successful'),
+        title: safeLocaleString(
+          context,
+          'login_success',
+          fallback: 'Login successful',
+        ),
       );
       Navigator.pushReplacement(
         context,
@@ -56,7 +60,11 @@ class _LoginScreenState extends State<LoginScreen> {
       final body = res['body'];
       final message = body is Map ? body['message'] : null;
       CustomSnackBar.error(
-        title: safeLocaleString(context, 'login_failed', fallback: 'Login failed'),
+        title: safeLocaleString(
+          context,
+          'login_failed',
+          fallback: 'Login failed',
+        ),
         message: message?.toString() ?? '',
       );
     }
@@ -65,9 +73,11 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+
     return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF121212) : Colors.white, // bottom should be white like Figma
+      backgroundColor: isDark
+          ? const Color(0xFF121212)
+          : Colors.white, // bottom should be white like Figma
       body: Stack(
         children: [
           ClipPath(
@@ -86,7 +96,11 @@ class _LoginScreenState extends State<LoginScreen> {
 
                 // LOGO
                 Center(
-                  child: Image.asset("assets/images/logo.png", height: 110),
+                  child: Image.asset(
+                    "assets/images/logo.png",
+                    height: 110,
+                    errorBuilder: (_, __, ___) => const SizedBox(height: 110),
+                  ),
                 ),
 
                 const SizedBox(height: 50),
@@ -133,7 +147,11 @@ class _LoginScreenState extends State<LoginScreen> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  safeLocaleString(context, 'email_or_phone', fallback: 'Email or Phone number'),
+                                  safeLocaleString(
+                                    context,
+                                    'email_or_phone',
+                                    fallback: 'Email or Phone number',
+                                  ),
                                   style: const TextStyle(
                                     fontSize: 14,
                                     color: Colors.grey,
@@ -180,7 +198,11 @@ class _LoginScreenState extends State<LoginScreen> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  safeLocaleString(context, 'password', fallback: 'Password'),
+                                  safeLocaleString(
+                                    context,
+                                    'password',
+                                    fallback: 'Password',
+                                  ),
                                   style: const TextStyle(
                                     fontSize: 14,
                                     color: Colors.grey,
@@ -270,7 +292,13 @@ class _LoginScreenState extends State<LoginScreen> {
                             Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                Text(safeLocaleString(context, 'dont_have_account', fallback: "Don't have an account? ")),
+                                Text(
+                                  safeLocaleString(
+                                    context,
+                                    'dont_have_account',
+                                    fallback: "Don't have an account? ",
+                                  ),
+                                ),
                                 TextButton(
                                   onPressed: () {
                                     Navigator.push(
@@ -282,7 +310,11 @@ class _LoginScreenState extends State<LoginScreen> {
                                   },
 
                                   child: Text(
-                                    safeLocaleString(context, 'sign_up', fallback: 'Sign Up'),
+                                    safeLocaleString(
+                                      context,
+                                      'sign_up',
+                                      fallback: 'Sign Up',
+                                    ),
                                     style: const TextStyle(
                                       color: AppColors.primaryBlue,
                                     ),
