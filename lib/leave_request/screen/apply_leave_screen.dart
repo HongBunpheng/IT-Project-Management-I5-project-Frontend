@@ -5,6 +5,7 @@ import '../../configs/app_theme_extension.dart';
 import '../../utils/responsive.dart';
 import 'leave_request_detail_screen.dart';
 import '../../services/leave_request_service.dart';
+import '../../utils/snackbar.dart';
 
 class ApplyLeaveScreen extends StatefulWidget {
   const ApplyLeaveScreen({super.key});
@@ -391,18 +392,14 @@ class _ApplyLeaveScreenState extends State<ApplyLeaveScreen> {
                                 final reason = _reasonController.text.trim();
 
                                 if (startIso == null || endIso == null) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text('Please select dates'),
-                                    ),
+                                  CustomSnackBar.error(
+                                    title: 'Please select dates',
                                   );
                                   return;
                                 }
                                 if (reason.isEmpty) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text('Please enter a reason'),
-                                    ),
+                                  CustomSnackBar.error(
+                                    title: 'Please enter a reason',
                                   );
                                   return;
                                 }
@@ -421,10 +418,8 @@ class _ApplyLeaveScreenState extends State<ApplyLeaveScreen> {
                                 if (statusCode is int &&
                                     statusCode >= 200 &&
                                     statusCode < 300) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text('Leave request submitted'),
-                                    ),
+                                  CustomSnackBar.success(
+                                    title: 'Leave request submitted',
                                   );
                                 } else {
                                   final body = res['body'];
@@ -432,8 +427,9 @@ class _ApplyLeaveScreenState extends State<ApplyLeaveScreen> {
                                       ? (body['message']?.toString() ??
                                             'Failed to submit')
                                       : 'Failed to submit';
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(content: Text(message)),
+                                  CustomSnackBar.error(
+                                    title: 'Failed to submit',
+                                    message: message,
                                   );
                                 }
 

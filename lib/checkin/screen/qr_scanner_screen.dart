@@ -42,7 +42,7 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
           ),
           // Dark overlay outside scanning area
           Container(
-            color: Colors.black.withOpacity(0.5),
+            color: Colors.black.withValues(alpha: 0.5),
           ),
           SafeArea(
             child: Padding(
@@ -51,7 +51,7 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
                 children: [
                   Container(
                     decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.5),
+                      color: Colors.black.withValues(alpha: 0.5),
                       shape: BoxShape.circle,
                     ),
                     child: IconButton(
@@ -67,7 +67,7 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
                         vertical: AppSizes.spacingS,
                       ),
                       decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.5),
+                        color: Colors.black.withValues(alpha: 0.5),
                         borderRadius: BorderRadius.circular(AppSizes.radiusM),
                       ),
                       child: Text(
@@ -83,7 +83,7 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
                   const SizedBox(width: 8),
                   Container(
                     decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.5),
+                      color: Colors.black.withValues(alpha: 0.5),
                       shape: BoxShape.circle,
                     ),
                     child: IconButton(

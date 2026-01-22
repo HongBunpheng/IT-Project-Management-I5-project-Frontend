@@ -241,6 +241,7 @@ class _ExamScoresScreenState extends State<ExamScoresScreen> {
                   ),
                 ],
               ),
+            ),
       bottomNavigationBar: CustomBottomNavigationBar(
         currentIndex: _currentBottomNavIndex,
         onTap: _onBottomNavTap,

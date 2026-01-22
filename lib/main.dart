@@ -4,6 +4,7 @@ import 'package:flutter_locales/flutter_locales.dart';
 import 'configs/app_colors.dart';
 import 'configs/app_theme_extension.dart';
 import 'auth/screen/login_screen.dart';
+import 'utils/snackbar.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -62,6 +63,7 @@ class _MyAppState extends State<MyApp> {
             title: 'CG Intern Project',
             theme: theme,
             darkTheme: darkTheme,
+            navigatorKey: CustomSnackBar.navigatorKey,
             locale: appLocale,
             supportedLocales: const [
               Locale('en', ''),

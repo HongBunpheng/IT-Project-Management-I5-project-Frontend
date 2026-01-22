@@ -3,7 +3,7 @@ import '../../configs/app_colors.dart';
 import '../../utils/localization_helper.dart';
 import 'login_screen.dart';
 import '../repository/auth_repository.dart';
-import '../../utils/helpers.dart';
+import '../../utils/snackbar.dart';
 import '../../utils/validators.dart';
 import '../../dashboard/screen/dashboard_screen.dart';
 
@@ -53,9 +53,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
     final statusCode = res["statusCode"];
     if (statusCode is int && statusCode >= 200 && statusCode < 300) {
-      Helpers.showSnackBar(
-        context,
-        safeLocaleString(
+      CustomSnackBar.success(
+        title: safeLocaleString(
           context,
           'register_successful',
           fallback: "Register Successful!",
@@ -69,14 +68,13 @@ class _SignUpScreenState extends State<SignUpScreen> {
     } else {
       final body = res["body"];
       final message = body is Map ? body["message"] : null;
-      Helpers.showSnackBar(
-        context,
-        message?.toString() ??
-            safeLocaleString(
-              context,
-              'registration_failed',
-              fallback: "Registration failed",
-            ),
+      CustomSnackBar.error(
+        title: safeLocaleString(
+          context,
+          'registration_failed',
+          fallback: "Registration failed",
+        ),
+        message: message?.toString() ?? '',
       );
     }
   }

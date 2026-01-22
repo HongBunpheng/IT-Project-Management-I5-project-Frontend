@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../configs/app_colors.dart';
+import '../../utils/snackbar.dart';
 
 class PersonalInformationScreen extends StatefulWidget {
   const PersonalInformationScreen({super.key});
@@ -199,13 +200,9 @@ class _PersonalInformationScreenState extends State<PersonalInformationScreen> {
                         onPressed: () {
                           if (_formKey.currentState!.validate()) {
                             // Save data
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text(
+                            CustomSnackBar.success(
+                              title:
                                   'Personal information updated successfully',
-                                ),
-                                backgroundColor: AppColors.success,
-                              ),
                             );
                             Navigator.pop(context);
                           }

@@ -13,6 +13,7 @@ import '../../services/attendance_service.dart';
 import '../../services/token_storage.dart';
 import '../../utils/json_utils.dart';
 import '../../account/screen/profile_screen.dart';
+import '../../utils/snackbar.dart';
 
 class CheckInScreen extends StatefulWidget {
   const CheckInScreen({super.key});
@@ -93,9 +94,14 @@ class _CheckInScreenState extends State<CheckInScreen> {
                     final message = body is Map
                         ? (body['message']?.toString() ?? 'Check-in complete')
                         : 'Check-in complete';
-                    ScaffoldMessenger.of(
-                      context,
-                    ).showSnackBar(SnackBar(content: Text(message)));
+                    final statusCode = res['statusCode'];
+                    if (statusCode is int &&
+                        statusCode >= 200 &&
+                        statusCode < 300) {
+                      CustomSnackBar.success(title: message);
+                    } else {
+                      CustomSnackBar.error(title: message);
+                    }
                     await _loadRecent();
                   }
                 },

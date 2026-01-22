@@ -360,7 +360,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   width: 40,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: appColors.textSecondary.withOpacity(0.3),
+                    color: appColors.textSecondary.withValues(alpha: 0.3),
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -722,7 +722,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       trailing: Switch(
         value: value,
         onChanged: onChanged,
-        activeColor: appColors.primaryBlue,
+        activeThumbColor: appColors.primaryBlue,
       ),
     );
   }

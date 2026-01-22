@@ -5,7 +5,7 @@ import '../../utils/localization_helper.dart';
 import 'signup_screen.dart';
 import '../../dashboard/screen/dashboard_screen.dart';
 import '../repository/auth_repository.dart';
-import '../../utils/helpers.dart';
+import '../../utils/snackbar.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -45,7 +45,9 @@ class _LoginScreenState extends State<LoginScreen> {
 
     final statusCode = res['statusCode'];
     if (statusCode is int && statusCode >= 200 && statusCode < 300) {
-      Helpers.showSnackBar(context, "Login Successful!");
+      CustomSnackBar.success(
+        title: safeLocaleString(context, 'login_success', fallback: 'Login successful'),
+      );
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (_) => const DashboardView()),
@@ -53,7 +55,10 @@ class _LoginScreenState extends State<LoginScreen> {
     } else {
       final body = res['body'];
       final message = body is Map ? body['message'] : null;
-      Helpers.showSnackBar(context, message?.toString() ?? "Login failed");
+      CustomSnackBar.error(
+        title: safeLocaleString(context, 'login_failed', fallback: 'Login failed'),
+        message: message?.toString() ?? '',
+      );
     }
   }
 
