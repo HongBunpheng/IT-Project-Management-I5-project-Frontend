@@ -1,18 +1,14 @@
 import 'package:flutter/material.dart';
 import '../../configs/app_colors.dart';
 import '../../configs/app_sizes.dart';
-import '../../widgets/common/custom_bottom_navigation_bar.dart';
-import '../../dashboard/screen/dashboard_screen.dart';
 import '../widget/calendar_table_widget.dart';
 import '../widget/timetable_task_card.dart';
 import '../model/timetable_task_model.dart';
-import '../../exam/screen/exam_scores_screen.dart';
-import '../../checkin/screen/checkin_screen.dart';
 import '../../services/timetable_service.dart';
 import '../../services/token_storage.dart';
 import '../../utils/json_utils.dart';
-import '../../account/screen/profile_screen.dart';
-import '../../auth/service/auth_service.dart';
+import '../../account/service/account_service.dart';
+import '../../utils/pull_to_refresh.dart';
 
 class TimetableView extends StatefulWidget {
   const TimetableView({super.key});
@@ -22,7 +18,6 @@ class TimetableView extends StatefulWidget {
 }
 
 class _TimetableViewState extends State<TimetableView> {
-  int _currentBottomNavIndex = 3; // Schedule icon is index 3
   final TimetableService _timetableService = TimetableService();
   final TokenStorage _tokenStorage = TokenStorage();
 
@@ -55,15 +50,14 @@ class _TimetableViewState extends State<TimetableView> {
       // If user ID is missing, try to fetch it from the API
       if (userId == null || userId.isEmpty) {
         try {
-          // Try to get user info from /auth/me
-          final authService = AuthService();
-          final meData = await authService.me();
-          if (meData != null) {
-            final data = asMap(meData['data']) ?? meData;
+          final profile = await AccountService().getProfile();
+          if (profile != null) {
+            final data = asMap(profile['data']) ?? profile;
             final user = asMap(data['user']) ?? data;
             userId = readString(user, const ['id', 'user_id', 'userId']);
-            groupId = readString(user, const ['group_id', 'groupId']) ?? groupId;
-            
+            groupId =
+                readString(user, const ['group_id', 'groupId']) ?? groupId;
+
             if (userId != null && userId.isNotEmpty) {
               await _tokenStorage.writeUserId(userId);
               if (groupId != null && groupId.isNotEmpty) {
@@ -154,8 +148,8 @@ class _TimetableViewState extends State<TimetableView> {
         _isLoading = false;
         // Clean error message - remove "Exception:" prefix if present
         final errorStr = e.toString();
-        _errorMessage = errorStr.startsWith('Exception: ') 
-            ? errorStr.substring(12) 
+        _errorMessage = errorStr.startsWith('Exception: ')
+            ? errorStr.substring(12)
             : errorStr;
         _tasks = [];
       });
@@ -187,7 +181,8 @@ class _TimetableViewState extends State<TimetableView> {
   void _onDateSelected(DateTime date) {
     setState(() {
       // If the date is in a different month, update the current month view
-      if (date.year != _currentMonth.year || date.month != _currentMonth.month) {
+      if (date.year != _currentMonth.year ||
+          date.month != _currentMonth.month) {
         _currentMonth = DateTime(date.year, date.month);
       }
       _selectedDate = DateTime(date.year, date.month, date.day);
@@ -201,7 +196,7 @@ class _TimetableViewState extends State<TimetableView> {
       // Rebuild tasks count for the new month
       _tasksCountByDate = _buildTasksCountByDate();
       // Keep selected date if it's still in the new month, otherwise select first day
-      if (_selectedDate.year != _currentMonth.year || 
+      if (_selectedDate.year != _currentMonth.year ||
           _selectedDate.month != _currentMonth.month) {
         _selectedDate = DateTime(_currentMonth.year, _currentMonth.month, 1);
         _tasks = _mapTasksForSelectedDay();
@@ -212,121 +207,100 @@ class _TimetableViewState extends State<TimetableView> {
     });
   }
 
-  void _onBottomNavTap(int index) {
-    // Only update local index when staying on this tab
-    switch (index) {
-      case 0:
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const DashboardView()),
-        );
-        break;
-      case 1:
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const CheckInScreen()),
-        );
-        break;
-      case 2:
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const ExamScoresScreen()),
-        );
-        break;
-      case 3:
-        // Already on timetable
-        setState(() => _currentBottomNavIndex = 3);
-        break;
-      case 4:
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const ProfileScreen()),
-        );
-        break;
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+
     return Scaffold(
       backgroundColor: isDark ? const Color(0xFF121212) : AppColors.white,
-      body: SafeArea(
-        child: Column(
-          children: [
-            // Timetable Header
-            SizedBox(height: AppSizes.spacingM),
-            // Calendar Table
-            CalendarTableWidget(
-              selectedDate: _selectedDate,
-              currentMonth: _currentMonth,
-              onDateSelected: _onDateSelected,
-              onMonthChanged: _onMonthChanged,
-              tasksCount: _tasksCountByDate,
-            ),
-            SizedBox(height: AppSizes.spacingXL),
-            // Tasks List
-            Expanded(
-              child: _isLoading
-                  ? const Center(child: CircularProgressIndicator())
-                  : _errorMessage != null
-                  ? Center(
-                      child: Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(_errorMessage!, textAlign: TextAlign.center),
-                            const SizedBox(height: 12),
-                            ElevatedButton(
-                              onPressed: _loadTimetable,
-                              child: const Text('Retry'),
-                            ),
-                          ],
+      body: Column(
+        children: [
+          // Timetable Header
+          SizedBox(height: AppSizes.spacingM),
+          // Calendar Table
+          CalendarTableWidget(
+            selectedDate: _selectedDate,
+            currentMonth: _currentMonth,
+            onDateSelected: _onDateSelected,
+            onMonthChanged: _onMonthChanged,
+            tasksCount: _tasksCountByDate,
+          ),
+          SizedBox(height: AppSizes.spacingXL),
+          // Tasks List
+          Expanded(
+            child: _isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : _errorMessage != null
+                    ? Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                _errorMessage!,
+                                textAlign: TextAlign.center,
+                              ),
+                              const SizedBox(height: 12),
+                              ElevatedButton(
+                                onPressed: _loadTimetable,
+                                child: const Text('Retry'),
+                              ),
+                            ],
+                          ),
+                        ),
+                      )
+                    : AppPullToRefresh(
+                        onRefresh: _loadTimetable,
+                        child: ListView.builder(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          padding: EdgeInsets.only(bottom: AppSizes.spacingM),
+                          itemCount: _tasks.length,
+                          itemBuilder: (context, index) {
+                            return TimetableTaskCard(
+                              task: _tasks[index],
+                              onCompletionChanged: (completed) =>
+                                  _onTaskCompleted(index, completed),
+                            );
+                          },
                         ),
                       ),
-                    )
-                  : RefreshIndicator(
-                      onRefresh: _loadTimetable,
-                      child: ListView.builder(
-                        padding: EdgeInsets.only(bottom: AppSizes.spacingM),
-                        itemCount: _tasks.length,
-                        itemBuilder: (context, index) {
-                          return TimetableTaskCard(
-                            task: _tasks[index],
-                            onCompletionChanged: (completed) =>
-                                _onTaskCompleted(index, completed),
-                          );
-                        },
-                      ),
-                    ),
-            ),
-          ],
-        ),
-      ),
-      bottomNavigationBar: CustomBottomNavigationBar(
-        currentIndex: _currentBottomNavIndex,
-        onTap: _onBottomNavTap,
+          ),
+        ],
       ),
     );
   }
 
   Map<DateTime, int> _buildTasksCountByDate() {
     final Map<DateTime, int> countMap = {};
-    final firstDayOfMonth = DateTime(_currentMonth.year, _currentMonth.month, 1);
-    final lastDayOfMonth = DateTime(_currentMonth.year, _currentMonth.month + 1, 0);
+    final firstDayOfMonth = DateTime(
+      _currentMonth.year,
+      _currentMonth.month,
+      1,
+    );
+    final lastDayOfMonth = DateTime(
+      _currentMonth.year,
+      _currentMonth.month + 1,
+      0,
+    );
 
     for (final row in _rawTimetable) {
       // Try to get date from various fields (specific date)
-      final dateStr = readString(row, const ['date', 'schedule_date', 'scheduleDate', 'scheduled_date']);
+      final dateStr = readString(row, const [
+        'date',
+        'schedule_date',
+        'scheduleDate',
+        'scheduled_date',
+      ]);
       if (dateStr != null) {
         try {
           final taskDate = DateTime.parse(dateStr);
           final dateKey = DateTime(taskDate.year, taskDate.month, taskDate.day);
-          
+
           // Only include if it's in the current month view
-          if (dateKey.isAfter(firstDayOfMonth.subtract(const Duration(days: 1))) &&
+          if (dateKey.isAfter(
+                firstDayOfMonth.subtract(const Duration(days: 1)),
+              ) &&
               dateKey.isBefore(lastDayOfMonth.add(const Duration(days: 1)))) {
             countMap[dateKey] = (countMap[dateKey] ?? 0) + 1;
           }
@@ -335,14 +309,14 @@ class _TimetableViewState extends State<TimetableView> {
           // If parsing fails, fall through to day of week processing
         }
       }
-      
+
       // Handle weekly recurring schedules (day_of_week)
       final dayOfWeek = readString(row, const [
         'day_of_week',
         'dayOfWeek',
         'day',
       ]);
-      
+
       if (dayOfWeek != null) {
         final weekdayNumber = _getWeekdayNumber(dayOfWeek);
         if (weekdayNumber != null) {
@@ -352,7 +326,7 @@ class _TimetableViewState extends State<TimetableView> {
             firstDayOfMonth,
             lastDayOfMonth,
           );
-          
+
           for (final date in occurrences) {
             final dateKey = DateTime(date.year, date.month, date.day);
             countMap[dateKey] = (countMap[dateKey] ?? 0) + 1;
@@ -366,15 +340,31 @@ class _TimetableViewState extends State<TimetableView> {
 
   int? _getWeekdayNumber(String dayOfWeek) {
     final dayNames = {
-      'monday': 1, 'mon': 1, '1': 1,
-      'tuesday': 2, 'tue': 2, '2': 2,
-      'wednesday': 3, 'wed': 3, '3': 3,
-      'thursday': 4, 'thu': 4, 'thurs': 4, '4': 4,
-      'friday': 5, 'fri': 5, '5': 5,
-      'saturday': 6, 'sat': 6, '6': 6,
-      'sunday': 7, 'sun': 7, '0': 7, '7': 7,
+      'monday': 1,
+      'mon': 1,
+      '1': 1,
+      'tuesday': 2,
+      'tue': 2,
+      '2': 2,
+      'wednesday': 3,
+      'wed': 3,
+      '3': 3,
+      'thursday': 4,
+      'thu': 4,
+      'thurs': 4,
+      '4': 4,
+      'friday': 5,
+      'fri': 5,
+      '5': 5,
+      'saturday': 6,
+      'sat': 6,
+      '6': 6,
+      'sunday': 7,
+      'sun': 7,
+      '0': 7,
+      '7': 7,
     };
-    
+
     return dayNames[dayOfWeek.toLowerCase().trim()];
   }
 
@@ -384,26 +374,29 @@ class _TimetableViewState extends State<TimetableView> {
     DateTime lastDay,
   ) {
     final List<DateTime> occurrences = [];
-    
+
     // Find first occurrence of this weekday in the month
     int firstDayWeekday = firstDay.weekday;
     int daysToAdd = weekday - firstDayWeekday;
     if (daysToAdd < 0) daysToAdd += 7;
-    
+
     DateTime currentDate = firstDay.add(Duration(days: daysToAdd));
-    
+
     // Add all occurrences in the month
     while (currentDate.isBefore(lastDay.add(const Duration(days: 1)))) {
       occurrences.add(currentDate);
       currentDate = currentDate.add(const Duration(days: 7));
     }
-    
+
     return occurrences;
   }
 
-
   List<TimetableTaskModel> _mapTasksForSelectedDay() {
-    final selectedDateKey = DateTime(_selectedDate.year, _selectedDate.month, _selectedDate.day);
+    final selectedDateKey = DateTime(
+      _selectedDate.year,
+      _selectedDate.month,
+      _selectedDate.day,
+    );
     final selectedWeekday = _selectedDate.weekday;
 
     return _rawTimetable
@@ -419,13 +412,17 @@ class _TimetableViewState extends State<TimetableView> {
           if (dateStr != null && dateStr.isNotEmpty) {
             try {
               final taskDate = DateTime.parse(dateStr);
-              final taskDateKey = DateTime(taskDate.year, taskDate.month, taskDate.day);
+              final taskDateKey = DateTime(
+                taskDate.year,
+                taskDate.month,
+                taskDate.day,
+              );
               return taskDateKey == selectedDateKey;
             } catch (_) {
               // If parsing fails, fall through to day of week matching
             }
           }
-          
+
           // Fall back to day of week matching (weekly recurring schedules)
           final day = readString(row, const [
             'day_of_week',
@@ -434,7 +431,7 @@ class _TimetableViewState extends State<TimetableView> {
             'weekday',
           ]);
           if (day == null || day.isEmpty) return false;
-          
+
           final weekdayNumber = _getWeekdayNumber(day);
           return weekdayNumber != null && weekdayNumber == selectedWeekday;
         })
@@ -444,15 +441,17 @@ class _TimetableViewState extends State<TimetableView> {
           final classroom = asMap(row['classroom']);
           final teacher = asMap(row['teacher']);
           final group = asMap(row['group']);
-          final building = asMap(classroom?['building']) ?? asMap(row['building']);
+          final building =
+              asMap(classroom?['building']) ?? asMap(row['building']);
 
           // Get subject name
-          final subjectName = subject != null ? readString(subject, const ['name']) : null;
-          
+          final subjectName = subject != null
+              ? readString(subject, const ['name'])
+              : null;
+
           // Get title - prefer timetable.title, then subject.name, then default
-          final title = readString(row, const ['title']) ??
-                       subjectName ?? 
-                       'Class';
+          final title =
+              readString(row, const ['title']) ?? subjectName ?? 'Class';
 
           // Get time - format start_time and end_time
           final start = readString(row, const ['start_time']) ?? '';
@@ -460,7 +459,9 @@ class _TimetableViewState extends State<TimetableView> {
           String time = '';
           if (start.isNotEmpty && end.isNotEmpty) {
             // Format time: "08:00:00" -> "08:00"
-            final startFormatted = start.length >= 5 ? start.substring(0, 5) : start;
+            final startFormatted = start.length >= 5
+                ? start.substring(0, 5)
+                : start;
             final endFormatted = end.length >= 5 ? end.substring(0, 5) : end;
             time = '$startFormatted - $endFormatted';
           } else if (start.isNotEmpty) {
@@ -468,19 +469,27 @@ class _TimetableViewState extends State<TimetableView> {
           }
 
           // Get room name from classroom
-          final roomName = classroom != null ? readString(classroom, const ['name']) : null;
-          
+          final roomName = classroom != null
+              ? readString(classroom, const ['name'])
+              : null;
+
           // Get building name (if available in building object)
           // Note: Backend returns building_id in classroom, not building object
           // Building might need to be fetched separately or included in response
-          final buildingName = building != null ? readString(building, const ['name']) : null;
-          
+          final buildingName = building != null
+              ? readString(building, const ['name'])
+              : null;
+
           // Get teacher name from teacher object
-          final teacherName = teacher != null ? readString(teacher, const ['user_name', 'name']) : null;
-          
+          final teacherName = teacher != null
+              ? readString(teacher, const ['user_name', 'name'])
+              : null;
+
           // Get group name
-          final groupName = group != null ? readString(group, const ['name']) : null;
-          
+          final groupName = group != null
+              ? readString(group, const ['name'])
+              : null;
+
           // Get day of week
           final dayOfWeek = readString(row, const ['day_of_week']);
 

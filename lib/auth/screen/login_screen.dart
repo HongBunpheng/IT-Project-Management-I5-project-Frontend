@@ -3,7 +3,7 @@ import '../../configs/app_colors.dart';
 import '../../utils/validators.dart';
 import '../../utils/localization_helper.dart';
 import 'signup_screen.dart';
-import '../../dashboard/screen/dashboard_screen.dart';
+import '../../main_shell.dart';
 import '../repository/auth_repository.dart';
 import '../../utils/snackbar.dart';
 
@@ -46,17 +46,25 @@ class _LoginScreenState extends State<LoginScreen> {
     final statusCode = res['statusCode'];
     if (statusCode is int && statusCode >= 200 && statusCode < 300) {
       CustomSnackBar.success(
-        title: safeLocaleString(context, 'login_successful', fallback: 'Login Successful!'),
+        title: safeLocaleString(
+          context,
+          'login_successful',
+          fallback: 'Login Successful!',
+        ),
       );
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (_) => const DashboardView()),
+        MaterialPageRoute(builder: (_) => const MainShell(initialIndex: 0)),
       );
     } else {
       final body = res['body'];
       final message = body is Map ? body['message'] : null;
       CustomSnackBar.error(
-        title: safeLocaleString(context, 'login_failed', fallback: 'Login failed'),
+        title: safeLocaleString(
+          context,
+          'login_failed',
+          fallback: 'Login failed',
+        ),
         message: message?.toString() ?? '',
       );
     }
@@ -64,11 +72,12 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Always use light mode for login screen
-    return Theme(
-      data: ThemeData.light(),
-      child: Scaffold(
-        backgroundColor: Colors.white, // Always white background
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Scaffold(
+      backgroundColor: isDark
+          ? const Color(0xFF121212)
+          : Colors.white, // bottom should be white like Figma
       body: Stack(
         children: [
           ClipPath(
@@ -87,7 +96,11 @@ class _LoginScreenState extends State<LoginScreen> {
 
                 // LOGO
                 Center(
-                  child: Image.asset("assets/images/logo.png", height: 110),
+                  child: Image.asset(
+                    "assets/images/logo.png",
+                    height: 110,
+                    errorBuilder: (_, __, ___) => const SizedBox(height: 110),
+                  ),
                 ),
 
                 const SizedBox(height: 50),
@@ -134,7 +147,11 @@ class _LoginScreenState extends State<LoginScreen> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  safeLocaleString(context, 'email', fallback: 'Email'),
+                                  safeLocaleString(
+                                    context,
+                                    'email_or_phone',
+                                    fallback: 'Email or Phone number',
+                                  ),
                                   style: const TextStyle(
                                     fontSize: 14,
                                     color: Colors.grey,
@@ -145,8 +162,8 @@ class _LoginScreenState extends State<LoginScreen> {
 
                                 TextFormField(
                                   controller: _emailOrPhoneController,
-                                  keyboardType: TextInputType.emailAddress,
-                                  validator: Validators.validateEmail,
+                                  keyboardType: TextInputType.text,
+                                  validator: Validators.validateEmailOrPhone,
                                   decoration: InputDecoration(
                                     filled: true,
                                     fillColor: Colors.white,
@@ -182,7 +199,11 @@ class _LoginScreenState extends State<LoginScreen> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  safeLocaleString(context, 'password', fallback: 'Password'),
+                                  safeLocaleString(
+                                    context,
+                                    'password',
+                                    fallback: 'Password',
+                                  ),
                                   style: const TextStyle(
                                     fontSize: 14,
                                     color: Colors.grey,
@@ -272,7 +293,13 @@ class _LoginScreenState extends State<LoginScreen> {
                             Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                Text(safeLocaleString(context, 'dont_have_account', fallback: "Don't have an account? ")),
+                                Text(
+                                  safeLocaleString(
+                                    context,
+                                    'dont_have_account',
+                                    fallback: "Don't have an account? ",
+                                  ),
+                                ),
                                 TextButton(
                                   onPressed: () {
                                     Navigator.push(
@@ -284,7 +311,11 @@ class _LoginScreenState extends State<LoginScreen> {
                                   },
 
                                   child: Text(
-                                    safeLocaleString(context, 'sign_up', fallback: 'Sign Up'),
+                                    safeLocaleString(
+                                      context,
+                                      'sign_up',
+                                      fallback: 'Sign Up',
+                                    ),
                                     style: const TextStyle(
                                       color: AppColors.primaryBlue,
                                     ),
@@ -299,12 +330,11 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ),
 
-                const SizedBox(height: 50                ),
+                const SizedBox(height: 50),
               ],
             ),
           ),
         ],
-      ),
       ),
     );
   }
