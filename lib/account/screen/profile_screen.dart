@@ -13,6 +13,7 @@ import '../../services/token_storage.dart';
 import '../../utils/json_utils.dart';
 import '../../utils/snackbar.dart';
 import '../service/account_service.dart';
+import '../../utils/pull_to_refresh.dart';
 import 'personal_information_screen.dart';
 import 'academic_records_screen.dart';
 
@@ -625,16 +626,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
         child: Column(
           children: [
             Expanded(
-              child: SingleChildScrollView(
-                controller: _scrollController,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    const SizedBox(height: 32),
-                    // Profile Picture with Camera Icon
-                    Stack(
-                      children: [
-                        GestureDetector(
+              child: AppPullToRefresh(
+                onRefresh: _loadProfile,
+                child: SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  controller: _scrollController,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      const SizedBox(height: 32),
+                      // Profile Picture with Camera Icon
+                      Stack(
+                        children: [
+                          GestureDetector(
                           onTap: _isUploadingImage ? null : _pickImage,
                           child: Container(
                             width: 120,
@@ -880,7 +884,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     // Logout
                     _buildLogoutItem(),
                     const SizedBox(height: 32),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),

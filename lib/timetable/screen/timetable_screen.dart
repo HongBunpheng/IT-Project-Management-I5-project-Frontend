@@ -8,6 +8,7 @@ import '../../services/timetable_service.dart';
 import '../../services/token_storage.dart';
 import '../../utils/json_utils.dart';
 import '../../account/service/account_service.dart';
+import '../../utils/pull_to_refresh.dart';
 
 class TimetableView extends StatefulWidget {
   const TimetableView({super.key});
@@ -193,9 +194,10 @@ class _TimetableViewState extends State<TimetableView> {
                           ),
                         ),
                       )
-                    : RefreshIndicator(
+                    : AppPullToRefresh(
                         onRefresh: _loadTimetable,
                         child: ListView.builder(
+                          physics: const AlwaysScrollableScrollPhysics(),
                           padding: EdgeInsets.only(bottom: AppSizes.spacingM),
                           itemCount: _tasks.length,
                           itemBuilder: (context, index) {

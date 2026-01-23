@@ -9,6 +9,7 @@ import '../../widgets/common/app_header.dart';
 import '../../services/attendance_service.dart';
 import '../../services/token_storage.dart';
 import '../../utils/json_utils.dart';
+import '../../utils/pull_to_refresh.dart';
 import 'attendance_history_screen.dart';
 import '../../leave_request/screen/leave_request_screen.dart';
 
@@ -87,11 +88,14 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
           children: [
             const AppHeader(),
             Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(24.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
+              child: AppPullToRefresh(
+                onRefresh: _loadAttendance,
+                child: SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.all(24.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
@@ -315,7 +319,8 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                         ),
                       ),
                     ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),

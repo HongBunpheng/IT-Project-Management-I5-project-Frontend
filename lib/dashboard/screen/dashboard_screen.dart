@@ -3,6 +3,7 @@ import '../../configs/app_colors.dart';
 import '../../configs/app_sizes.dart';
 import '../../configs/app_theme_extension.dart';
 import '../../utils/responsive.dart';
+import '../../utils/pull_to_refresh.dart';
 import '../../services/timetable_service.dart';
 import '../widget/exam_card_item.dart';
 import '../widget/exam_score_summary_card.dart';
@@ -37,6 +38,10 @@ class _DashboardViewState extends State<DashboardView> {
     _loadSummary();
     _loadSubjects();
     _loadEvents();
+  }
+
+  Future<void> _refresh() async {
+    await Future.wait([_loadSummary(), _loadSubjects(), _loadEvents()]);
   }
 
   Future<void> _loadSummary() async {
@@ -174,7 +179,9 @@ class _DashboardViewState extends State<DashboardView> {
 
     return Scaffold(
       backgroundColor: isDark ? const Color(0xFF121212) : AppColors.white,
-      body: SingleChildScrollView(
+      body: AppPullToRefresh(
+        onRefresh: _refresh,
+        alwaysScrollable: true,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -199,13 +206,13 @@ class _DashboardViewState extends State<DashboardView> {
                       horizontal: AppSizes.spacingS,
                       vertical: AppSizes.spacingXS,
                     ),
-                    decoration: BoxDecoration(
+                    decoration: const BoxDecoration(
                       color: AppColors.purple,
                       shape: BoxShape.circle,
                     ),
                     child: Text(
                       '${_events.length}',
-                      style: TextStyle(
+                      style: const TextStyle(
                         color: AppColors.white,
                         fontSize: AppSizes.fontSizeS,
                         fontWeight: FontWeight.bold,
@@ -253,13 +260,13 @@ class _DashboardViewState extends State<DashboardView> {
                       horizontal: AppSizes.spacingS,
                       vertical: AppSizes.spacingXS,
                     ),
-                    decoration: BoxDecoration(
+                    decoration: const BoxDecoration(
                       color: AppColors.purple,
                       shape: BoxShape.circle,
                     ),
                     child: Text(
                       '${_subjects.length}',
-                      style: TextStyle(
+                      style: const TextStyle(
                         color: AppColors.white,
                         fontSize: AppSizes.fontSizeS,
                         fontWeight: FontWeight.bold,

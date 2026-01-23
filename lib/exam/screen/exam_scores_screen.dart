@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../configs/app_colors.dart';
 import '../../configs/app_theme_extension.dart';
 import '../../utils/localization_helper.dart';
+import '../../utils/pull_to_refresh.dart';
 import '../model/exam_model.dart';
 import '../service/exam_service.dart';
 import '../../attendance/screen/attendance_screen.dart';
@@ -69,121 +70,126 @@ class _ExamScoresScreenState extends State<ExamScoresScreen> {
                         ),
                       ),
               )
-            : SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _OverviewCard(
-                      title: safeLocaleString(
-                        context,
-                        'exam_scores',
-                        fallback: 'Exam Scores',
-                      ),
-                      averageLabel: safeLocaleString(
-                        context,
-                        'average_score',
-                        fallback: 'Average Score',
-                      ),
-                      averageScore: _examSummary!.averageScore,
-                      subjectsCount: _examSummary!.examResults.length,
-                    ),
-                    const SizedBox(height: 16),
-                    _SectionHeader(
-                      icon: Icons.grid_view,
-                      title: safeLocaleString(
-                        context,
-                        'quick_actions',
-                        fallback: 'Quick actions',
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _ActionTile(
-                            title: safeLocaleString(
-                              context,
-                              'attendance',
-                              fallback: 'Attendance',
-                            ),
-                            subtitle: safeLocaleString(
-                              context,
-                              'view_complete_history',
-                              fallback: 'View complete history',
-                            ),
-                            icon: Icons.fact_check_outlined,
-                            color: appColors.primaryBlue,
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => const AttendanceScreen(),
-                                ),
-                              );
-                            },
-                          ),
+            : AppPullToRefresh(
+                onRefresh: _loadExamData,
+                alwaysScrollable: true,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _OverviewCard(
+                        title: safeLocaleString(
+                          context,
+                          'exam_scores',
+                          fallback: 'Exam Scores',
                         ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: _ActionTile(
-                            title: safeLocaleString(
-                              context,
-                              'score_summary',
-                              fallback: 'Score Summary',
-                            ),
-                            subtitle: safeLocaleString(
-                              context,
-                              'detailed_analytics',
-                              fallback: 'Detailed analytics',
-                            ),
-                            icon: Icons.pie_chart_outline,
-                            color: appColors.success,
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => const ScoresSummaryScreen(),
-                                ),
-                              );
-                            },
-                          ),
+                        averageLabel: safeLocaleString(
+                          context,
+                          'average_score',
+                          fallback: 'Average Score',
                         ),
-                      ],
-                    ),
-                    const SizedBox(height: 20),
-                    _SectionHeader(
-                      icon: Icons.workspace_premium,
-                      title: safeLocaleString(
-                        context,
-                        'exam_results',
-                        fallback: 'Exam Results',
+                        averageScore: _examSummary!.averageScore,
+                        subjectsCount: _examSummary!.examResults.length,
                       ),
-                    ),
-                    const SizedBox(height: 12),
-                    ListView.builder(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemCount: _examSummary!.examResults.length,
-                      itemBuilder: (context, index) {
-                        final exam = _examSummary!.examResults[index];
-                        return _ExamResultCard(
-                          exam: exam,
-                          onPreview: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => ExamDetailScreen(
-                                  examId: exam.examId,
-                                  subjectName: exam.subjectName,
-                                ),
+                      const SizedBox(height: 16),
+                      _SectionHeader(
+                        icon: Icons.grid_view,
+                        title: safeLocaleString(
+                          context,
+                          'quick_actions',
+                          fallback: 'Quick actions',
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _ActionTile(
+                              title: safeLocaleString(
+                                context,
+                                'attendance',
+                                fallback: 'Attendance',
                               ),
-                            );
-                          },
-                        );
-                      },
-                    ),
-                  ],
+                              subtitle: safeLocaleString(
+                                context,
+                                'view_complete_history',
+                                fallback: 'View complete history',
+                              ),
+                              icon: Icons.fact_check_outlined,
+                              color: appColors.primaryBlue,
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => const AttendanceScreen(),
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: _ActionTile(
+                              title: safeLocaleString(
+                                context,
+                                'score_summary',
+                                fallback: 'Score Summary',
+                              ),
+                              subtitle: safeLocaleString(
+                                context,
+                                'detailed_analytics',
+                                fallback: 'Detailed analytics',
+                              ),
+                              icon: Icons.pie_chart_outline,
+                              color: appColors.success,
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) =>
+                                        const ScoresSummaryScreen(),
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 20),
+                      _SectionHeader(
+                        icon: Icons.workspace_premium,
+                        title: safeLocaleString(
+                          context,
+                          'exam_results',
+                          fallback: 'Exam Results',
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      ListView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: _examSummary!.examResults.length,
+                        itemBuilder: (context, index) {
+                          final exam = _examSummary!.examResults[index];
+                          return _ExamResultCard(
+                            exam: exam,
+                            onPreview: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => ExamDetailScreen(
+                                    examId: exam.examId,
+                                    subjectName: exam.subjectName,
+                                  ),
+                                ),
+                              );
+                            },
+                          );
+                        },
+                      ),
+                    ],
+                  ),
                 ),
               ),
     );

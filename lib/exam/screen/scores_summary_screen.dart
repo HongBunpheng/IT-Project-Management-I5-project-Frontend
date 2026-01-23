@@ -8,6 +8,7 @@ import '../../widgets/common/app_header.dart';
 import '../../configs/app_colors.dart';
 import '../../configs/app_sizes.dart';
 import '../../utils/snackbar.dart';
+import '../../utils/pull_to_refresh.dart';
 
 class ScoresSummaryScreen extends StatefulWidget {
   const ScoresSummaryScreen({super.key});
@@ -84,10 +85,12 @@ class _ScoresSummaryScreenState extends State<ScoresSummaryScreen> {
                 children: [
                   const AppHeader(),
                   Expanded(
-                    child: SingleChildScrollView(
-                      physics: const BouncingScrollPhysics(),
-                      child: Column(
-                        children: [
+                    child: AppPullToRefresh(
+                      onRefresh: _loadSummaryData,
+                      child: SingleChildScrollView(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        child: Column(
+                          children: [
                           const SizedBox(height: 35),
                           // Donut Chart with rounded segments
                           RoundedDonutChart(
@@ -142,6 +145,7 @@ class _ScoresSummaryScreenState extends State<ScoresSummaryScreen> {
                           ),
                         ],
                       ),
+                    ),
                     ),
                   ),
                 ],

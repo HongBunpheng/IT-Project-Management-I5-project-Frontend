@@ -6,6 +6,7 @@ import '../../widgets/common/app_header.dart';
 import '../../utils/snackbar.dart';
 import '../../configs/app_colors.dart';
 import '../../configs/app_sizes.dart';
+import '../../utils/pull_to_refresh.dart';
 
 class ExamDetailScreen extends StatefulWidget {
   final String examId;
@@ -61,10 +62,12 @@ class _ExamDetailScreenState extends State<ExamDetailScreen> {
             ? const Center(child: CircularProgressIndicator())
             : _examResult == null
             ? const Center(child: Text('No data available'))
-            : SingleChildScrollView(
-                physics: const BouncingScrollPhysics(),
-                child: Column(
-                  children: [
+            : AppPullToRefresh(
+                onRefresh: _loadExamDetail,
+                child: SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  child: Column(
+                    children: [
                     const SizedBox(height: 20),
                     // Header
                     AppHeader(title: widget.subjectName),
@@ -133,6 +136,7 @@ class _ExamDetailScreenState extends State<ExamDetailScreen> {
                   ],
                 ),
               ),
+            ),
       ),
     );
   }
