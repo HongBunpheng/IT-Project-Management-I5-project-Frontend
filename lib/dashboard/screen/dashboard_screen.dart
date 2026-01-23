@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../configs/app_colors.dart';
 import '../../configs/app_sizes.dart';
+import '../../configs/app_theme_extension.dart';
 import '../../utils/responsive.dart';
 import '../../widgets/common/app_header.dart';
 import '../../widgets/common/custom_bottom_navigation_bar.dart';
@@ -11,14 +12,14 @@ import '../widget/exam_score_summary_card.dart';
 import '../widget/task_card_item.dart';
 import '../model/dashboard_models.dart';
 import '../../notification/screen/notification_screen.dart';
-import '../../services/notification_service.dart';
 import '../../exam/screen/exam_scores_screen.dart';
 import '../../checkin/screen/checkin_screen.dart';
-import '../../auth/service/auth_service.dart';
+import '../../account/service/account_service.dart';
 import '../../exam/service/exam_service.dart';
 import '../../account/screen/profile_screen.dart';
 import '../../services/token_storage.dart';
 import '../../utils/json_utils.dart';
+import '../../services/event_service.dart';
 
 class DashboardView extends StatefulWidget {
   const DashboardView({super.key});
@@ -30,15 +31,16 @@ class DashboardView extends StatefulWidget {
 class _DashboardViewState extends State<DashboardView> {
   int _currentBottomNavIndex = 0;
 
-  final AuthService _authService = AuthService();
+  final AccountService _accountService = AccountService();
   final ExamService _examService = ExamService();
   final TimetableService _timetableService = TimetableService();
-  final NotificationService _notificationService = NotificationService();
+  final EventService _eventService = EventService();
   final TokenStorage _tokenStorage = TokenStorage();
 
   ExamScoreSummary _scoreSummary = ExamScoreSummary(score: 0.0);
-  String? _username;
   String? _userId;
+  String? _fullName;
+  String? _email;
 
   List<ExamCard> _events = [];
   List<TaskCard> _subjects = [];
@@ -46,10 +48,33 @@ class _DashboardViewState extends State<DashboardView> {
   @override
   void initState() {
     super.initState();
-    _loadSummary();
-    _loadMe();
-    _loadSubjects();
-    _loadEvents();
+    // Load from storage first for immediate display
+    _loadFromStorage().then((_) {
+      // Then load other data
+      _loadSummary();
+      _loadMe();
+      _loadSubjects();
+      _loadEvents();
+    });
+  }
+
+  Future<void> _loadFromStorage() async {
+    try {
+      final storedFullName = await _tokenStorage.readFullName();
+      final storedEmail = await _tokenStorage.readEmail();
+      if (mounted) {
+        setState(() {
+          if (storedFullName != null && storedFullName.isNotEmpty) {
+            _fullName = storedFullName;
+          }
+          if (storedEmail != null && storedEmail.isNotEmpty) {
+            _email = storedEmail;
+          }
+        });
+      }
+    } catch (_) {
+      // ignore
+    }
   }
 
   Future<void> _loadSummary() async {
@@ -66,16 +91,47 @@ class _DashboardViewState extends State<DashboardView> {
 
   Future<void> _loadMe() async {
     try {
-      final me = await _authService.me();
-      if (!mounted || me == null) return;
-      final data = me['data'] is Map ? (me['data'] as Map) : me;
+      final profile = await _accountService.getProfile();
+      if (!mounted || profile == null) return;
+
+      final user = _accountService.extractUserData(profile);
+
+      final fullName = readString(user, const [
+        'full_name',
+        'fullName',
+        'name',
+        'user_name',
+        'username',
+      ]);
+      final email = readString(user, const ['email']);
+      final userId = readString(user, const ['id', 'user_id', 'userId']);
+
+      if (!mounted) return;
       setState(() {
-        _username = (data['name'] ?? data['full_name'] ?? data['email'])
-            ?.toString();
-        _userId = (data['id'] ?? data['user_id'])?.toString();
+        if (fullName != null && fullName.isNotEmpty) _fullName = fullName;
+        if (email != null && email.isNotEmpty) _email = email;
+        _userId = userId ?? _userId;
       });
+
+      if (fullName != null && fullName.isNotEmpty) {
+        await _tokenStorage.writeFullName(fullName);
+      }
+      if (email != null && email.isNotEmpty) {
+        await _tokenStorage.writeEmail(email);
+      }
+      if (userId != null && userId.isNotEmpty) {
+        await _tokenStorage.writeUserId(userId);
+      }
     } catch (_) {
-      // ignore
+      // If API fails, use stored values if available
+      if (mounted) {
+        final storedFullName = await _tokenStorage.readFullName();
+        final storedEmail = await _tokenStorage.readEmail();
+        setState(() {
+          _fullName = storedFullName;
+          _email = storedEmail;
+        });
+      }
     }
   }
 
@@ -116,16 +172,16 @@ class _DashboardViewState extends State<DashboardView> {
 
       final subjects =
           stats.entries.map((entry) {
-            final total = entry.value.total;
-            final completed = entry.value.completed;
-            final progress = total == 0 ? 0.0 : (completed / total);
-            return TaskCard(
-              title: entry.key,
-              taskCount: total,
-              progress: progress.clamp(0.0, 1.0),
-              iconCategory: _subjectIconCategory(entry.key),
-            );
-          }).toList()
+              final total = entry.value.total;
+              final completed = entry.value.completed;
+              final progress = total == 0 ? 0.0 : (completed / total);
+              return TaskCard(
+                title: entry.key,
+                taskCount: total,
+                progress: progress.clamp(0.0, 1.0),
+                iconCategory: _subjectIconCategory(entry.key),
+              );
+            }).toList()
             ..sort((a, b) => (b.taskCount ?? 0).compareTo(a.taskCount ?? 0));
 
       if (!mounted) return;
@@ -137,32 +193,34 @@ class _DashboardViewState extends State<DashboardView> {
 
   Future<void> _loadEvents() async {
     try {
-      final raw = await _notificationService.list();
+      final raw = await _eventService.list();
       final events = raw
-          .map(_mapNotificationToEventCard)
+          .map(_mapEventToEventCard)
           .whereType<ExamCard>()
           .toList();
 
       if (!mounted) return;
-      setState(() => _events = events.take(2).toList());
+      setState(() => _events = events);
     } catch (_) {
       // ignore
     }
   }
 
-  ExamCard? _mapNotificationToEventCard(Map<String, dynamic> json) {
-    final type = readString(json, const ['title', 'type']) ?? 'Event';
-    final message = readString(json, const ['message', 'body']) ?? '';
-    final isRead =
-        (json['is_read'] == true) ||
-        (json['isRead'] == true) ||
-        (readInt(json, const ['is_read']) ?? 0) == 1;
+  ExamCard? _mapEventToEventCard(Map<String, dynamic> json) {
+    final type =
+        readString(json, const ['type', 'category', 'title']) ?? 'Event';
+    final title =
+        readString(json, const ['title', 'name', 'description']) ?? 'New event';
+    final isExam =
+        type.toLowerCase().contains('exam') ||
+        title.toLowerCase().contains('exam');
 
     return ExamCard(
+      id: readString(json, const ['id']),
       category: type,
-      title: message.isEmpty ? 'New event' : message,
-      progress: isRead ? 1.0 : 0.35,
-      iconCategory: isRead ? 'blue' : 'pink',
+      title: title,
+      progress: 0.65,
+      iconCategory: isExam ? 'blue' : 'pink',
     );
   }
 
@@ -238,16 +296,19 @@ class _DashboardViewState extends State<DashboardView> {
   @override
   Widget build(BuildContext context) {
     final horizontalPadding = Responsive.getPadding(context);
+    final appColors = context.appColors;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: AppColors.white,
+      backgroundColor: isDark ? const Color(0xFF121212) : AppColors.white,
       body: SafeArea(
         child: Column(
           children: [
             // Header
             AppHeader(
-              username: _username,
               userId: _userId,
+              fullName: _fullName,
+              email: _email,
               trailing: IconButton(
                 icon: const Icon(Icons.notifications_outlined),
                 onPressed: () => Navigator.push(
@@ -278,7 +339,7 @@ class _DashboardViewState extends State<DashboardView> {
                             style: TextStyle(
                               fontSize: AppSizes.fontSizeXL,
                               fontWeight: FontWeight.bold,
-                              color: AppColors.textPrimary,
+                              color: appColors.textPrimary,
                             ),
                           ),
                           SizedBox(width: AppSizes.spacingS),
@@ -340,7 +401,7 @@ class _DashboardViewState extends State<DashboardView> {
                             style: TextStyle(
                               fontSize: AppSizes.fontSizeXL,
                               fontWeight: FontWeight.bold,
-                              color: AppColors.textPrimary,
+                              color: appColors.textPrimary,
                             ),
                           ),
                           SizedBox(width: AppSizes.spacingS),

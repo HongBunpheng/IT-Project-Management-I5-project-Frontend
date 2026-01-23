@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import '../../configs/app_colors.dart';
+import '../../utils/validators.dart';
+import '../../utils/localization_helper.dart';
 import 'signup_screen.dart';
 import '../../dashboard/screen/dashboard_screen.dart';
 import '../repository/auth_repository.dart';
-import '../../utils/helpers.dart';
-import '../../utils/validators.dart';
+import '../../utils/snackbar.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -44,7 +45,13 @@ class _LoginScreenState extends State<LoginScreen> {
 
     final statusCode = res['statusCode'];
     if (statusCode is int && statusCode >= 200 && statusCode < 300) {
-      Helpers.showSnackBar(context, "Login Successful!");
+      CustomSnackBar.success(
+        title: safeLocaleString(
+          context,
+          'login_successful',
+          fallback: 'Login Successful!',
+        ),
+      );
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (_) => const DashboardView()),
@@ -52,14 +59,25 @@ class _LoginScreenState extends State<LoginScreen> {
     } else {
       final body = res['body'];
       final message = body is Map ? body['message'] : null;
-      Helpers.showSnackBar(context, message?.toString() ?? "Login failed");
+      CustomSnackBar.error(
+        title: safeLocaleString(
+          context,
+          'login_failed',
+          fallback: 'Login failed',
+        ),
+        message: message?.toString() ?? '',
+      );
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: Colors.white, // bottom should be white like Figma
+      backgroundColor: isDark
+          ? const Color(0xFF121212)
+          : Colors.white, // bottom should be white like Figma
       body: Stack(
         children: [
           ClipPath(
@@ -78,7 +96,11 @@ class _LoginScreenState extends State<LoginScreen> {
 
                 // LOGO
                 Center(
-                  child: Image.asset("assets/images/logo.png", height: 110),
+                  child: Image.asset(
+                    "assets/images/logo.png",
+                    height: 110,
+                    errorBuilder: (_, __, ___) => const SizedBox(height: 110),
+                  ),
                 ),
 
                 const SizedBox(height: 50),
@@ -105,7 +127,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     children: [
                       Center(
                         child: Text(
-                          "Login",
+                          safeLocaleString(context, 'login', fallback: 'Login'),
                           style: TextStyle(
                             fontSize: 26,
                             fontWeight: FontWeight.bold,
@@ -120,13 +142,17 @@ class _LoginScreenState extends State<LoginScreen> {
                         key: _formKey,
                         child: Column(
                           children: [
-                            // EMAIL / PHONE
+                            // EMAIL
                             Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Text(
-                                  "Email or Phone number",
-                                  style: TextStyle(
+                                Text(
+                                  safeLocaleString(
+                                    context,
+                                    'email_or_phone',
+                                    fallback: 'Email or Phone number',
+                                  ),
+                                  style: const TextStyle(
                                     fontSize: 14,
                                     color: Colors.grey,
                                     fontWeight: FontWeight.w500,
@@ -136,6 +162,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                                 TextFormField(
                                   controller: _emailOrPhoneController,
+                                  keyboardType: TextInputType.text,
                                   validator: Validators.validateEmailOrPhone,
                                   decoration: InputDecoration(
                                     filled: true,
@@ -171,9 +198,13 @@ class _LoginScreenState extends State<LoginScreen> {
                             Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Text(
-                                  "Password",
-                                  style: TextStyle(
+                                Text(
+                                  safeLocaleString(
+                                    context,
+                                    'password',
+                                    fallback: 'Password',
+                                  ),
+                                  style: const TextStyle(
                                     fontSize: 14,
                                     color: Colors.grey,
                                     fontWeight: FontWeight.w500,
@@ -242,9 +273,13 @@ class _LoginScreenState extends State<LoginScreen> {
                                     ? const CircularProgressIndicator(
                                         color: Colors.white,
                                       )
-                                    : const Text(
-                                        "Log In",
-                                        style: TextStyle(
+                                    : Text(
+                                        safeLocaleString(
+                                          context,
+                                          'log_in',
+                                          fallback: 'Log In',
+                                        ),
+                                        style: const TextStyle(
                                           fontSize: 18,
                                           fontWeight: FontWeight.w600,
                                           color: Colors.white,
@@ -258,7 +293,13 @@ class _LoginScreenState extends State<LoginScreen> {
                             Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                const Text("Don't have an account? "),
+                                Text(
+                                  safeLocaleString(
+                                    context,
+                                    'dont_have_account',
+                                    fallback: "Don't have an account? ",
+                                  ),
+                                ),
                                 TextButton(
                                   onPressed: () {
                                     Navigator.push(
@@ -269,9 +310,13 @@ class _LoginScreenState extends State<LoginScreen> {
                                     );
                                   },
 
-                                  child: const Text(
-                                    "Sign Up",
-                                    style: TextStyle(
+                                  child: Text(
+                                    safeLocaleString(
+                                      context,
+                                      'sign_up',
+                                      fallback: 'Sign Up',
+                                    ),
+                                    style: const TextStyle(
                                       color: AppColors.primaryBlue,
                                     ),
                                   ),

@@ -29,160 +29,200 @@ class TaskCompletionDialog extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header with icon and delete button
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: AppColors.iconOrange,
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    Icons.info,
-                    color: AppColors.white,
-                    size: AppSizes.iconSizeM,
-                  ),
-                ),
-                GestureDetector(
-                  onTap: () => Navigator.of(context).pop(false),
-                  child: Icon(
-                    Icons.delete_outline,
-                    color: AppColors.error,
-                    size: AppSizes.iconSizeL,
-                  ),
-                ),
-              ],
-            ),
-            SizedBox(height: AppSizes.spacingL),
-            // Question
-            Center(
-              child: Text(
-                'Did you complete your schedule?',
-                style: TextStyle(
-                  fontSize: AppSizes.fontSizeL,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.primaryBlue,
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ),
-            SizedBox(height: AppSizes.spacingXL),
             // Task Title
             Center(
-              child: Text(
-                task.title,
-                style: TextStyle(
-                  fontSize: AppSizes.fontSizeXXL,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.primaryBlue,
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  task.title,
+                  style: TextStyle(
+                    fontSize: AppSizes.fontSizeXXL,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.primaryBlue,
+                  ),
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                 ),
-                textAlign: TextAlign.center,
               ),
             ),
             SizedBox(height: AppSizes.spacingXL),
-            // Schedule details
-            Row(
-              children: [
-                Icon(
-                  Icons.calendar_today,
-                  size: AppSizes.iconSizeM,
-                  color: AppColors.primaryBlue,
-                ),
-                SizedBox(width: AppSizes.spacingS),
-                Expanded(
-                  child: Text(
-                    'Scheduled for ${task.time}, Wednesday',
-                    style: TextStyle(
-                      fontSize: AppSizes.fontSizeM,
+            // Subject Name
+            if (task.subjectName != null && task.subjectName!.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(bottom: AppSizes.spacingM),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.book,
+                      size: AppSizes.iconSizeM,
                       color: AppColors.primaryBlue,
                     ),
-                  ),
+                    SizedBox(width: AppSizes.spacingS),
+                    Expanded(
+                      child: Text(
+                        task.subjectName!,
+                        style: TextStyle(
+                          fontSize: AppSizes.fontSizeM,
+                          color: AppColors.primaryBlue,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-            SizedBox(height: AppSizes.spacingM),
-            // Task details
-            Row(
-              children: [
-                Icon(
-                  Icons.description,
-                  size: AppSizes.iconSizeM,
-                  color: AppColors.primaryBlue,
-                ),
-                SizedBox(width: AppSizes.spacingS),
-                Expanded(
-                  child: Text(
-                    task.details,
-                    style: TextStyle(
-                      fontSize: AppSizes.fontSizeM,
+              ),
+            // Time
+            if (task.time.isNotEmpty && task.time != '-')
+              Padding(
+                padding: const EdgeInsets.only(bottom: AppSizes.spacingM),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.access_time,
+                      size: AppSizes.iconSizeM,
                       color: AppColors.primaryBlue,
                     ),
-                  ),
+                    SizedBox(width: AppSizes.spacingS),
+                    Expanded(
+                      child: Text(
+                        task.time,
+                        style: TextStyle(
+                          fontSize: AppSizes.fontSizeM,
+                          color: AppColors.primaryBlue,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-            SizedBox(height: AppSizes.spacingXL),
-            // Yes/No Buttons
-            Row(
-              children: [
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: () => Navigator.of(context).pop(true),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primaryBlue,
-                      foregroundColor: AppColors.white,
-                      padding: EdgeInsets.symmetric(
-                        vertical: AppSizes.spacingM,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(AppSizes.radiusM),
+              ),
+            // Building
+            if (task.building != null && task.building!.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(bottom: AppSizes.spacingM),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.business,
+                      size: AppSizes.iconSizeM,
+                      color: AppColors.primaryBlue,
+                    ),
+                    SizedBox(width: AppSizes.spacingS),
+                    Expanded(
+                      child: Text(
+                        task.building!,
+                        style: TextStyle(
+                          fontSize: AppSizes.fontSizeM,
+                          color: AppColors.primaryBlue,
+                        ),
                       ),
                     ),
-                    child: Text(
-                      'Yes',
-                      style: TextStyle(
-                        fontSize: AppSizes.fontSizeM,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
+                  ],
                 ),
-                SizedBox(width: AppSizes.spacingM),
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: () => Navigator.of(context).pop(false),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primaryBlueLight,
-                      foregroundColor: AppColors.white,
-                      padding: EdgeInsets.symmetric(
-                        vertical: AppSizes.spacingM,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(AppSizes.radiusM),
+              ),
+            // Room
+            if (task.room != null && task.room!.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(bottom: AppSizes.spacingM),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.room,
+                      size: AppSizes.iconSizeM,
+                      color: AppColors.primaryBlue,
+                    ),
+                    SizedBox(width: AppSizes.spacingS),
+                    Expanded(
+                      child: Text(
+                        task.room!,
+                        style: TextStyle(
+                          fontSize: AppSizes.fontSizeM,
+                          color: AppColors.primaryBlue,
+                        ),
                       ),
                     ),
-                    child: Text(
-                      'No',
-                      style: TextStyle(
-                        fontSize: AppSizes.fontSizeM,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+            // Instructor/Teacher
+            if (task.instructor != null && task.instructor!.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(bottom: AppSizes.spacingM),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.person,
+                      size: AppSizes.iconSizeM,
+                      color: AppColors.primaryBlue,
+                    ),
+                    SizedBox(width: AppSizes.spacingS),
+                    Expanded(
+                      child: Text(
+                        task.instructor!,
+                        style: TextStyle(
+                          fontSize: AppSizes.fontSizeM,
+                          color: AppColors.primaryBlue,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            // Day of Week
+            if (task.dayOfWeek != null && task.dayOfWeek!.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(bottom: AppSizes.spacingM),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.calendar_today,
+                      size: AppSizes.iconSizeM,
+                      color: AppColors.primaryBlue,
+                    ),
+                    SizedBox(width: AppSizes.spacingS),
+                    Expanded(
+                      child: Text(
+                        task.dayOfWeek!,
+                        style: TextStyle(
+                          fontSize: AppSizes.fontSizeM,
+                          color: AppColors.primaryBlue,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            // Group Name
+            if (task.groupName != null && task.groupName!.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(bottom: AppSizes.spacingM),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.group,
+                      size: AppSizes.iconSizeM,
+                      color: AppColors.primaryBlue,
+                    ),
+                    SizedBox(width: AppSizes.spacingS),
+                    Expanded(
+                      child: Text(
+                        task.groupName!,
+                        style: TextStyle(
+                          fontSize: AppSizes.fontSizeM,
+                          color: AppColors.primaryBlue,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
           ],
         ),
       ),
     );
   }
 
-  static Future<bool?> show(BuildContext context, TimetableTaskModel task) {
-    return showDialog<bool>(
+  static Future<void> show(BuildContext context, TimetableTaskModel task) {
+    return showDialog(
       context: context,
       builder: (context) => TaskCompletionDialog(task: task),
     );

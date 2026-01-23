@@ -7,6 +7,7 @@ import '../widget/scores_table_header.dart';
 import '../../widgets/common/app_header.dart';
 import '../../configs/app_colors.dart';
 import '../../configs/app_sizes.dart';
+import '../../utils/snackbar.dart';
 
 class ScoresSummaryScreen extends StatefulWidget {
   const ScoresSummaryScreen({super.key});
@@ -44,9 +45,10 @@ class _ScoresSummaryScreenState extends State<ScoresSummaryScreen> {
         _errorMessage = e.toString();
       });
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error loading summary: $e')));
+        CustomSnackBar.error(
+          title: 'Error loading summary',
+          message: e.toString(),
+        );
       }
     }
   }

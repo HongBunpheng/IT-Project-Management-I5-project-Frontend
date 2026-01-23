@@ -5,8 +5,7 @@ class PersonalInformationScreen extends StatefulWidget {
   const PersonalInformationScreen({super.key});
 
   @override
-  State<PersonalInformationScreen> createState() =>
-      _PersonalInformationScreenState();
+  State<PersonalInformationScreen> createState() => _PersonalInformationScreenState();
 }
 
 class _PersonalInformationScreenState extends State<PersonalInformationScreen> {
@@ -14,9 +13,7 @@ class _PersonalInformationScreenState extends State<PersonalInformationScreen> {
   final _nameController = TextEditingController(text: 'Sok Dara');
   final _emailController = TextEditingController(text: 'sok.dara@example.com');
   final _phoneController = TextEditingController(text: '+855 12 345 678');
-  final _addressController = TextEditingController(
-    text: 'Phnom Penh, Cambodia',
-  );
+  final _addressController = TextEditingController(text: 'Phnom Penh, Cambodia');
   final _dateOfBirthController = TextEditingController(text: '01/01/2000');
   final _genderController = TextEditingController(text: 'Male');
 
@@ -46,7 +43,7 @@ class _PersonalInformationScreenState extends State<PersonalInformationScreen> {
             width: 40,
             height: 4,
             decoration: BoxDecoration(
-              color: AppColors.textSecondary.withValues(alpha: 0.3),
+              color: AppColors.textSecondary.withOpacity(0.3),
               borderRadius: BorderRadius.circular(2),
             ),
           ),
@@ -201,9 +198,7 @@ class _PersonalInformationScreenState extends State<PersonalInformationScreen> {
                             // Save data
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
-                                content: Text(
-                                  'Personal information updated successfully',
-                                ),
+                                content: Text('Personal information updated successfully'),
                                 backgroundColor: AppColors.success,
                               ),
                             );

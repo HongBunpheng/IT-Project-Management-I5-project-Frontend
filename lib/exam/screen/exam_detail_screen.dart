@@ -3,6 +3,7 @@ import '../model/exam_model.dart';
 import '../service/exam_service.dart';
 import '../widget/single_score_donut_chart.dart';
 import '../../widgets/common/app_header.dart';
+import '../../utils/snackbar.dart';
 import '../../configs/app_colors.dart';
 import '../../configs/app_sizes.dart';
 
@@ -43,8 +44,9 @@ class _ExamDetailScreenState extends State<ExamDetailScreen> {
         _isLoading = false;
       });
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error loading exam detail: $e')),
+        CustomSnackBar.error(
+          title: 'Error loading exam detail',
+          message: e.toString(),
         );
       }
     }

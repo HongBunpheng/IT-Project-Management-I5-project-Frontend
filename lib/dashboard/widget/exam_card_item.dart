@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../configs/app_colors.dart';
 import '../../configs/app_sizes.dart';
+import '../../configs/app_theme_extension.dart';
 import '../model/dashboard_models.dart';
 
 class ExamCardItem extends StatelessWidget {
@@ -10,9 +11,16 @@ class ExamCardItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final appColors = context.appColors;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
     final Color cardColor = exam.iconCategory == 'blue'
-        ? AppColors.cardBlue
-        : AppColors.primaryBlueLight;
+        ? (isDark 
+            ? AppColors.primaryBlue.withValues(alpha: 0.2) 
+            : AppColors.cardBlue)
+        : (isDark 
+            ? AppColors.primaryBlueLight.withValues(alpha: 0.2) 
+            : AppColors.primaryBlueLight.withValues(alpha: 0.3));
     final Color iconColor = exam.iconCategory == 'blue'
         ? AppColors.iconPink
         : AppColors.iconOrange;
@@ -25,8 +33,29 @@ class ExamCardItem extends StatelessWidget {
       child: Container(
         padding: EdgeInsets.all(AppSizes.spacingM),
         decoration: BoxDecoration(
-          color: cardColor,
+          color: isDark 
+              ? (exam.iconCategory == 'blue' 
+                  ? AppColors.primaryBlue.withValues(alpha: 0.2)
+                  : AppColors.primaryBlueLight.withValues(alpha: 0.2))
+              : cardColor,
           borderRadius: BorderRadius.circular(AppSizes.radiusM),
+          border: isDark
+              ? Border.all(
+                  color: exam.iconCategory == 'blue'
+                      ? AppColors.primaryBlue.withValues(alpha: 0.4)
+                      : AppColors.primaryBlueLight.withValues(alpha: 0.4),
+                  width: 1,
+                )
+              : null,
+          boxShadow: isDark
+              ? null
+              : [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.05),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -38,7 +67,7 @@ class ExamCardItem extends StatelessWidget {
                   exam.category ?? 'Category',
                   style: TextStyle(
                     fontSize: AppSizes.fontSizeS,
-                    color: AppColors.textSecondary,
+                    color: appColors.textSecondary,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -62,7 +91,7 @@ class ExamCardItem extends StatelessWidget {
               style: TextStyle(
                 fontSize: AppSizes.fontSizeM,
                 fontWeight: FontWeight.w600,
-                color: AppColors.textPrimary,
+                color: appColors.textPrimary,
               ),
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
@@ -73,7 +102,9 @@ class ExamCardItem extends StatelessWidget {
               child: LinearProgressIndicator(
                 value: exam.progress ?? 0.0,
                 minHeight: 6,
-                backgroundColor: AppColors.white,
+                backgroundColor: isDark
+                    ? appColors.lightGrey.withValues(alpha: 0.3)
+                    : AppColors.white,
                 valueColor: AlwaysStoppedAnimation<Color>(progressColor),
               ),
             ),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../configs/app_colors.dart';
 import '../../configs/app_sizes.dart';
+import '../../configs/app_theme_extension.dart';
 import '../../utils/responsive.dart';
 import '../model/notification_model.dart';
 
@@ -19,6 +20,7 @@ class NotificationItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final horizontalPadding = Responsive.getPadding(context);
+    final appColors = context.appColors;
 
     return Container(
       padding: EdgeInsets.symmetric(
@@ -37,18 +39,18 @@ class NotificationItem extends StatelessWidget {
               child: Container(
                 width: 8,
                 height: 8,
-                decoration: const BoxDecoration(
-                  color: AppColors.primaryBlue,
+                decoration: BoxDecoration(
+                  color: appColors.primaryBlue,
                   shape: BoxShape.circle,
                 ),
               ),
             ),
           CircleAvatar(
             radius: 24,
-            backgroundColor: AppColors.lightGrey,
+            backgroundColor: appColors.lightGrey,
             child: Icon(
               Icons.person,
-              color: AppColors.textSecondary,
+              color: appColors.textSecondary,
               size: AppSizes.iconSizeL,
             ),
           ),
@@ -59,18 +61,18 @@ class NotificationItem extends StatelessWidget {
               children: [
                 Text(
                   notification.senderName,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: AppSizes.fontSizeM,
                     fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimary,
+                    color: appColors.textPrimary,
                   ),
                 ),
                 const SizedBox(height: AppSizes.spacingXS),
                 Text(
                   notification.message,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: AppSizes.fontSizeS,
-                    color: AppColors.textSecondary,
+                    color: appColors.textSecondary,
                   ),
                 ),
                 if (notification.hasActions) ...[

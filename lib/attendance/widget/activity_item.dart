@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../utils/localization_helper.dart';
 
 class ActivityItemWidget extends StatelessWidget {
   final String type;
@@ -29,7 +30,13 @@ class ActivityItemWidget extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                type == "checkin" ? "Check In" : "Check Out",
+                type == "checkin"
+                    ? safeLocaleString(context, 'check_in', fallback: 'Check In')
+                    : safeLocaleString(
+                        context,
+                        'check_out',
+                        fallback: 'Check Out',
+                      ),
                 style: const TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w500,

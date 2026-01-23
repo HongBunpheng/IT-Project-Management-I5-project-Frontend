@@ -1,7 +1,12 @@
 import 'dart:io';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:adaptive_theme/adaptive_theme.dart';
+import 'package:flutter_locales/flutter_locales.dart';
 import '../../configs/app_colors.dart';
+import '../../configs/app_theme_extension.dart';
+import '../../utils/localization_helper.dart';
 import '../../widgets/common/custom_bottom_navigation_bar.dart';
 import '../../dashboard/screen/dashboard_screen.dart';
 import '../../checkin/screen/checkin_screen.dart';
@@ -11,6 +16,8 @@ import '../../auth/screen/login_screen.dart';
 import '../../auth/service/auth_service.dart';
 import '../../services/token_storage.dart';
 import '../../utils/json_utils.dart';
+import '../../utils/snackbar.dart';
+import '../service/account_service.dart';
 import 'personal_information_screen.dart';
 import 'academic_records_screen.dart';
 
@@ -24,21 +31,24 @@ class ProfileScreen extends StatefulWidget {
 class _ProfileScreenState extends State<ProfileScreen> {
   int _currentBottomNavIndex = 4; // Profile is index 4
   bool _notificationsEnabled = true;
-  bool _darkModeEnabled = false;
   File? _profileImage;
   final ScrollController _scrollController = ScrollController();
   bool _isScrolled = false;
   bool _isLoadingMe = true;
   bool _isLoggingOut = false;
+  bool _isUploadingImage = false;
 
   final AuthService _authService = AuthService();
   final TokenStorage _tokenStorage = TokenStorage();
+  final AccountService _accountService = AccountService();
 
   String? _name;
+  String? _fullName;
   String? _email;
   String? _userId;
   String? _groupId;
   String? _major;
+  String? _profileImageUrl;
 
   @override
   void initState() {
@@ -67,45 +77,91 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Future<void> _loadProfile() async {
     try {
+      // Try to load from storage first
       final storedUserId = await _tokenStorage.readUserId();
       final storedGroupId = await _tokenStorage.readGroupId();
+      final storedFullName = await _tokenStorage.readFullName();
+      final storedEmail = await _tokenStorage.readEmail();
+
       if (mounted) {
         setState(() {
           _userId = storedUserId;
           _groupId = storedGroupId;
+          _fullName = storedFullName;
+          _email = storedEmail;
+          _name = storedFullName ?? storedEmail;
         });
       }
 
-      final decoded = await _authService.me();
-      if (!mounted || decoded == null) return;
+      // Use AccountService to get profile
+      final profileResponse = await _accountService.getProfile();
+      if (profileResponse == null || !mounted) {
+        if (mounted) setState(() => _isLoadingMe = false);
+        return;
+      }
 
-      final data = asMap(decoded['data']) ?? decoded;
-      final user = asMap(data['user']) ?? data;
+      // Extract avatar URL using service method
+      final avatarUrl = _accountService.extractAvatarUrl(profileResponse);
 
-      setState(() {
-        _name =
-            (readString(user, const ['name', 'full_name', 'fullName']) ??
-                    readString(user, const ['email']))
-                ?.toString();
-        _email = readString(user, const ['email']);
-        _userId =
-            readString(user, const ['id', 'user_id', 'userId']) ?? _userId;
-        _groupId =
-            readString(user, const ['group_id', 'groupId']) ?? _groupId;
-        _major =
-            readString(user, const [
-              'major',
-              'department',
-              'faculty',
-              'course',
-              'program',
-            ]);
-      });
+      // Extract user data
+      final user = _accountService.extractUserData(profileResponse);
+
+      if (mounted) {
+        setState(() {
+          _fullName = readString(user, const ['full_name', 'fullName', 'name']);
+          _name = readString(user, const [
+            'user_name',
+            'name',
+            'full_name',
+            'fullName',
+          ]);
+          _email = readString(user, const ['email']);
+          _userId =
+              readString(user, const ['id', 'user_id', 'userId']) ?? _userId;
+          _groupId =
+              readString(user, const ['group_id', 'groupId']) ?? _groupId;
+          _major = readString(user, const [
+            'major',
+            'department',
+            'faculty',
+            'course',
+            'program',
+          ]);
+          if (avatarUrl != null && avatarUrl.isNotEmpty) {
+            _profileImageUrl = avatarUrl;
+          }
+        });
+      }
+
+      if (_fullName != null && _fullName!.isNotEmpty) {
+        await _tokenStorage.writeFullName(_fullName!);
+      }
+      if (_email != null && _email!.isNotEmpty) {
+        await _tokenStorage.writeEmail(_email!);
+      }
+      if (_userId != null && _userId!.isNotEmpty) {
+        await _tokenStorage.writeUserId(_userId!);
+      }
+      if (_groupId != null && _groupId!.isNotEmpty) {
+        await _tokenStorage.writeGroupId(_groupId!);
+      }
     } catch (_) {
       // ignore
     } finally {
       if (mounted) setState(() => _isLoadingMe = false);
     }
+  }
+
+  String _capitalizeFullName(String? name) {
+    if (name == null || name.isEmpty) return '';
+    return name
+        .split(' ')
+        .map(
+          (word) => word.isEmpty
+              ? ''
+              : word[0].toUpperCase() + word.substring(1).toLowerCase(),
+        )
+        .join(' ');
   }
 
   Future<void> _handleLogout() async {
@@ -126,13 +182,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _pickImage() async {
+    final appColors = context.appColors;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        decoration: const BoxDecoration(
-          color: AppColors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      builder: (builderContext) => Container(
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF1E1E1E) : AppColors.white,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
         ),
         child: SafeArea(
           child: Column(
@@ -144,73 +203,74 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: AppColors.textSecondary.withValues(alpha: 0.3),
+                  color: appColors.textSecondary.withValues(alpha: 0.3),
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
               const SizedBox(height: 20),
-              const Text(
-                'Select Profile Photo',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
+              Builder(
+                builder: (textContext) => Text(
+                  safeLocaleString(
+                    textContext,
+                    'select_profile_photo',
+                    fallback: 'Select Profile Photo',
+                  ),
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: appColors.textPrimary,
+                  ),
                 ),
               ),
               const SizedBox(height: 24),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  _buildImageSourceOption(
-                    icon: Icons.photo_library,
-                    label: 'Gallery',
-                    onTap: () async {
-                      Navigator.pop(context);
-                      final ImagePicker picker = ImagePicker();
-                      final XFile? image = await picker.pickImage(
-                        source: ImageSource.gallery,
-                        maxWidth: 512,
-                        maxHeight: 512,
-                        imageQuality: 85,
-                      );
-                      if (image != null) {
-                        setState(() {
-                          _profileImage = File(image.path);
-                        });
-                      }
-                    },
-                  ),
-                  _buildImageSourceOption(
-                    icon: Icons.camera_alt,
-                    label: 'Camera',
-                    onTap: () async {
-                      Navigator.pop(context);
-                      final ImagePicker picker = ImagePicker();
-                      final XFile? image = await picker.pickImage(
-                        source: ImageSource.camera,
-                        maxWidth: 512,
-                        maxHeight: 512,
-                        imageQuality: 85,
-                      );
-                      if (image != null) {
-                        setState(() {
-                          _profileImage = File(image.path);
-                        });
-                      }
-                    },
-                  ),
-                  if (_profileImage != null)
+              Builder(
+                builder: (rowContext) => Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
                     _buildImageSourceOption(
-                      icon: Icons.delete_outline,
-                      label: 'Remove',
-                      onTap: () {
+                      icon: Icons.photo_library,
+                      label: safeLocaleString(
+                        rowContext,
+                        'gallery',
+                        fallback: 'Gallery',
+                      ),
+                      onTap: () async {
                         Navigator.pop(context);
-                        setState(() {
-                          _profileImage = null;
-                        });
+                        await _selectAndUploadImage(ImageSource.gallery);
                       },
                     ),
-                ],
+                    _buildImageSourceOption(
+                      icon: Icons.camera_alt,
+                      label: safeLocaleString(
+                        rowContext,
+                        'camera',
+                        fallback: 'Camera',
+                      ),
+                      onTap: () async {
+                        Navigator.pop(context);
+                        await _selectAndUploadImage(ImageSource.camera);
+                      },
+                    ),
+                    if (_profileImage != null ||
+                        (_profileImageUrl != null &&
+                            _profileImageUrl!.isNotEmpty))
+                      _buildImageSourceOption(
+                        icon: Icons.delete_outline,
+                        label: safeLocaleString(
+                          rowContext,
+                          'remove',
+                          fallback: 'Remove',
+                        ),
+                        onTap: () {
+                          Navigator.pop(context);
+                          setState(() {
+                            _profileImage = null;
+                            _profileImageUrl = null;
+                          });
+                        },
+                      ),
+                  ],
+                ),
               ),
               const SizedBox(height: 20),
             ],
@@ -218,6 +278,142 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ),
       ),
     );
+  }
+
+  Future<void> _selectAndUploadImage(ImageSource source) async {
+    try {
+      final ImagePicker picker = ImagePicker();
+      final XFile? image = await picker.pickImage(
+        source: source,
+        maxWidth: 512,
+        maxHeight: 512,
+        imageQuality: 85,
+      );
+
+      if (image != null) {
+        final file = File(image.path);
+        // Show local image immediately for better UX
+        setState(() {
+          _profileImage = file;
+        });
+
+        // Upload to backend
+        await _uploadProfileImage(file);
+      }
+    } catch (e) {
+      if (mounted) {
+        CustomSnackBar.error(
+          title: 'Error',
+          message: 'Failed to select image. Please try again.',
+        );
+        print('Error selecting image: $e');
+      }
+    }
+  }
+
+  Future<void> _uploadProfileImage(File imageFile) async {
+    if (!mounted) return;
+
+    setState(() => _isUploadingImage = true);
+
+    try {
+      // Use AccountService to upload avatar
+      final response = await _accountService.uploadAvatar(imageFile);
+
+      if (response != null) {
+        final statusCode = response['statusCode'] as int? ?? 0;
+
+        if (statusCode == 200) {
+          final body = response['body'];
+          if (body != null && body is Map<String, dynamic>) {
+            // Debug: Print the response to see what we're getting
+            print('Upload response: ${jsonEncode(body)}');
+
+            // Extract avatar URL using service method
+            final avatarUrl = _accountService.extractAvatarUrl(body);
+            print('Extracted avatar URL: $avatarUrl');
+
+            if (mounted) {
+              // Only update if we got a valid URL
+              if (avatarUrl != null && avatarUrl.isNotEmpty) {
+                setState(() {
+                  _profileImageUrl = avatarUrl;
+                  // Clear local image so it uses the URL from backend
+                  _profileImage = null;
+                  _isUploadingImage = false;
+                });
+
+                CustomSnackBar.success(
+                  title: 'Success',
+                  message: 'Profile photo uploaded successfully',
+                );
+
+                // Reload profile after a short delay to ensure backend has processed
+                Future.delayed(const Duration(milliseconds: 500), () {
+                  if (mounted) {
+                    _loadProfile();
+                  }
+                });
+              } else {
+                // No URL found, but upload was successful - reload profile
+                setState(() {
+                  _isUploadingImage = false;
+                });
+
+                CustomSnackBar.success(
+                  title: 'Success',
+                  message: 'Profile photo uploaded successfully',
+                );
+
+                // Reload profile to get the URL
+                Future.delayed(const Duration(milliseconds: 500), () {
+                  if (mounted) {
+                    _loadProfile();
+                  }
+                });
+              }
+            }
+          } else {
+            if (mounted) {
+              setState(() => _isUploadingImage = false);
+              CustomSnackBar.error(
+                title: 'Error',
+                message: 'Invalid response from server',
+              );
+            }
+          }
+        } else {
+          // Handle error
+          if (mounted) {
+            final body = response['body'];
+            final errorMessage = body is Map<String, dynamic>
+                ? (readString(body, const ['message', 'error']) ??
+                      'Failed to upload image')
+                : 'Failed to upload image';
+            setState(() => _isUploadingImage = false);
+            CustomSnackBar.error(title: 'Upload Failed', message: errorMessage);
+            print('Failed to upload image: $statusCode - $errorMessage');
+          }
+        }
+      } else {
+        if (mounted) {
+          setState(() => _isUploadingImage = false);
+          CustomSnackBar.error(
+            title: 'Error',
+            message: 'Failed to upload image. Please try again.',
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isUploadingImage = false);
+        CustomSnackBar.error(
+          title: 'Error',
+          message: 'Failed to upload image. Please try again.',
+        );
+        print('Error uploading image: $e');
+      }
+    }
   }
 
   Widget _buildImageSourceOption({
@@ -233,15 +429,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
             width: 70,
             height: 70,
             decoration: BoxDecoration(
-              color: AppColors.primaryBlueLight.withValues(alpha: 0.1),
+              color: context.appColors.primaryBlueLight.withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
-            child: Icon(icon, size: 32, color: AppColors.primaryBlue),
+            child: Icon(icon, size: 32, color: context.appColors.primaryBlue),
           ),
           const SizedBox(height: 8),
           Text(
             label,
-            style: const TextStyle(fontSize: 14, color: AppColors.textPrimary),
+            style: TextStyle(
+              fontSize: 14,
+              color: context.appColors.textPrimary,
+            ),
           ),
         ],
       ),
@@ -311,29 +510,159 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  String _getCurrentLanguageName(BuildContext context) {
+    final currentLocale = Locales.currentLocale(context);
+    if (currentLocale?.languageCode == 'km') {
+      return safeLocaleString(context, 'khmer', fallback: 'Khmer');
+    }
+    return safeLocaleString(context, 'english', fallback: 'English');
+  }
+
+  void _showLanguagePicker() {
+    final appColors = context.appColors;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    // Store the widget's context for locale changes
+    final widgetContext = context;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) {
+        final currentLocale = Locales.currentLocale(sheetContext);
+        final currentLangCode = currentLocale?.languageCode ?? 'en';
+
+        return Container(
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF1E1E1E) : AppColors.white,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          child: SafeArea(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Handle bar
+                Container(
+                  margin: const EdgeInsets.only(top: 12),
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: appColors.textSecondary.withValues(alpha: 0.3),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Text(
+                  safeLocaleString(
+                    sheetContext,
+                    'language',
+                    fallback: 'Language',
+                  ),
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: appColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                // English option
+                ListTile(
+                  leading: const Icon(Icons.language),
+                  title: Text(
+                    safeLocaleString(
+                      sheetContext,
+                      'english',
+                      fallback: 'English',
+                    ),
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: appColors.textPrimary,
+                    ),
+                  ),
+                  trailing: currentLangCode == 'en'
+                      ? Icon(Icons.check, color: appColors.primaryBlue)
+                      : null,
+                  onTap: () async {
+                    Navigator.pop(sheetContext);
+                    // Change locale using the widget's context
+                    await Locales.change(widgetContext, 'en');
+                    if (mounted) {
+                      setState(() {});
+                    }
+                  },
+                ),
+                // Khmer option
+                ListTile(
+                  leading: const Icon(Icons.language),
+                  title: Text(
+                    safeLocaleString(sheetContext, 'khmer', fallback: 'Khmer'),
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: appColors.textPrimary,
+                    ),
+                  ),
+                  trailing: currentLangCode == 'km'
+                      ? Icon(Icons.check, color: appColors.primaryBlue)
+                      : null,
+                  onTap: () async {
+                    Navigator.pop(sheetContext);
+                    // Change locale using the widget's context
+                    await Locales.change(widgetContext, 'km');
+                    if (mounted) {
+                      setState(() {});
+                    }
+                  },
+                ),
+                const SizedBox(height: 20),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final appColors = context.appColors;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: AppColors.white,
+      backgroundColor: isDark ? const Color(0xFF121212) : AppColors.white,
       appBar: AppBar(
-        backgroundColor: AppColors.white,
+        backgroundColor: isDark
+            ? AppColors.primaryBlue.withValues(alpha: 0.2)
+            : AppColors.white,
         elevation: _isScrolled ? 4 : 0,
         shadowColor: _isScrolled
-            ? AppColors.grey.withValues(alpha: 0.3)
+            ? (isDark
+                  ? AppColors.primaryBlue.withValues(alpha: 0.3)
+                  : AppColors.grey.withValues(alpha: 0.3))
             : Colors.transparent,
         surfaceTintColor: Colors.transparent,
+        flexibleSpace: isDark
+            ? Container(
+                decoration: BoxDecoration(
+                  border: Border(
+                    bottom: BorderSide(
+                      color: AppColors.primaryBlue.withValues(alpha: 0.3),
+                      width: 1,
+                    ),
+                  ),
+                ),
+              )
+            : null,
         leading: IconButton(
-          icon: const Icon(
+          icon: Icon(
             Icons.arrow_back_ios,
-            color: AppColors.textPrimary,
+            color: appColors.textPrimary,
             size: 20,
           ),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
-          'My Profile',
+        title: Text(
+          safeLocaleString(context, 'my_profile', fallback: 'My Profile'),
           style: TextStyle(
-            color: AppColors.textPrimary,
+            color: appColors.textPrimary,
             fontSize: 20,
             fontWeight: FontWeight.bold,
           ),
@@ -354,27 +683,102 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     Stack(
                       children: [
                         GestureDetector(
-                          onTap: _pickImage,
+                          onTap: _isUploadingImage ? null : _pickImage,
                           child: Container(
                             width: 120,
                             height: 120,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              color: AppColors.lightGrey,
-                              image: _profileImage != null
-                                  ? DecorationImage(
-                                      image: FileImage(_profileImage!),
-                                      fit: BoxFit.cover,
-                                    )
-                                  : null,
+                              color: appColors.lightGrey,
                             ),
-                            child: _profileImage == null
-                                ? const Icon(
-                                    Icons.person,
-                                    size: 60,
-                                    color: AppColors.textSecondary,
-                                  )
-                                : null,
+                            child: Stack(
+                              fit: StackFit.expand,
+                              children: [
+                                // Image layer
+                                _profileImage != null
+                                    ? ClipOval(
+                                        child: Image.file(
+                                          _profileImage!,
+                                          fit: BoxFit.cover,
+                                          width: 120,
+                                          height: 120,
+                                        ),
+                                      )
+                                    : _profileImageUrl != null &&
+                                          _profileImageUrl!.isNotEmpty
+                                    ? ClipOval(
+                                        child: Image.network(
+                                          _profileImageUrl!,
+                                          fit: BoxFit.cover,
+                                          width: 120,
+                                          height: 120,
+                                          loadingBuilder: (context, child, loadingProgress) {
+                                            if (loadingProgress == null)
+                                              return child;
+                                            return Center(
+                                              child: CircularProgressIndicator(
+                                                value:
+                                                    loadingProgress
+                                                            .expectedTotalBytes !=
+                                                        null
+                                                    ? loadingProgress
+                                                              .cumulativeBytesLoaded /
+                                                          loadingProgress
+                                                              .expectedTotalBytes!
+                                                    : null,
+                                                color: appColors.primaryBlue,
+                                                strokeWidth: 2,
+                                              ),
+                                            );
+                                          },
+                                          errorBuilder: (context, error, stackTrace) {
+                                            print(
+                                              'Error loading network image: $error',
+                                            );
+                                            print(
+                                              'Failed URL: $_profileImageUrl',
+                                            );
+                                            // Clear invalid URL
+                                            if (mounted) {
+                                              Future.microtask(() {
+                                                if (mounted) {
+                                                  setState(() {
+                                                    _profileImageUrl = null;
+                                                  });
+                                                }
+                                              });
+                                            }
+                                            return Icon(
+                                              Icons.person,
+                                              size: 60,
+                                              color: appColors.textSecondary,
+                                            );
+                                          },
+                                        ),
+                                      )
+                                    : Icon(
+                                        Icons.person,
+                                        size: 60,
+                                        color: appColors.textSecondary,
+                                      ),
+                                // Loading overlay
+                                if (_isUploadingImage)
+                                  Container(
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      color: Colors.black.withValues(
+                                        alpha: 0.3,
+                                      ),
+                                    ),
+                                    child: Center(
+                                      child: CircularProgressIndicator(
+                                        color: AppColors.white,
+                                        strokeWidth: 2,
+                                      ),
+                                    ),
+                                  ),
+                              ],
+                            ),
                           ),
                         ),
                         Positioned(
@@ -386,14 +790,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               width: 36,
                               height: 36,
                               decoration: BoxDecoration(
-                                color: AppColors.primaryBlue,
+                                color: appColors.primaryBlue,
                                 shape: BoxShape.circle,
                                 border: Border.all(
-                                  color: AppColors.white,
+                                  color: isDark
+                                      ? const Color(0xFF1E1E1E)
+                                      : AppColors.white,
                                   width: 3,
                                 ),
                               ),
-                              child: const Icon(
+                              child: Icon(
                                 Icons.camera_alt,
                                 size: 18,
                                 color: AppColors.white,
@@ -404,56 +810,81 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ],
                     ),
                     const SizedBox(height: 20),
-                    // Name
+                    // Full Name (capitalized)
                     Text(
-                      _name ?? (_isLoadingMe ? 'Loading...' : 'Student'),
-                      style: const TextStyle(
+                      _isLoadingMe
+                          ? 'Loading...'
+                          : (_fullName != null && _fullName!.isNotEmpty
+                                ? _capitalizeFullName(_fullName)
+                                : _name ?? 'Student Name'),
+                      style: TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
-                        color: AppColors.textPrimary,
+                        color: isDark ? Colors.white : AppColors.textPrimary,
                       ),
                     ),
-                    const SizedBox(height: 8),
-                    // ID and Major
-                    Text(
-                      'ID: ${_userId ?? '-'}',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: AppColors.textSecondary,
+                    // Email
+                    if (_email != null && _email!.isNotEmpty) ...[
+                      const SizedBox(height: 8),
+                      Text(
+                        _email!,
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: isDark
+                              ? Colors.white70
+                              : AppColors.textSecondary,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      _major ?? _email ?? (_groupId != null ? 'Group: $_groupId' : '-'),
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
+                    ],
                     const SizedBox(height: 32),
                     // Divider
                     const Divider(height: 1),
                     // Account Section
-                    _buildSectionHeader('Account'),
+                    _buildSectionHeader(
+                      safeLocaleString(context, 'account', fallback: 'Account'),
+                      context,
+                    ),
                     _buildAccountItem(
+                      context: context,
                       icon: Icons.person_outline,
-                      iconColor: AppColors.primaryBlueLight,
-                      label: 'Personal Information',
+                      iconColor: appColors.primaryBlueLight,
+                      label: safeLocaleString(
+                        context,
+                        'personal_information',
+                        fallback: 'Personal Information',
+                      ),
                       onTap: _showPersonalInformation,
                     ),
                     _buildAccountItem(
+                      context: context,
                       icon: Icons.school_outlined,
-                      iconColor: AppColors.primaryBlueLight,
-                      label: 'Academic Records',
+                      iconColor: appColors.primaryBlueLight,
+                      label: safeLocaleString(
+                        context,
+                        'academic_records',
+                        fallback: 'Academic Records',
+                      ),
                       onTap: _showAcademicRecords,
                     ),
                     const Divider(height: 1),
                     // Settings Section
-                    _buildSectionHeader('Settings'),
+                    _buildSectionHeader(
+                      safeLocaleString(
+                        context,
+                        'settings',
+                        fallback: 'Settings',
+                      ),
+                      context,
+                    ),
                     _buildSettingsItemWithToggle(
+                      context: context,
                       icon: Icons.notifications_outlined,
-                      iconColor: AppColors.primaryBlueLight,
-                      label: 'Notifications',
+                      iconColor: appColors.primaryBlueLight,
+                      label: safeLocaleString(
+                        context,
+                        'notifications',
+                        fallback: 'Notifications',
+                      ),
                       value: _notificationsEnabled,
                       onChanged: (value) {
                         setState(() {
@@ -462,22 +893,36 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       },
                     ),
                     _buildSettingsItemWithToggle(
+                      context: context,
                       icon: Icons.dark_mode_outlined,
-                      iconColor: AppColors.primaryBlueLight,
-                      label: 'Dark Mode',
-                      value: _darkModeEnabled,
+                      iconColor: appColors.primaryBlueLight,
+                      label: safeLocaleString(
+                        context,
+                        'dark_mode',
+                        fallback: 'Dark Mode',
+                      ),
+                      value:
+                          AdaptiveTheme.of(context).mode ==
+                          AdaptiveThemeMode.dark,
                       onChanged: (value) {
-                        setState(() {
-                          _darkModeEnabled = value;
-                        });
+                        AdaptiveTheme.of(context).setThemeMode(
+                          value
+                              ? AdaptiveThemeMode.dark
+                              : AdaptiveThemeMode.light,
+                        );
                       },
                     ),
                     _buildSettingsItemWithSubtitle(
+                      context: context,
                       icon: Icons.language_outlined,
-                      iconColor: AppColors.primaryBlueLight,
-                      label: 'Language',
-                      subtitle: 'English',
-                      onTap: () {},
+                      iconColor: appColors.primaryBlueLight,
+                      label: safeLocaleString(
+                        context,
+                        'language',
+                        fallback: 'Language',
+                      ),
+                      subtitle: _getCurrentLanguageName(context),
+                      onTap: _showLanguagePicker,
                     ),
                     const Divider(height: 1),
                     // Logout
@@ -497,17 +942,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildSectionHeader(String title) {
+  Widget _buildSectionHeader(String title, BuildContext context) {
+    final appColors = context.appColors;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       child: Align(
         alignment: Alignment.centerLeft,
         child: Text(
           title,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.bold,
-            color: AppColors.textPrimary,
+            color: appColors.textPrimary,
           ),
         ),
       ),
@@ -515,11 +961,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _buildAccountItem({
+    required BuildContext context,
     required IconData icon,
     required Color iconColor,
     required String label,
     required VoidCallback onTap,
   }) {
+    final appColors = context.appColors;
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
       leading: Container(
@@ -533,15 +981,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ),
       title: Text(
         label,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 16,
           fontWeight: FontWeight.w500,
-          color: AppColors.textPrimary,
+          color: appColors.textPrimary,
         ),
       ),
-      trailing: const Icon(
+      trailing: Icon(
         Icons.chevron_right,
-        color: AppColors.textSecondary,
+        color: appColors.textSecondary,
         size: 20,
       ),
       onTap: onTap,
@@ -549,12 +997,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _buildSettingsItemWithToggle({
+    required BuildContext context,
     required IconData icon,
     required Color iconColor,
     required String label,
     required bool value,
     required ValueChanged<bool> onChanged,
   }) {
+    final appColors = context.appColors;
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
       leading: Container(
@@ -568,27 +1018,29 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ),
       title: Text(
         label,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 16,
           fontWeight: FontWeight.w500,
-          color: AppColors.textPrimary,
+          color: appColors.textPrimary,
         ),
       ),
       trailing: Switch(
         value: value,
         onChanged: onChanged,
-        activeThumbColor: AppColors.primaryBlue,
+        activeThumbColor: appColors.primaryBlue,
       ),
     );
   }
 
   Widget _buildSettingsItemWithSubtitle({
+    required BuildContext context,
     required IconData icon,
     required Color iconColor,
     required String label,
     required String subtitle,
     required VoidCallback onTap,
   }) {
+    final appColors = context.appColors;
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
       leading: Container(
@@ -602,19 +1054,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ),
       title: Text(
         label,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 16,
           fontWeight: FontWeight.w500,
-          color: AppColors.textPrimary,
+          color: appColors.textPrimary,
         ),
       ),
       subtitle: Text(
         subtitle,
-        style: const TextStyle(fontSize: 14, color: AppColors.textSecondary),
+        style: TextStyle(fontSize: 14, color: appColors.textSecondary),
       ),
-      trailing: const Icon(
+      trailing: Icon(
         Icons.chevron_right,
-        color: AppColors.textSecondary,
+        color: appColors.textSecondary,
         size: 20,
       ),
       onTap: onTap,
@@ -633,9 +1085,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ),
         child: const Icon(Icons.logout, color: AppColors.error, size: 22),
       ),
-      title: const Text(
-        'Logout',
-        style: TextStyle(
+      title: Text(
+        safeLocaleString(context, 'logout', fallback: 'Logout'),
+        style: const TextStyle(
           fontSize: 16,
           fontWeight: FontWeight.w500,
           color: AppColors.error,
@@ -648,11 +1100,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ),
       onTap: () {
         // Handle logout
+        final dialogColors = context.appColors;
+        final isDark = Theme.of(context).brightness == Brightness.dark;
         showDialog(
           context: context,
           barrierColor: Colors.black.withValues(alpha: 0.5),
           builder: (context) => Dialog(
-            backgroundColor: AppColors.white,
+            backgroundColor: isDark ? const Color(0xFF1E1E1E) : AppColors.white,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(20),
             ),
@@ -677,22 +1131,26 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                   const SizedBox(height: 20),
                   // Title
-                  const Text(
-                    'Logout',
+                  Text(
+                    safeLocaleString(context, 'logout', fallback: 'Logout'),
                     style: TextStyle(
                       fontSize: 22,
                       fontWeight: FontWeight.bold,
-                      color: AppColors.textPrimary,
+                      color: dialogColors.textPrimary,
                     ),
                   ),
                   const SizedBox(height: 12),
                   // Message
-                  const Text(
-                    'Are you sure you want to logout?',
+                  Text(
+                    safeLocaleString(
+                      context,
+                      'logout_confirmation',
+                      fallback: 'Are you sure you want to logout?',
+                    ),
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 16,
-                      color: AppColors.textSecondary,
+                      color: dialogColors.textSecondary,
                     ),
                   ),
                   const SizedBox(height: 24),
@@ -704,19 +1162,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           onPressed: () => Navigator.pop(context),
                           style: OutlinedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 14),
-                            side: const BorderSide(
-                              color: AppColors.borderLight,
-                            ),
+                            side: BorderSide(color: dialogColors.borderLight),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
                           ),
-                          child: const Text(
-                            'Cancel',
+                          child: Text(
+                            safeLocaleString(
+                              context,
+                              'cancel',
+                              fallback: 'Cancel',
+                            ),
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w600,
-                              color: AppColors.textPrimary,
+                              color: dialogColors.textPrimary,
                             ),
                           ),
                         ),
@@ -739,7 +1199,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             ),
                           ),
                           child: Text(
-                            _isLoggingOut ? 'Logging out...' : 'Logout',
+                            _isLoggingOut
+                                ? 'Logging out...'
+                                : safeLocaleString(
+                                    context,
+                                    'logout',
+                                    fallback: 'Logout',
+                                  ),
                             style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w600,
