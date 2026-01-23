@@ -48,7 +48,9 @@ class _ExamScoresScreenState extends State<ExamScoresScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF121212) : AppColors.white,
+      backgroundColor: isDark
+          ? const Color(0xFF121212)
+          : const Color(0xFFF6F8FA),
       body: _examSummary == null
           ? Center(
               child: _errorMessage == null
@@ -60,59 +62,58 @@ class _ExamScoresScreenState extends State<ExamScoresScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _OverviewCard(
-                    title: safeLocaleString(
-                      context,
-                      'exam_scores',
-                      fallback: 'Exam Scores',
-                    ),
-                    averageLabel: safeLocaleString(
-                      context,
-                      'average_score',
-                      fallback: 'Average Score',
-                    ),
-                    averageScore: _examSummary!.averageScore,
-                    subjectsCount: _examSummary!.examResults.length,
-                  ),
+                  _HeroScoreCard(summary: _examSummary!),
+                  const SizedBox(height: 20),
 
-                  const SizedBox(height: 16),
+                  _StatsRow(summary: _examSummary!),
+                  const SizedBox(height: 28),
 
-                  _SectionHeader(
-                    icon: Icons.grid_view,
-                    title: safeLocaleString(
+                  Text(
+                    safeLocaleString(
                       context,
                       'quick_actions',
-                      fallback: 'Quick actions',
+                      fallback: 'Quick Actions',
+                    ),
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
-
                   const SizedBox(height: 12),
 
-                  /// ✅ ONLY SCORE SUMMARY (ATTENDANCE REMOVED)
-                  _ActionTile(
-                    title: safeLocaleString(
-                      context,
-                      'score_summary',
-                      fallback: 'Score Summary',
-                    ),
-                    subtitle: safeLocaleString(
-                      context,
-                      'detailed_analytics',
-                      fallback: 'Detailed analytics',
-                    ),
-                    icon: Icons.pie_chart_outline,
-                    color: appColors.success,
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const ScoresSummaryScreen(),
+                  GridView.count(
+                    crossAxisCount: 2,
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    mainAxisSpacing: 12,
+                    crossAxisSpacing: 12,
+                    children: [
+                      _ActionCard(
+                        title: safeLocaleString(
+                          context,
+                          'score_summary',
+                          fallback: 'Score Summary',
                         ),
-                      );
-                    },
+                        subtitle: safeLocaleString(
+                          context,
+                          'detailed_analytics',
+                          fallback: 'Detailed analytics',
+                        ),
+                        icon: Icons.pie_chart_outline,
+                        color: appColors.success,
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const ScoresSummaryScreen(),
+                            ),
+                          );
+                        },
+                      ),
+                    ],
                   ),
 
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 28),
 
                   _SectionHeader(
                     icon: Icons.workspace_premium,
@@ -122,7 +123,6 @@ class _ExamScoresScreenState extends State<ExamScoresScreen> {
                       fallback: 'Exam Results',
                     ),
                   ),
-
                   const SizedBox(height: 12),
 
                   ListView.builder(
@@ -155,64 +155,183 @@ class _ExamScoresScreenState extends State<ExamScoresScreen> {
 }
 
 /* =========================
-   UI COMPONENTS BELOW
+   UI COMPONENTS
 ========================= */
 
-class _OverviewCard extends StatelessWidget {
-  final String title;
-  final String averageLabel;
-  final double averageScore;
-  final int subjectsCount;
-
-  const _OverviewCard({
-    required this.title,
-    required this.averageLabel,
-    required this.averageScore,
-    required this.subjectsCount,
-  });
+class _HeroScoreCard extends StatelessWidget {
+  final ExamSummary summary;
+  const _HeroScoreCard({required this.summary});
 
   @override
   Widget build(BuildContext context) {
+    final passed = summary.examResults.where((e) => e.score >= 50).length;
+
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: AppColors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.borderLight),
+        borderRadius: BorderRadius.circular(20),
+        gradient: LinearGradient(
+          colors: [
+            AppColors.primaryBlue,
+            AppColors.primaryBlue.withOpacity(0.85),
+          ],
+        ),
       ),
       child: Row(
         children: [
+          _ScoreCircle(score: summary.averageScore.toInt()),
+          const SizedBox(width: 20),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 16,
+                  safeLocaleString(
+                    context,
+                    'exam_scores',
+                    fallback: 'Exam Scores',
+                  ),
+                  style: const TextStyle(color: Colors.white70),
+                ),
+                const SizedBox(height: 6),
+                const Text(
+                  'Keep pushing ',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 22,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
                 const SizedBox(height: 4),
-                Text(averageLabel, style: const TextStyle(fontSize: 12)),
-                const SizedBox(height: 6),
                 Text(
-                  '${averageScore.toInt()}%',
-                  style: const TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.primaryBlue,
-                  ),
+                  'Passed $passed / ${summary.examResults.length} subjects',
+                  style: const TextStyle(color: Colors.white70),
                 ),
               ],
             ),
           ),
-          _Pill(
-            label: 'Subjects: $subjectsCount',
-            background: AppColors.primaryBlue.withValues(alpha: 0.12),
-            foreground: AppColors.primaryBlue,
-          ),
         ],
+      ),
+    );
+  }
+}
+
+class _ScoreCircle extends StatelessWidget {
+  final int score;
+  const _ScoreCircle({required this.score});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 88,
+      height: 88,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: Colors.white.withOpacity(0.2),
+      ),
+      child: Center(
+        child: Text(
+          '$score%',
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 26,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _StatsRow extends StatelessWidget {
+  final ExamSummary summary;
+  const _StatsRow({required this.summary});
+
+  @override
+  Widget build(BuildContext context) {
+    final passed = summary.examResults.where((e) => e.score >= 50).length;
+    final failed = summary.examResults.length - passed;
+
+    return Row(
+      children: [
+        _StatCard(
+          label: 'Subjects',
+          value: summary.examResults.length.toString(),
+        ),
+        const SizedBox(width: 12),
+        _StatCard(label: 'Passed', value: passed.toString()),
+        const SizedBox(width: 12),
+        _StatCard(label: 'Failed', value: failed.toString()),
+      ],
+    );
+  }
+}
+
+class _StatCard extends StatelessWidget {
+  final String label;
+  final String value;
+
+  const _StatCard({required this.label, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 14),
+        decoration: BoxDecoration(
+          color: AppColors.white,
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: Column(
+          children: [
+            Text(
+              value,
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 4),
+            Text(label, style: const TextStyle(fontSize: 12)),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ActionCard extends StatelessWidget {
+  final String title;
+  final String subtitle;
+  final IconData icon;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _ActionCard({
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+    required this.color,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: AppColors.white,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(icon, size: 30, color: color),
+            const Spacer(),
+            Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
+            Text(subtitle, style: const TextStyle(fontSize: 11)),
+          ],
+        ),
       ),
     );
   }
@@ -239,63 +358,6 @@ class _SectionHeader extends StatelessWidget {
   }
 }
 
-class _ActionTile extends StatelessWidget {
-  final String title;
-  final String subtitle;
-  final IconData icon;
-  final Color color;
-  final VoidCallback onTap;
-
-  const _ActionTile({
-    required this.title,
-    required this.subtitle,
-    required this.icon,
-    required this.color,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(14),
-      child: Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: AppColors.borderLight),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(icon, color: color),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: const TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  Text(subtitle, style: const TextStyle(fontSize: 11)),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 class _ExamResultCard extends StatelessWidget {
   final ExamResult exam;
   final VoidCallback onPreview;
@@ -304,12 +366,14 @@ class _ExamResultCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isPass = exam.score >= 50;
+
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.borderLight),
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(14),
       ),
       child: Row(
         children: [
@@ -319,39 +383,26 @@ class _ExamResultCard extends StatelessWidget {
               style: const TextStyle(fontWeight: FontWeight.bold),
             ),
           ),
-          ElevatedButton(onPressed: onPreview, child: const Text('Preview')),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              color: isPass ? Colors.green.shade50 : Colors.red.shade50,
+              borderRadius: BorderRadius.circular(999),
+            ),
+            child: Text(
+              '${exam.score}%',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: isPass ? Colors.green : Colors.red,
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          IconButton(
+            icon: const Icon(Icons.chevron_right),
+            onPressed: onPreview,
+          ),
         ],
-      ),
-    );
-  }
-}
-
-class _Pill extends StatelessWidget {
-  final String label;
-  final Color background;
-  final Color foreground;
-
-  const _Pill({
-    required this.label,
-    required this.background,
-    required this.foreground,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: background,
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.w600,
-          color: foreground,
-        ),
       ),
     );
   }
