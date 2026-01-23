@@ -43,7 +43,7 @@ class _ExamDetailScreenState extends State<ExamDetailScreen> {
         _examResult = exam;
         _isLoading = false;
       });
-    } catch (e) {
+    } catch (_) {
       if (!mounted) return;
       setState(() => _isLoading = false);
       CustomSnackBar.error(
@@ -55,13 +55,22 @@ class _ExamDetailScreenState extends State<ExamDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: AppColors.white,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       body: SafeArea(
         child: _isLoading
             ? const Center(child: CircularProgressIndicator())
             : _examResult == null
-            ? const Center(child: Text('No exam data available'))
+            ? Center(
+                child: Text(
+                  'No exam data available',
+                  style: TextStyle(
+                    color: isDark ? Colors.white : Colors.black87,
+                  ),
+                ),
+              )
             : SingleChildScrollView(
                 physics: const BouncingScrollPhysics(),
                 child: Column(
@@ -78,7 +87,9 @@ class _ExamDetailScreenState extends State<ExamDetailScreen> {
                       child: SingleScoreDonutChart(
                         score: _examResult!.score.toDouble(),
                         scoreColor: AppColors.primaryBlue,
-                        remainingColor: const Color(0xFFEEEEEE),
+                        remainingColor: isDark
+                            ? Colors.white24
+                            : const Color(0xFFEEEEEE),
                         size: 180,
                         strokeWidth: 20,
                       ),
@@ -150,25 +161,24 @@ class _ScoreDetailsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return _CardContainer(
       child: Column(
         children: [
           _cardHeader(Icons.verified, 'Score Details'),
           const SizedBox(height: 20),
-          _row(
-            'Total Mark',
-            '${result.totalMark ?? 100}',
-            AppColors.primaryBlue,
-          ),
+          _row('Total Mark', '${result.totalMark ?? 100}', isDark),
           _divider(),
-          _row('Max Score', '${result.maxScore ?? 100}', AppColors.primaryBlue),
+          _row('Max Score', '${result.maxScore ?? 100}', isDark),
           _divider(),
           _row(
             'Midterm Exam',
             result.midtermScore != null
                 ? '${result.midtermScore} (${result.midtermScore}%)'
                 : 'N/A',
-            AppColors.success,
+            isDark,
+            highlight: true,
           ),
           _divider(),
           _row(
@@ -176,24 +186,36 @@ class _ScoreDetailsCard extends StatelessWidget {
             result.finalScore != null
                 ? '${result.finalScore} (${result.finalScore}%)'
                 : 'N/A',
-            AppColors.success,
+            isDark,
+            highlight: true,
           ),
         ],
       ),
     );
   }
 
-  Widget _row(String label, String value, Color color) {
+  Widget _row(
+    String label,
+    String value,
+    bool isDark, {
+    bool highlight = false,
+  }) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(label, style: const TextStyle(fontSize: 14, color: Colors.grey)),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 14,
+            color: isDark ? Colors.white70 : Colors.grey,
+          ),
+        ),
         Text(
           value,
           style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.bold,
-            color: color,
+            color: highlight ? AppColors.success : AppColors.primaryBlue,
           ),
         ),
       ],
@@ -216,25 +238,30 @@ class _ExamDateCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return _CardContainer(
-      background: const Color(0xFFFCE4EC),
       child: Row(
         children: [
-          _iconCircle(Icons.calendar_today, const Color(0xFFEC407A)),
+          _iconCircle(Icons.calendar_today, AppColors.primaryBlue),
           const SizedBox(width: 16),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
+              Text(
                 'Exam Date',
-                style: TextStyle(fontSize: 12, color: Colors.grey),
+                style: TextStyle(
+                  fontSize: 12,
+                  color: isDark ? Colors.white70 : Colors.grey,
+                ),
               ),
               const SizedBox(height: 4),
               Text(
                 date,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
+                  color: isDark ? Colors.white : Colors.black,
                 ),
               ),
             ],
@@ -255,8 +282,9 @@ class _LecturersCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return _CardContainer(
-      background: const Color(0xFFE3F2FD),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -273,13 +301,15 @@ class _LecturersCard extends StatelessWidget {
                       vertical: 8,
                     ),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: isDark
+                          ? Colors.white12
+                          : AppColors.primaryBlue.withOpacity(0.08),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
                       l.replaceAll('(TP)', '').trim(),
-                      style: const TextStyle(
-                        color: Color(0xFF1565C0),
+                      style: TextStyle(
+                        color: isDark ? Colors.white : AppColors.primaryBlue,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -294,28 +324,32 @@ class _LecturersCard extends StatelessWidget {
 }
 
 /// =======================
-/// SHARED UI HELPERS
+/// SHARED CARD CONTAINER
 /// =======================
 class _CardContainer extends StatelessWidget {
   final Widget child;
-  final Color? background;
 
-  const _CardContainer({required this.child, this.background});
+  const _CardContainer({required this.child});
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: background ?? Colors.white,
+        color: isDark
+            ? Theme.of(context).colorScheme.surfaceVariant
+            : Colors.white,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withValues(alpha: 0.08),
-            blurRadius: 15,
-            offset: const Offset(0, 5),
-          ),
+          if (!isDark)
+            BoxShadow(
+              color: Colors.grey.withOpacity(0.08),
+              blurRadius: 15,
+              offset: const Offset(0, 5),
+            ),
         ],
       ),
       child: child,
@@ -330,7 +364,11 @@ Widget _cardHeader(IconData icon, String title) {
       const SizedBox(width: 12),
       Text(
         title,
-        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+        style: const TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.bold,
+          color: Colors.white,
+        ),
       ),
     ],
   );

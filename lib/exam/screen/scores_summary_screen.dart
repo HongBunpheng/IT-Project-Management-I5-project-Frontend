@@ -38,6 +38,8 @@ class _ScoresSummaryScreenState extends State<ScoresSummaryScreen> {
       final summary = await _examService.getScoresSummary();
       final examSummary = await _examService.getExamResults();
 
+      if (!mounted) return;
+
       setState(() {
         _subjectScores = summary;
         _averageScore = examSummary.averageScore;
@@ -45,47 +47,31 @@ class _ScoresSummaryScreenState extends State<ScoresSummaryScreen> {
         _errorMessage = null;
       });
     } catch (e) {
+      if (!mounted) return;
+
       setState(() {
         _isLoading = false;
         _errorMessage = e.toString();
       });
 
-      if (mounted) {
-        CustomSnackBar.error(
-          title: 'Error loading summary',
-          message: e.toString(),
-        );
-      }
+      CustomSnackBar.error(
+        title: 'Error loading summary',
+        message: e.toString(),
+      );
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       body: SafeArea(
         child: _isLoading
             ? const Center(child: CircularProgressIndicator())
             : _errorMessage != null
-            ? Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(_errorMessage!, textAlign: TextAlign.center),
-                      const SizedBox(height: 12),
-                      ElevatedButton(
-                        onPressed: () {
-                          setState(() => _isLoading = true);
-                          _loadSummaryData();
-                        },
-                        child: const Text('Retry'),
-                      ),
-                    ],
-                  ),
-                ),
-              )
+            ? _errorView(context)
             : Column(
                 children: [
                   const AppHeader(),
@@ -97,7 +83,7 @@ class _ScoresSummaryScreenState extends State<ScoresSummaryScreen> {
                         children: [
                           const SizedBox(height: 35),
 
-                          /// 🔵 DONUT CHART (AVERAGE SCORE)
+                          /// 🔵 DONUT CHART
                           RoundedDonutChart(
                             subjects: _subjectScores,
                             averageScore: _averageScore,
@@ -110,7 +96,7 @@ class _ScoresSummaryScreenState extends State<ScoresSummaryScreen> {
 
                           const SizedBox(height: 12),
 
-                          /// 📋 SUBJECT SCORE LIST
+                          /// 📋 SUBJECT LIST
                           ListView.builder(
                             shrinkWrap: true,
                             physics: const NeverScrollableScrollPhysics(),
@@ -156,6 +142,38 @@ class _ScoresSummaryScreenState extends State<ScoresSummaryScreen> {
                   ),
                 ],
               ),
+      ),
+    );
+  }
+
+  /// ❌ ERROR VIEW — DARK MODE FRIENDLY
+  Widget _errorView(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              _errorMessage!,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: isDark ? Colors.white : Colors.black87,
+                fontSize: AppSizes.fontSizeM,
+              ),
+            ),
+            const SizedBox(height: 12),
+            ElevatedButton(
+              onPressed: () {
+                setState(() => _isLoading = true);
+                _loadSummaryData();
+              },
+              child: const Text('Retry'),
+            ),
+          ],
+        ),
       ),
     );
   }
