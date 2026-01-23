@@ -6,10 +6,12 @@ class AcademicRecordsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Container(
-      decoration: const BoxDecoration(
-        color: AppColors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
       ),
       child: Column(
         children: [
@@ -19,31 +21,38 @@ class AcademicRecordsScreen extends StatelessWidget {
             width: 40,
             height: 4,
             decoration: BoxDecoration(
-              color: AppColors.textSecondary.withValues(alpha: 0.3),
+              color: isDark
+                  ? Colors.white24
+                  : AppColors.textSecondary.withOpacity(0.3),
               borderRadius: BorderRadius.circular(2),
             ),
           ),
+
           // Header
           Padding(
             padding: const EdgeInsets.all(20),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
+                Text(
                   'Academic Records',
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimary,
+                    color: Theme.of(context).textTheme.titleLarge?.color,
                   ),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.close, color: AppColors.textPrimary),
+                  icon: Icon(
+                    Icons.close,
+                    color: Theme.of(context).iconTheme.color,
+                  ),
                   onPressed: () => Navigator.pop(context),
                 ),
               ],
             ),
           ),
+
           // Content
           Expanded(
             child: SingleChildScrollView(
@@ -51,69 +60,90 @@ class AcademicRecordsScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildInfoCard(
+                  _infoCard(
+                    context,
+                    isDark,
                     title: 'Student ID',
                     value: 'ITC-2024-001',
                     icon: Icons.badge_outlined,
                   ),
                   const SizedBox(height: 16),
-                  _buildInfoCard(
+                  _infoCard(
+                    context,
+                    isDark,
                     title: 'Major',
                     value: 'Computer Science',
                     icon: Icons.school_outlined,
                   ),
                   const SizedBox(height: 16),
-                  _buildInfoCard(
+                  _infoCard(
+                    context,
+                    isDark,
                     title: 'Year',
                     value: 'Year 3',
                     icon: Icons.calendar_today_outlined,
                   ),
                   const SizedBox(height: 16),
-                  _buildInfoCard(
+                  _infoCard(
+                    context,
+                    isDark,
                     title: 'Enrollment Date',
                     value: 'September 2022',
                     icon: Icons.event_outlined,
                   ),
                   const SizedBox(height: 16),
-                  _buildInfoCard(
+                  _infoCard(
+                    context,
+                    isDark,
                     title: 'GPA',
                     value: '3.75 / 4.0',
                     icon: Icons.star_outline,
                   ),
                   const SizedBox(height: 24),
-                  const Text(
+
+                  Text(
                     'Course History',
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
-                      color: AppColors.textPrimary,
+                      color: Theme.of(context).textTheme.titleMedium?.color,
                     ),
                   ),
                   const SizedBox(height: 16),
-                  _buildCourseItem(
+
+                  _courseItem(
+                    context,
+                    isDark,
                     courseName: 'Data Structures',
                     grade: 'A',
                     credits: '3',
                     semester: 'Fall 2023',
                   ),
-                  _buildCourseItem(
+                  _courseItem(
+                    context,
+                    isDark,
                     courseName: 'Algorithms',
                     grade: 'A-',
                     credits: '3',
                     semester: 'Fall 2023',
                   ),
-                  _buildCourseItem(
+                  _courseItem(
+                    context,
+                    isDark,
                     courseName: 'Database Systems',
                     grade: 'B+',
                     credits: '3',
                     semester: 'Spring 2024',
                   ),
-                  _buildCourseItem(
+                  _courseItem(
+                    context,
+                    isDark,
                     courseName: 'Software Engineering',
                     grade: 'A',
                     credits: '3',
                     semester: 'Spring 2024',
                   ),
+
                   const SizedBox(height: 20),
                 ],
               ),
@@ -124,7 +154,9 @@ class AcademicRecordsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildInfoCard({
+  Widget _infoCard(
+    BuildContext context,
+    bool isDark, {
     required String title,
     required String value,
     required IconData icon,
@@ -132,9 +164,11 @@ class AcademicRecordsScreen extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.lightGrey,
+        color: Theme.of(context).colorScheme.surfaceVariant,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.borderLight),
+        border: Border.all(
+          color: AppColors.borderLight.withOpacity(isDark ? 0.35 : 1),
+        ),
       ),
       child: Row(
         children: [
@@ -142,10 +176,10 @@ class AcademicRecordsScreen extends StatelessWidget {
             width: 40,
             height: 40,
             decoration: BoxDecoration(
-              color: AppColors.primaryBlueLight.withValues(alpha: 0.15),
+              color: AppColors.primaryBlue.withOpacity(0.15),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: Icon(icon, color: AppColors.primaryBlueLight, size: 22),
+            child: Icon(icon, color: AppColors.primaryBlue),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -154,18 +188,18 @@ class AcademicRecordsScreen extends StatelessWidget {
               children: [
                 Text(
                   title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 12,
-                    color: AppColors.textSecondary,
+                    color: Theme.of(context).textTheme.bodySmall?.color,
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   value,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
-                    color: AppColors.textPrimary,
+                    color: Theme.of(context).textTheme.bodyLarge?.color,
                   ),
                 ),
               ],
@@ -176,7 +210,9 @@ class AcademicRecordsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildCourseItem({
+  Widget _courseItem(
+    BuildContext context,
+    bool isDark, {
     required String courseName,
     required String grade,
     required String credits,
@@ -186,9 +222,11 @@ class AcademicRecordsScreen extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.borderLight),
+        border: Border.all(
+          color: AppColors.borderLight.withOpacity(isDark ? 0.35 : 1),
+        ),
       ),
       child: Row(
         children: [
@@ -198,18 +236,18 @@ class AcademicRecordsScreen extends StatelessWidget {
               children: [
                 Text(
                   courseName,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
-                    color: AppColors.textPrimary,
+                    color: Theme.of(context).textTheme.bodyLarge?.color,
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   semester,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 12,
-                    color: AppColors.textSecondary,
+                    color: Theme.of(context).textTheme.bodySmall?.color,
                   ),
                 ),
               ],
@@ -224,13 +262,12 @@ class AcademicRecordsScreen extends StatelessWidget {
                   vertical: 6,
                 ),
                 decoration: BoxDecoration(
-                  color: AppColors.primaryBlue.withValues(alpha: 0.1),
+                  color: AppColors.primaryBlue.withOpacity(0.15),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
                   grade,
                   style: const TextStyle(
-                    fontSize: 14,
                     fontWeight: FontWeight.bold,
                     color: AppColors.primaryBlue,
                   ),
@@ -239,9 +276,9 @@ class AcademicRecordsScreen extends StatelessWidget {
               const SizedBox(height: 4),
               Text(
                 '$credits Credits',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 12,
-                  color: AppColors.textSecondary,
+                  color: Theme.of(context).textTheme.bodySmall?.color,
                 ),
               ),
             ],
