@@ -4,7 +4,7 @@ import 'package:flutter_locales/flutter_locales.dart';
 import 'configs/app_colors.dart';
 import 'configs/app_theme_extension.dart';
 import 'auth/screen/login_screen.dart';
-import 'dashboard/screen/dashboard_screen.dart';
+import 'main_shell.dart';
 import 'services/token_storage.dart';
 import 'utils/snackbar.dart';
 
@@ -108,7 +108,7 @@ class _AuthCheckScreenState extends State<AuthCheckScreen> {
     if (token != null && token.isNotEmpty) {
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (_) => const DashboardView()),
+        MaterialPageRoute(builder: (_) => const MainShell(initialIndex: 0)),
       );
     } else {
       Navigator.pushReplacement(

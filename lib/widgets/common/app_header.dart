@@ -17,6 +17,7 @@ class AppHeader extends StatefulWidget {
   final VoidCallback? onNotificationTap;
   final String? title;
   final Widget? trailing;
+  final VoidCallback? onProfileTap;
 
   const AppHeader({
     super.key,
@@ -28,6 +29,7 @@ class AppHeader extends StatefulWidget {
     this.onNotificationTap,
     this.title,
     this.trailing,
+    this.onProfileTap,
   });
 
   String _capitalizeFullName(String? name) {
@@ -137,12 +139,14 @@ class _AppHeaderState extends State<AppHeader> {
         children: [
           // Profile Picture (Clickable)
           GestureDetector(
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const ProfileScreen()),
-              );
-            },
+            onTap:
+                widget.onProfileTap ??
+                () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const ProfileScreen()),
+                  );
+                },
             child: Container(
               width: 60,
               height: 60,

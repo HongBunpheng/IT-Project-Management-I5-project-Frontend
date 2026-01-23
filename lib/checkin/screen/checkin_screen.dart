@@ -4,15 +4,11 @@ import '../../configs/app_sizes.dart';
 import '../../configs/app_theme_extension.dart';
 import '../../utils/responsive.dart';
 import '../../utils/localization_helper.dart';
-import '../../widgets/common/custom_bottom_navigation_bar.dart';
-import '../../dashboard/screen/dashboard_screen.dart';
-import '../../exam/screen/exam_scores_screen.dart';
-import '../../timetable/screen/timetable_screen.dart';
 import 'qr_scanner_screen.dart';
 import '../../services/attendance_service.dart';
+import '../../services/timetable_service.dart';
 import '../../services/token_storage.dart';
 import '../../utils/json_utils.dart';
-import '../../account/screen/profile_screen.dart';
 import '../../utils/snackbar.dart';
 
 class CheckInScreen extends StatefulWidget {
@@ -24,26 +20,72 @@ class CheckInScreen extends StatefulWidget {
 
 class _CheckInScreenState extends State<CheckInScreen> {
   final AttendanceService _attendanceService = AttendanceService();
+  final TimetableService _timetableService = TimetableService();
   final TokenStorage _tokenStorage = TokenStorage();
 
   bool _isLoading = false;
   List<Map<String, dynamic>> _recent = [];
+  int _totalRooms = 0;
+  int _totalCheckedIns = 0;
+  bool _isSummaryLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _loadRecent();
+    _loadSummary();
   }
 
-  Future<void> _loadRecent() async {
+  Future<void> _loadSummary() async {
+    if (!mounted) return;
+    setState(() => _isSummaryLoading = true);
+    await Future.wait([_loadAttendance(), _loadRooms()]);
+    if (!mounted) return;
+    setState(() => _isSummaryLoading = false);
+  }
+
+  Future<void> _loadAttendance() async {
     try {
       final userId = await _tokenStorage.readUserId();
       if (userId == null || userId.isEmpty) return;
       final list = await _attendanceService.myAttendance(userId);
       if (!mounted) return;
       setState(() {
+        _totalCheckedIns = list.length;
         _recent = list.take(6).toList();
       });
+    } catch (_) {
+      // ignore
+    }
+  }
+
+  Future<void> _loadRooms() async {
+    try {
+      final userId = await _tokenStorage.readUserId();
+      final groupId = await _tokenStorage.readGroupId();
+
+      List<Map<String, dynamic>> raw = const [];
+      if (userId != null && userId.isNotEmpty) {
+        raw = await _timetableService.listByUser(userId);
+      } else if (groupId != null && groupId.isNotEmpty) {
+        raw = await _timetableService.listByGroup(groupId);
+      } else {
+        return;
+      }
+
+      final rooms = <String>{};
+      for (final row in raw) {
+        final classroom = asMap(row['classroom']);
+        final roomName =
+            (classroom != null ? readString(classroom, const ['name']) : null) ??
+            readString(row, const ['room', 'classroom_name', 'classroom']);
+        final normalized = roomName?.trim();
+        if (normalized != null && normalized.isNotEmpty) {
+          rooms.add(normalized);
+        }
+      }
+
+      if (!mounted) return;
+      setState(() => _totalRooms = rooms.length);
     } catch (_) {
       // ignore
     }
@@ -54,169 +96,139 @@ class _CheckInScreenState extends State<CheckInScreen> {
     final horizontalPadding = Responsive.getPadding(context);
     final appColors = context.appColors;
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+
     return Scaffold(
       backgroundColor: isDark ? const Color(0xFF121212) : AppColors.white,
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: EdgeInsets.symmetric(
-            horizontal: horizontalPadding,
-            vertical: AppSizes.spacingL,
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              const SizedBox(height: AppSizes.spacingL),
-              Text(
-                safeLocaleString(context, 'click_qr_code', fallback: 'Click QR Code for Scan'),
-                style: TextStyle(
-                  fontSize: AppSizes.fontSizeXL,
-                  fontWeight: FontWeight.bold,
-                  color: appColors.textPrimary,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: AppSizes.spacingS),
-              GestureDetector(
-                onTap: () async {
-                  final result = await Navigator.push<String>(
-                    context,
-                    MaterialPageRoute(builder: (_) => const QrScannerScreen()),
-                  );
-                  if (!mounted) return;
-                  if (result != null && result.isNotEmpty) {
-                    setState(() => _isLoading = true);
-                    final res = await _attendanceService.checkIn(code: result);
-                    if (!context.mounted) return;
-                    setState(() => _isLoading = false);
-
-                    final body = res['body'];
-                    final message = body is Map
-                        ? (body['message']?.toString() ?? 'Check-in complete')
-                        : 'Check-in complete';
-                    final statusCode = res['statusCode'];
-                    if (statusCode is int &&
-                        statusCode >= 200 &&
-                        statusCode < 300) {
-                      CustomSnackBar.success(title: message);
-                    } else {
-                      CustomSnackBar.error(title: message);
-                    }
-                    await _loadRecent();
-                  }
-                },
-                child: SizedBox(
-                  width: 280,
-                  height: 280,
-                  child: Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      // blue corner frame
-                      CustomPaint(
-                        size: const Size(250, 250),
-                        painter: _QrCornerFramePainter(
-                          color: AppColors.primaryBlue,
-                        ),
-                      ),
-                      // qr
-                      Container(
-                        width: 220,
-                        height: 220,
-                        decoration: BoxDecoration(
-                          color: isDark ? const Color(0xFF1E1E1E) : AppColors.white,
-                          borderRadius: BorderRadius.circular(AppSizes.radiusM),
-                        ),
-                        child: Icon(
-                          Icons.qr_code_2,
-                          size: 220,
-                          color: isDark ? AppColors.white : Colors.black,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: AppSizes.spacingS),
-              Text(
-                _isLoading
-                    ? 'Checking in...'
-                    : safeLocaleString(context, 'click_me', fallback: 'Click me'),
-                style: const TextStyle(
-                  fontSize: AppSizes.fontSizeL,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.success,
-                ),
-              ),
-              const SizedBox(height: AppSizes.spacingXL),
-              const _SummaryCards(totalRooms: 5, totalCheckedIns: 27),
-              const SizedBox(height: AppSizes.spacingXL),
-              Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  safeLocaleString(context, 'recent_scan', fallback: 'Recent Scan'),
-                  style: TextStyle(
-                    fontSize: AppSizes.fontSizeM,
-                    fontWeight: FontWeight.w700,
-                    color: appColors.primaryBlue,
-                  ),
-                ),
-              ),
-              const SizedBox(height: AppSizes.spacingS),
-              if (_recent.isEmpty)
-                const Text('No recent scans')
-              else
-                ..._recent.map((row) {
-                  final code =
-                      readString(row, const ['code', 'qr_code']) ?? '-';
-                  final date =
-                      readString(row, const ['date', 'created_at']) ?? '-';
-                  final inTime =
-                      readString(row, const ['check_in_time']) ?? '-';
-                  final outTime =
-                      readString(row, const ['check_out_time']) ?? '-';
-                  return _ScanRow(
-                    code: code,
-                    date: date,
-                    inTime: inTime,
-                    outTime: outTime,
-                  );
-                }),
-            ],
-          ),
+      body: SingleChildScrollView(
+        padding: EdgeInsets.symmetric(
+          horizontal: horizontalPadding,
+          vertical: AppSizes.spacingL,
         ),
-      ),
-      bottomNavigationBar: CustomBottomNavigationBar(
-        currentIndex: 1,
-        onTap: (index) {
-          switch (index) {
-            case 0:
-              Navigator.pushReplacement(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Text(
+              safeLocaleString(
                 context,
-                MaterialPageRoute(builder: (_) => const DashboardView()),
-              );
-              break;
-            case 1:
-              break;
-            case 2:
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (_) => const ExamScoresScreen()),
-              );
-              break;
-            case 3:
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (_) => const TimetableView()),
-              );
-              break;
-            case 4:
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (_) => const ProfileScreen()),
-              );
-              break;
-          }
-        },
+                'click_qr_code',
+                fallback: 'Click QR Code for Scan',
+              ),
+              style: TextStyle(
+                fontSize: AppSizes.fontSizeXL,
+                fontWeight: FontWeight.bold,
+                color: appColors.textPrimary,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: AppSizes.spacingS),
+            GestureDetector(
+              onTap: () async {
+                final result = await Navigator.push<String>(
+                  context,
+                  MaterialPageRoute(builder: (_) => const QrScannerScreen()),
+                );
+                if (!mounted) return;
+                if (result != null && result.isNotEmpty) {
+                  setState(() => _isLoading = true);
+                  final res = await _attendanceService.checkIn(code: result);
+                  if (!context.mounted) return;
+                  setState(() => _isLoading = false);
+
+                  final body = res['body'];
+                  final message = body is Map
+                      ? (body['message']?.toString() ?? 'Check-in complete')
+                      : 'Check-in complete';
+                  final statusCode = res['statusCode'];
+                  if (statusCode is int &&
+                      statusCode >= 200 &&
+                      statusCode < 300) {
+                    CustomSnackBar.success(title: message);
+                  } else {
+                    CustomSnackBar.error(title: message);
+                  }
+                  await _loadAttendance();
+                }
+              },
+              child: SizedBox(
+                width: 280,
+                height: 280,
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    // blue corner frame
+                    CustomPaint(
+                      size: const Size(250, 250),
+                      painter: _QrCornerFramePainter(
+                        color: AppColors.primaryBlue,
+                      ),
+                    ),
+                    // qr
+                    Container(
+                      width: 220,
+                      height: 220,
+                      decoration: BoxDecoration(
+                        color:
+                            isDark ? const Color(0xFF1E1E1E) : AppColors.white,
+                        borderRadius: BorderRadius.circular(AppSizes.radiusM),
+                      ),
+                      child: Icon(
+                        Icons.qr_code_2,
+                        size: 220,
+                        color: isDark ? AppColors.white : Colors.black,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: AppSizes.spacingS),
+            Text(
+              _isLoading
+                  ? 'Checking in...'
+                  : safeLocaleString(context, 'click_me', fallback: 'Click me'),
+              style: const TextStyle(
+                fontSize: AppSizes.fontSizeL,
+                fontWeight: FontWeight.w700,
+                color: AppColors.success,
+              ),
+            ),
+            const SizedBox(height: AppSizes.spacingXL),
+            _SummaryCards(
+              totalRooms: _totalRooms,
+              totalCheckedIns: _totalCheckedIns,
+              isLoading: _isSummaryLoading,
+            ),
+            const SizedBox(height: AppSizes.spacingXL),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                safeLocaleString(context, 'recent_scan', fallback: 'Recent Scan'),
+                style: TextStyle(
+                  fontSize: AppSizes.fontSizeM,
+                  fontWeight: FontWeight.w700,
+                  color: appColors.primaryBlue,
+                ),
+              ),
+            ),
+            const SizedBox(height: AppSizes.spacingS),
+            if (_recent.isEmpty)
+              const Text('No recent scans')
+            else
+              ..._recent.map((row) {
+                final code = readString(row, const ['code', 'qr_code']) ?? '-';
+                final date =
+                    readString(row, const ['date', 'created_at']) ?? '-';
+                final inTime = readString(row, const ['check_in_time']) ?? '-';
+                final outTime = readString(row, const ['check_out_time']) ?? '-';
+                return _ScanRow(
+                  code: code,
+                  date: date,
+                  inTime: inTime,
+                  outTime: outTime,
+                );
+              }),
+          ],
+        ),
       ),
     );
   }
@@ -225,10 +237,12 @@ class _CheckInScreenState extends State<CheckInScreen> {
 class _SummaryCards extends StatelessWidget {
   final int totalRooms;
   final int totalCheckedIns;
+  final bool isLoading;
 
   const _SummaryCards({
     required this.totalRooms,
     required this.totalCheckedIns,
+    required this.isLoading,
   });
 
   @override
@@ -273,7 +287,7 @@ class _SummaryCards extends StatelessWidget {
               Expanded(
                 child: _buildSummaryCard(
                   context: context,
-                  number: totalRooms.toString(),
+                  number: isLoading ? '—' : totalRooms.toString(),
                   label: safeLocaleString(context, 'rooms', fallback: 'Rooms'),
                   icon: Icons.grid_view,
                 ),
@@ -282,7 +296,7 @@ class _SummaryCards extends StatelessWidget {
               Expanded(
                 child: _buildSummaryCard(
                   context: context,
-                  number: totalCheckedIns.toString(),
+                  number: isLoading ? '—' : totalCheckedIns.toString(),
                   label: safeLocaleString(context, 'checked_ins', fallback: 'Checked-ins'),
                   icon: Icons.people,
                 ),

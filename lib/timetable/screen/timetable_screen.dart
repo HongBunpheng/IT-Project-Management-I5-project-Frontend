@@ -1,17 +1,12 @@
 import 'package:flutter/material.dart';
 import '../../configs/app_colors.dart';
 import '../../configs/app_sizes.dart';
-import '../../widgets/common/custom_bottom_navigation_bar.dart';
-import '../../dashboard/screen/dashboard_screen.dart';
 import '../widget/calendar_table_widget.dart';
 import '../widget/timetable_task_card.dart';
 import '../model/timetable_task_model.dart';
-import '../../exam/screen/exam_scores_screen.dart';
-import '../../checkin/screen/checkin_screen.dart';
 import '../../services/timetable_service.dart';
 import '../../services/token_storage.dart';
 import '../../utils/json_utils.dart';
-import '../../account/screen/profile_screen.dart';
 import '../../account/service/account_service.dart';
 
 class TimetableView extends StatefulWidget {
@@ -22,7 +17,6 @@ class TimetableView extends StatefulWidget {
 }
 
 class _TimetableViewState extends State<TimetableView> {
-  int _currentBottomNavIndex = 3; // Schedule icon is index 3
   final TimetableService _timetableService = TimetableService();
   final TokenStorage _tokenStorage = TokenStorage();
 
@@ -156,102 +150,65 @@ class _TimetableViewState extends State<TimetableView> {
     });
   }
 
-  void _onBottomNavTap(int index) {
-    // Only update local index when staying on this tab
-    switch (index) {
-      case 0:
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const DashboardView()),
-        );
-        break;
-      case 1:
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const CheckInScreen()),
-        );
-        break;
-      case 2:
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const ExamScoresScreen()),
-        );
-        break;
-      case 3:
-        // Already on timetable
-        setState(() => _currentBottomNavIndex = 3);
-        break;
-      case 4:
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const ProfileScreen()),
-        );
-        break;
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
       backgroundColor: isDark ? const Color(0xFF121212) : AppColors.white,
-      body: SafeArea(
-        child: Column(
-          children: [
-            // Timetable Header
-            SizedBox(height: AppSizes.spacingM),
-            // Calendar Table
-            CalendarTableWidget(
-              selectedDate: _selectedDate,
-              currentMonth: _currentMonth,
-              onDateSelected: _onDateSelected,
-              onMonthChanged: _onMonthChanged,
-              tasksCount: _tasksCountByDate,
-            ),
-            SizedBox(height: AppSizes.spacingXL),
-            // Tasks List
-            Expanded(
-              child: _isLoading
-                  ? const Center(child: CircularProgressIndicator())
-                  : _errorMessage != null
-                  ? Center(
-                      child: Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(_errorMessage!, textAlign: TextAlign.center),
-                            const SizedBox(height: 12),
-                            ElevatedButton(
-                              onPressed: _loadTimetable,
-                              child: const Text('Retry'),
-                            ),
-                          ],
+      body: Column(
+        children: [
+          // Timetable Header
+          SizedBox(height: AppSizes.spacingM),
+          // Calendar Table
+          CalendarTableWidget(
+            selectedDate: _selectedDate,
+            currentMonth: _currentMonth,
+            onDateSelected: _onDateSelected,
+            onMonthChanged: _onMonthChanged,
+            tasksCount: _tasksCountByDate,
+          ),
+          SizedBox(height: AppSizes.spacingXL),
+          // Tasks List
+          Expanded(
+            child: _isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : _errorMessage != null
+                    ? Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                _errorMessage!,
+                                textAlign: TextAlign.center,
+                              ),
+                              const SizedBox(height: 12),
+                              ElevatedButton(
+                                onPressed: _loadTimetable,
+                                child: const Text('Retry'),
+                              ),
+                            ],
+                          ),
+                        ),
+                      )
+                    : RefreshIndicator(
+                        onRefresh: _loadTimetable,
+                        child: ListView.builder(
+                          padding: EdgeInsets.only(bottom: AppSizes.spacingM),
+                          itemCount: _tasks.length,
+                          itemBuilder: (context, index) {
+                            return TimetableTaskCard(
+                              task: _tasks[index],
+                              onCompletionChanged: (completed) =>
+                                  _onTaskCompleted(index, completed),
+                            );
+                          },
                         ),
                       ),
-                    )
-                  : RefreshIndicator(
-                      onRefresh: _loadTimetable,
-                      child: ListView.builder(
-                        padding: EdgeInsets.only(bottom: AppSizes.spacingM),
-                        itemCount: _tasks.length,
-                        itemBuilder: (context, index) {
-                          return TimetableTaskCard(
-                            task: _tasks[index],
-                            onCompletionChanged: (completed) =>
-                                _onTaskCompleted(index, completed),
-                          );
-                        },
-                      ),
-                    ),
-            ),
-          ],
-        ),
-      ),
-      bottomNavigationBar: CustomBottomNavigationBar(
-        currentIndex: _currentBottomNavIndex,
-        onTap: _onBottomNavTap,
+          ),
+        ],
       ),
     );
   }

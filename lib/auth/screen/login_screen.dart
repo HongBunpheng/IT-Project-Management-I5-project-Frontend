@@ -3,7 +3,7 @@ import '../../configs/app_colors.dart';
 import '../../utils/validators.dart';
 import '../../utils/localization_helper.dart';
 import 'signup_screen.dart';
-import '../../dashboard/screen/dashboard_screen.dart';
+import '../../main_shell.dart';
 import '../repository/auth_repository.dart';
 import '../../utils/snackbar.dart';
 
@@ -54,7 +54,7 @@ class _LoginScreenState extends State<LoginScreen> {
       );
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (_) => const DashboardView()),
+        MaterialPageRoute(builder: (_) => const MainShell(initialIndex: 0)),
       );
     } else {
       final body = res['body'];

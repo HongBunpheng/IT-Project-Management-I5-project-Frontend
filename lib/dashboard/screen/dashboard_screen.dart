@@ -3,20 +3,12 @@ import '../../configs/app_colors.dart';
 import '../../configs/app_sizes.dart';
 import '../../configs/app_theme_extension.dart';
 import '../../utils/responsive.dart';
-import '../../widgets/common/app_header.dart';
-import '../../widgets/common/custom_bottom_navigation_bar.dart';
-import '../../timetable/screen/timetable_screen.dart';
 import '../../services/timetable_service.dart';
 import '../widget/exam_card_item.dart';
 import '../widget/exam_score_summary_card.dart';
 import '../widget/task_card_item.dart';
 import '../model/dashboard_models.dart';
-import '../../notification/screen/notification_screen.dart';
-import '../../exam/screen/exam_scores_screen.dart';
-import '../../checkin/screen/checkin_screen.dart';
-import '../../account/service/account_service.dart';
 import '../../exam/service/exam_service.dart';
-import '../../account/screen/profile_screen.dart';
 import '../../services/token_storage.dart';
 import '../../utils/json_utils.dart';
 import '../../services/event_service.dart';
@@ -29,18 +21,12 @@ class DashboardView extends StatefulWidget {
 }
 
 class _DashboardViewState extends State<DashboardView> {
-  int _currentBottomNavIndex = 0;
-
-  final AccountService _accountService = AccountService();
   final ExamService _examService = ExamService();
   final TimetableService _timetableService = TimetableService();
   final EventService _eventService = EventService();
   final TokenStorage _tokenStorage = TokenStorage();
 
   ExamScoreSummary _scoreSummary = ExamScoreSummary(score: 0.0);
-  String? _userId;
-  String? _fullName;
-  String? _email;
 
   List<ExamCard> _events = [];
   List<TaskCard> _subjects = [];
@@ -48,33 +34,9 @@ class _DashboardViewState extends State<DashboardView> {
   @override
   void initState() {
     super.initState();
-    // Load from storage first for immediate display
-    _loadFromStorage().then((_) {
-      // Then load other data
-      _loadSummary();
-      _loadMe();
-      _loadSubjects();
-      _loadEvents();
-    });
-  }
-
-  Future<void> _loadFromStorage() async {
-    try {
-      final storedFullName = await _tokenStorage.readFullName();
-      final storedEmail = await _tokenStorage.readEmail();
-      if (mounted) {
-        setState(() {
-          if (storedFullName != null && storedFullName.isNotEmpty) {
-            _fullName = storedFullName;
-          }
-          if (storedEmail != null && storedEmail.isNotEmpty) {
-            _email = storedEmail;
-          }
-        });
-      }
-    } catch (_) {
-      // ignore
-    }
+    _loadSummary();
+    _loadSubjects();
+    _loadEvents();
   }
 
   Future<void> _loadSummary() async {
@@ -86,52 +48,6 @@ class _DashboardViewState extends State<DashboardView> {
       );
     } catch (_) {
       // ignore
-    }
-  }
-
-  Future<void> _loadMe() async {
-    try {
-      final profile = await _accountService.getProfile();
-      if (!mounted || profile == null) return;
-
-      final user = _accountService.extractUserData(profile);
-
-      final fullName = readString(user, const [
-        'full_name',
-        'fullName',
-        'name',
-        'user_name',
-        'username',
-      ]);
-      final email = readString(user, const ['email']);
-      final userId = readString(user, const ['id', 'user_id', 'userId']);
-
-      if (!mounted) return;
-      setState(() {
-        if (fullName != null && fullName.isNotEmpty) _fullName = fullName;
-        if (email != null && email.isNotEmpty) _email = email;
-        _userId = userId ?? _userId;
-      });
-
-      if (fullName != null && fullName.isNotEmpty) {
-        await _tokenStorage.writeFullName(fullName);
-      }
-      if (email != null && email.isNotEmpty) {
-        await _tokenStorage.writeEmail(email);
-      }
-      if (userId != null && userId.isNotEmpty) {
-        await _tokenStorage.writeUserId(userId);
-      }
-    } catch (_) {
-      // If API fails, use stored values if available
-      if (mounted) {
-        final storedFullName = await _tokenStorage.readFullName();
-        final storedEmail = await _tokenStorage.readEmail();
-        setState(() {
-          _fullName = storedFullName;
-          _email = storedEmail;
-        });
-      }
     }
   }
 
@@ -250,49 +166,6 @@ class _DashboardViewState extends State<DashboardView> {
     }
   }
 
-  void _onBottomNavTap(int index) {
-    // Only update local index when staying on this tab
-    switch (index) {
-      case 0:
-        setState(() => _currentBottomNavIndex = 0);
-        break;
-      case 1:
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => const CheckInScreen()),
-        ).then((_) {
-          if (mounted) setState(() => _currentBottomNavIndex = 0);
-        });
-        break;
-      case 2:
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => const ExamScoresScreen()),
-        ).then((_) {
-          if (mounted) setState(() => _currentBottomNavIndex = 0);
-        });
-        break;
-      case 3:
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => const TimetableView()),
-        ).then((_) {
-          if (mounted) setState(() => _currentBottomNavIndex = 0);
-        });
-        break;
-      case 4:
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => const ProfileScreen()),
-        ).then((_) {
-          if (mounted) setState(() => _currentBottomNavIndex = 0);
-        });
-        break;
-      default:
-        break;
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final horizontalPadding = Responsive.getPadding(context);
@@ -301,162 +174,118 @@ class _DashboardViewState extends State<DashboardView> {
 
     return Scaffold(
       backgroundColor: isDark ? const Color(0xFF121212) : AppColors.white,
-      body: SafeArea(
+      body: SingleChildScrollView(
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header
-            AppHeader(
-              userId: _userId,
-              fullName: _fullName,
-              email: _email,
-              trailing: IconButton(
-                icon: const Icon(Icons.notifications_outlined),
-                onPressed: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const NotificationView()),
-                ),
+            SizedBox(height: AppSizes.spacingM),
+            ExamScoreSummaryCard(scoreSummary: _scoreSummary),
+            SizedBox(height: AppSizes.spacingL),
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+              child: Row(
+                children: [
+                  Text(
+                    'Event',
+                    style: TextStyle(
+                      fontSize: AppSizes.fontSizeXL,
+                      fontWeight: FontWeight.bold,
+                      color: appColors.textPrimary,
+                    ),
+                  ),
+                  SizedBox(width: AppSizes.spacingS),
+                  Container(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: AppSizes.spacingS,
+                      vertical: AppSizes.spacingXS,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.purple,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Text(
+                      '${_events.length}',
+                      style: TextStyle(
+                        color: AppColors.white,
+                        fontSize: AppSizes.fontSizeS,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
-            // Main Content
-            Expanded(
-              child: SingleChildScrollView(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+            SizedBox(height: AppSizes.spacingM),
+            if (_events.isEmpty)
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+                child: const Text('No events yet'),
+              )
+            else
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+                child: Row(
                   children: [
-                    SizedBox(height: AppSizes.spacingM),
-                    // Exam Score Summary Card
-                    ExamScoreSummaryCard(scoreSummary: _scoreSummary),
-                    SizedBox(height: AppSizes.spacingL),
-                    // Exam Section
-                    Padding(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: horizontalPadding,
-                      ),
-                      child: Row(
-                        children: [
-                          Text(
-                            'Event',
-                            style: TextStyle(
-                              fontSize: AppSizes.fontSizeXL,
-                              fontWeight: FontWeight.bold,
-                              color: appColors.textPrimary,
-                            ),
-                          ),
-                          SizedBox(width: AppSizes.spacingS),
-                          Container(
-                            padding: EdgeInsets.symmetric(
-                              horizontal: AppSizes.spacingS,
-                              vertical: AppSizes.spacingXS,
-                            ),
-                            decoration: BoxDecoration(
-                              color: AppColors.purple,
-                              shape: BoxShape.circle,
-                            ),
-                            child: Text(
-                              '${_events.length}',
-                              style: TextStyle(
-                                color: AppColors.white,
-                                fontSize: AppSizes.fontSizeS,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    SizedBox(height: AppSizes.spacingM),
-                    // Event Cards
-                    if (_events.isEmpty)
-                      Padding(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: horizontalPadding,
-                        ),
-                        child: const Text('No events yet'),
-                      )
-                    else
-                      Padding(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: horizontalPadding,
-                        ),
-                        child: Row(
-                          children: [
-                            ExamCardItem(exam: _events[0]),
-                            if (_events.length > 1) ...[
-                              SizedBox(width: AppSizes.spacingM),
-                              ExamCardItem(exam: _events[1]),
-                            ],
-                          ],
-                        ),
-                      ),
-                    SizedBox(height: AppSizes.spacingL),
-                    // Subject Section
-                    Padding(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: horizontalPadding,
-                      ),
-                      child: Row(
-                        children: [
-                          Text(
-                            'Subject',
-                            style: TextStyle(
-                              fontSize: AppSizes.fontSizeXL,
-                              fontWeight: FontWeight.bold,
-                              color: appColors.textPrimary,
-                            ),
-                          ),
-                          SizedBox(width: AppSizes.spacingS),
-                          Container(
-                            padding: EdgeInsets.symmetric(
-                              horizontal: AppSizes.spacingS,
-                              vertical: AppSizes.spacingXS,
-                            ),
-                            decoration: BoxDecoration(
-                              color: AppColors.purple,
-                              shape: BoxShape.circle,
-                            ),
-                            child: Text(
-                              '${_subjects.length}',
-                              style: TextStyle(
-                                color: AppColors.white,
-                                fontSize: AppSizes.fontSizeS,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    SizedBox(height: AppSizes.spacingM),
-                    // Subject Cards (same design as tasks)
-                    if (_subjects.isEmpty)
-                      Padding(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: horizontalPadding,
-                        ),
-                        child: const Text('No subjects yet'),
-                      )
-                    else
-                      Padding(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: horizontalPadding,
-                        ),
-                        child: Column(
-                          children: _subjects
-                              .map((task) => TaskCardItem(task: task))
-                              .toList(),
-                        ),
-                      ),
-                    SizedBox(height: AppSizes.spacingM),
+                    ExamCardItem(exam: _events[0]),
+                    if (_events.length > 1) ...[
+                      SizedBox(width: AppSizes.spacingM),
+                      ExamCardItem(exam: _events[1]),
+                    ],
                   ],
                 ),
               ),
+            SizedBox(height: AppSizes.spacingL),
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+              child: Row(
+                children: [
+                  Text(
+                    'Subject',
+                    style: TextStyle(
+                      fontSize: AppSizes.fontSizeXL,
+                      fontWeight: FontWeight.bold,
+                      color: appColors.textPrimary,
+                    ),
+                  ),
+                  SizedBox(width: AppSizes.spacingS),
+                  Container(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: AppSizes.spacingS,
+                      vertical: AppSizes.spacingXS,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.purple,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Text(
+                      '${_subjects.length}',
+                      style: TextStyle(
+                        color: AppColors.white,
+                        fontSize: AppSizes.fontSizeS,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
+            SizedBox(height: AppSizes.spacingM),
+            if (_subjects.isEmpty)
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+                child: const Text('No subjects yet'),
+              )
+            else
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+                child: Column(
+                  children:
+                      _subjects.map((task) => TaskCardItem(task: task)).toList(),
+                ),
+              ),
+            SizedBox(height: AppSizes.spacingM),
           ],
         ),
-      ),
-      bottomNavigationBar: CustomBottomNavigationBar(
-        currentIndex: _currentBottomNavIndex,
-        onTap: _onBottomNavTap,
       ),
     );
   }

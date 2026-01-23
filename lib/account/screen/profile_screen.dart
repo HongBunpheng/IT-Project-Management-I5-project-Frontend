@@ -7,11 +7,6 @@ import 'package:flutter_locales/flutter_locales.dart';
 import '../../configs/app_colors.dart';
 import '../../configs/app_theme_extension.dart';
 import '../../utils/localization_helper.dart';
-import '../../widgets/common/custom_bottom_navigation_bar.dart';
-import '../../dashboard/screen/dashboard_screen.dart';
-import '../../checkin/screen/checkin_screen.dart';
-import '../../exam/screen/exam_scores_screen.dart';
-import '../../timetable/screen/timetable_screen.dart';
 import '../../auth/screen/login_screen.dart';
 import '../../auth/service/auth_service.dart';
 import '../../services/token_storage.dart';
@@ -29,7 +24,6 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  int _currentBottomNavIndex = 4; // Profile is index 4
   bool _notificationsEnabled = true;
   File? _profileImage;
   final ScrollController _scrollController = ScrollController();
@@ -447,41 +441,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  void _onBottomNavTap(int index) {
-    switch (index) {
-      case 0:
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const DashboardView()),
-        );
-        break;
-      case 1:
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const CheckInScreen()),
-        );
-        break;
-      case 2:
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const ExamScoresScreen()),
-        );
-        break;
-      case 3:
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const TimetableView()),
-        );
-        break;
-      case 4:
-        // Already on settings
-        setState(() => _currentBottomNavIndex = 4);
-        break;
-      default:
-        break;
-    }
-  }
-
   void _showPersonalInformation() {
     showModalBottomSheet(
       context: context,
@@ -632,6 +591,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         backgroundColor: isDark
             ? AppColors.primaryBlue.withValues(alpha: 0.2)
             : AppColors.white,
+        automaticallyImplyLeading: false,
         elevation: _isScrolled ? 4 : 0,
         shadowColor: _isScrolled
             ? (isDark
@@ -651,14 +611,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
               )
             : null,
-        leading: IconButton(
-          icon: Icon(
-            Icons.arrow_back_ios,
-            color: appColors.textPrimary,
-            size: 20,
-          ),
-          onPressed: () => Navigator.pop(context),
-        ),
         title: Text(
           safeLocaleString(context, 'my_profile', fallback: 'My Profile'),
           style: TextStyle(
@@ -934,10 +886,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
           ],
         ),
-      ),
-      bottomNavigationBar: CustomBottomNavigationBar(
-        currentIndex: _currentBottomNavIndex,
-        onTap: _onBottomNavTap,
       ),
     );
   }

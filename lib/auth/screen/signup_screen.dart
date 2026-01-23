@@ -5,7 +5,7 @@ import 'login_screen.dart';
 import '../repository/auth_repository.dart';
 import '../../utils/snackbar.dart';
 import '../../utils/validators.dart';
-import '../../dashboard/screen/dashboard_screen.dart';
+import '../../main_shell.dart';
 import '../../services/token_storage.dart';
 import '../../account/service/account_service.dart';
 import '../../utils/json_utils.dart';
@@ -113,7 +113,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (_) => const DashboardView()),
+        MaterialPageRoute(builder: (_) => const MainShell(initialIndex: 0)),
       );
     } else {
       final body = res["body"];

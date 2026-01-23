@@ -4,7 +4,7 @@ import '../../configs/app_sizes.dart';
 import '../../utils/responsive.dart';
 import '../../utils/localization_helper.dart';
 import '../model/dashboard_models.dart';
-import '../../checkin/screen/checkin_screen.dart';
+import '../../main_shell.dart';
 
 class ExamScoreSummaryCard extends StatelessWidget {
   final ExamScoreSummary scoreSummary;
@@ -60,12 +60,7 @@ class ExamScoreSummaryCard extends StatelessWidget {
                 SizedBox(height: AppSizes.spacingM),
                 ElevatedButton(
                   onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const CheckInScreen(),
-                      ),
-                    );
+                    goToMainTab(context, 1);
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.white,
@@ -87,10 +82,7 @@ class ExamScoreSummaryCard extends StatelessWidget {
           ),
           GestureDetector(
             onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const CheckInScreen()),
-              );
+              goToMainTab(context, 1);
             },
             child: Container(
               width: 80,
