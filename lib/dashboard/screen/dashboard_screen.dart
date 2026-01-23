@@ -279,8 +279,9 @@ class _DashboardViewState extends State<DashboardView> {
               Padding(
                 padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
                 child: Column(
-                  children:
-                      _subjects.map((task) => TaskCardItem(task: task)).toList(),
+                  children: _subjects
+                      .map((task) => TaskCardItem(task: task))
+                      .toList(),
                 ),
               ),
             SizedBox(height: AppSizes.spacingM),

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+
 import '../model/exam_model.dart';
 import '../service/exam_service.dart';
 import '../widget/single_score_donut_chart.dart';
+
 import '../../widgets/common/app_header.dart';
 import '../../utils/snackbar.dart';
 import '../../configs/app_colors.dart';
@@ -23,6 +25,7 @@ class ExamDetailScreen extends StatefulWidget {
 
 class _ExamDetailScreenState extends State<ExamDetailScreen> {
   final ExamService _examService = ExamService();
+
   ExamResult? _examResult;
   bool _isLoading = true;
 
@@ -35,65 +38,62 @@ class _ExamDetailScreenState extends State<ExamDetailScreen> {
   Future<void> _loadExamDetail() async {
     try {
       final exam = await _examService.getExamDetail(widget.examId);
+      if (!mounted) return;
       setState(() {
         _examResult = exam;
         _isLoading = false;
       });
     } catch (e) {
-      setState(() {
-        _isLoading = false;
-      });
-      if (mounted) {
-        CustomSnackBar.error(
-          title: 'Error loading exam detail',
-          message: e.toString(),
-        );
-      }
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+      CustomSnackBar.error(
+        title: 'Error',
+        message: 'Failed to load exam detail',
+      );
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.white,
       body: SafeArea(
         child: _isLoading
             ? const Center(child: CircularProgressIndicator())
             : _examResult == null
-            ? const Center(child: Text('No data available'))
+            ? const Center(child: Text('No exam data available'))
             : SingleChildScrollView(
                 physics: const BouncingScrollPhysics(),
                 child: Column(
                   children: [
                     const SizedBox(height: 20),
-                    // Header
+
+                    /// HEADER
                     AppHeader(title: widget.subjectName),
+
                     const SizedBox(height: 35),
-                    // Donut Chart
+
+                    /// DONUT SCORE
                     Center(
                       child: SingleScoreDonutChart(
                         score: _examResult!.score.toDouble(),
-                        scoreColor: const Color(0xFF2196F3), // Blue
+                        scoreColor: AppColors.primaryBlue,
                         remainingColor: const Color(0xFFEEEEEE),
                         size: 180,
                         strokeWidth: 20,
                       ),
                     ),
+
                     const SizedBox(height: 30),
 
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 20.0),
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
                       child: Column(
                         children: [
-                          // Score Details Card
                           _ScoreDetailsCard(result: _examResult!),
                           const SizedBox(height: 16),
-
-                          // Exam Date Card
                           _ExamDateCard(date: _examResult!.examDate ?? 'N/A'),
                           const SizedBox(height: 16),
-
-                          // Lecturers Card
                           _LecturersCard(
                             lecturers: _examResult!.lecturers ?? [],
                           ),
@@ -101,10 +101,11 @@ class _ExamDetailScreenState extends State<ExamDetailScreen> {
                       ),
                     ),
 
-                    const SizedBox(height: 20),
-                    // Back Button
+                    const SizedBox(height: 24),
+
+                    /// BACK BUTTON
                     Padding(
-                      padding: const EdgeInsets.all(16.0),
+                      padding: const EdgeInsets.all(16),
                       child: SizedBox(
                         width: double.infinity,
                         height: 50,
@@ -129,6 +130,7 @@ class _ExamDetailScreenState extends State<ExamDetailScreen> {
                         ),
                       ),
                     ),
+
                     const SizedBox(height: 20),
                   ],
                 ),
@@ -138,6 +140,9 @@ class _ExamDetailScreenState extends State<ExamDetailScreen> {
   }
 }
 
+/// =======================
+/// SCORE DETAILS CARD
+/// =======================
 class _ScoreDetailsCard extends StatelessWidget {
   final ExamResult result;
 
@@ -145,112 +150,65 @@ class _ScoreDetailsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withValues(alpha: 0.08),
-            blurRadius: 15,
-            offset: const Offset(0, 5),
-          ),
-          BoxShadow(
-            color: Colors.grey.withValues(alpha: 0.05),
-            blurRadius: 5,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
+    return _CardContainer(
       child: Column(
         children: [
-          Row(
-            children: [
-              Container(
-                width: 36,
-                height: 36,
-                decoration: const BoxDecoration(
-                  color: Color(0xFF2979FF), // Blue icon bg
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.verified,
-                  color: Colors.white,
-                  size: 20,
-                ),
-              ),
-              const SizedBox(width: 12),
-              const Text(
-                'Score Details',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black87,
-                ),
-              ),
-            ],
-          ),
+          _cardHeader(Icons.verified, 'Score Details'),
           const SizedBox(height: 20),
-          _buildRow(
-            'Total Mark:',
+          _row(
+            'Total Mark',
             '${result.totalMark ?? 100}',
-            const Color(0xFF2979FF),
+            AppColors.primaryBlue,
           ),
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 12.0),
-            child: Divider(height: 1, color: Color(0xFFEEEEEE)),
-          ),
-          _buildRow(
-            'Max Score:',
-            '${result.maxScore ?? 100}',
-            const Color(0xFF2979FF),
-          ),
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 12.0),
-            child: Divider(height: 1, color: Color(0xFFEEEEEE)),
-          ),
-          _buildRow(
-            'Midterm Exam:',
+          _divider(),
+          _row('Max Score', '${result.maxScore ?? 100}', AppColors.primaryBlue),
+          _divider(),
+          _row(
+            'Midterm Exam',
             result.midtermScore != null
                 ? '${result.midtermScore} (${result.midtermScore}%)'
                 : 'N/A',
-            const Color(0xFF00C853), // Green for exam scores
+            AppColors.success,
           ),
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 12.0),
-            child: Divider(height: 1, color: Color(0xFFEEEEEE)),
-          ),
-          _buildRow(
-            'Final Exam:',
+          _divider(),
+          _row(
+            'Final Exam',
             result.finalScore != null
                 ? '${result.finalScore} (${result.finalScore}%)'
                 : 'N/A',
-            const Color(0xFF00C853), // Green
+            AppColors.success,
           ),
         ],
       ),
     );
   }
 
-  Widget _buildRow(String label, String value, Color valueColor) {
+  Widget _row(String label, String value, Color color) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(label, style: TextStyle(fontSize: 14, color: Colors.grey[600])),
+        Text(label, style: const TextStyle(fontSize: 14, color: Colors.grey)),
         Text(
           value,
           style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.bold,
-            color: valueColor,
+            color: color,
           ),
         ),
       ],
     );
   }
+
+  Widget _divider() => const Padding(
+    padding: EdgeInsets.symmetric(vertical: 12),
+    child: Divider(),
+  );
 }
 
+/// =======================
+/// EXAM DATE CARD
+/// =======================
 class _ExamDateCard extends StatelessWidget {
   final String date;
 
@@ -258,34 +216,18 @@ class _ExamDateCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xFFFCE4EC).withValues(alpha: 0.5), // Light pinkish
-        borderRadius: BorderRadius.circular(20),
-      ),
+    return _CardContainer(
+      background: const Color(0xFFFCE4EC),
       child: Row(
         children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: const BoxDecoration(
-              color: Color(0xFFEC407A), // Pink icon bg
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(
-              Icons.calendar_today,
-              color: Colors.white,
-              size: 20,
-            ),
-          ),
+          _iconCircle(Icons.calendar_today, const Color(0xFFEC407A)),
           const SizedBox(width: 16),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
+              const Text(
                 'Exam Date',
-                style: TextStyle(fontSize: 12, color: Colors.grey[700]),
+                style: TextStyle(fontSize: 12, color: Colors.grey),
               ),
               const SizedBox(height: 4),
               Text(
@@ -293,7 +235,6 @@ class _ExamDateCard extends StatelessWidget {
                 style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
-                  color: Colors.black87,
                 ),
               ),
             ],
@@ -304,6 +245,9 @@ class _ExamDateCard extends StatelessWidget {
   }
 }
 
+/// =======================
+/// LECTURERS CARD
+/// =======================
 class _LecturersCard extends StatelessWidget {
   final List<String> lecturers;
 
@@ -311,66 +255,92 @@ class _LecturersCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: const Color(0xFFE3F2FD).withValues(alpha: 0.5), // Light blue bg
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.blue.withValues(alpha: 0.1)),
-      ),
+    return _CardContainer(
+      background: const Color(0xFFE3F2FD),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Container(
-                width: 36,
-                height: 36,
-                decoration: const BoxDecoration(
-                  color: Color(0xFF2196F3), // Blue icon bg
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(Icons.people, color: Colors.white, size: 20),
-              ),
-              const SizedBox(width: 12),
-              const Text(
-                'Lecturers',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black87,
-                ),
-              ),
-            ],
-          ),
+          _cardHeader(Icons.people, 'Lecturers'),
           const SizedBox(height: 16),
           Wrap(
-            spacing: 8.0,
-            runSpacing: 8.0,
-            children: lecturers.map((lecturer) {
-              return Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 8,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  lecturer.replaceAll('(TP)', '').trim(),
-                  style: const TextStyle(
-                    color: Color(0xFF1565C0), // Darker blue text
-                    fontWeight: FontWeight.w500,
-                    fontSize: 14,
+            spacing: 8,
+            runSpacing: 8,
+            children: lecturers
+                .map(
+                  (l) => Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      l.replaceAll('(TP)', '').trim(),
+                      style: const TextStyle(
+                        color: Color(0xFF1565C0),
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
                   ),
-                ),
-              );
-            }).toList(),
+                )
+                .toList(),
           ),
         ],
       ),
     );
   }
+}
+
+/// =======================
+/// SHARED UI HELPERS
+/// =======================
+class _CardContainer extends StatelessWidget {
+  final Widget child;
+  final Color? background;
+
+  const _CardContainer({required this.child, this.background});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: background ?? Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withValues(alpha: 0.08),
+            blurRadius: 15,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      child: child,
+    );
+  }
+}
+
+Widget _cardHeader(IconData icon, String title) {
+  return Row(
+    children: [
+      _iconCircle(icon, AppColors.primaryBlue),
+      const SizedBox(width: 12),
+      Text(
+        title,
+        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+      ),
+    ],
+  );
+}
+
+Widget _iconCircle(IconData icon, Color color) {
+  return Container(
+    width: 36,
+    height: 36,
+    decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+    child: Icon(icon, color: Colors.white, size: 20),
+  );
 }

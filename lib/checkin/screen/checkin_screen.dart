@@ -76,7 +76,9 @@ class _CheckInScreenState extends State<CheckInScreen> {
       for (final row in raw) {
         final classroom = asMap(row['classroom']);
         final roomName =
-            (classroom != null ? readString(classroom, const ['name']) : null) ??
+            (classroom != null
+                ? readString(classroom, const ['name'])
+                : null) ??
             readString(row, const ['room', 'classroom_name', 'classroom']);
         final normalized = roomName?.trim();
         if (normalized != null && normalized.isNotEmpty) {
@@ -167,8 +169,9 @@ class _CheckInScreenState extends State<CheckInScreen> {
                       width: 220,
                       height: 220,
                       decoration: BoxDecoration(
-                        color:
-                            isDark ? const Color(0xFF1E1E1E) : AppColors.white,
+                        color: isDark
+                            ? const Color(0xFF1E1E1E)
+                            : AppColors.white,
                         borderRadius: BorderRadius.circular(AppSizes.radiusM),
                       ),
                       child: Icon(
@@ -202,7 +205,11 @@ class _CheckInScreenState extends State<CheckInScreen> {
             Align(
               alignment: Alignment.centerLeft,
               child: Text(
-                safeLocaleString(context, 'recent_scan', fallback: 'Recent Scan'),
+                safeLocaleString(
+                  context,
+                  'recent_scan',
+                  fallback: 'Recent Scan',
+                ),
                 style: TextStyle(
                   fontSize: AppSizes.fontSizeM,
                   fontWeight: FontWeight.w700,
@@ -219,7 +226,8 @@ class _CheckInScreenState extends State<CheckInScreen> {
                 final date =
                     readString(row, const ['date', 'created_at']) ?? '-';
                 final inTime = readString(row, const ['check_in_time']) ?? '-';
-                final outTime = readString(row, const ['check_out_time']) ?? '-';
+                final outTime =
+                    readString(row, const ['check_out_time']) ?? '-';
                 return _ScanRow(
                   code: code,
                   date: date,
@@ -261,7 +269,11 @@ class _SummaryCards extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                safeLocaleString(context, 'rooms', fallback: 'ROOMS').toUpperCase(),
+                safeLocaleString(
+                  context,
+                  'rooms',
+                  fallback: 'ROOMS',
+                ).toUpperCase(),
                 style: TextStyle(
                   fontSize: AppSizes.fontSizeS,
                   fontWeight: FontWeight.w600,
@@ -297,7 +309,11 @@ class _SummaryCards extends StatelessWidget {
                 child: _buildSummaryCard(
                   context: context,
                   number: isLoading ? '—' : totalCheckedIns.toString(),
-                  label: safeLocaleString(context, 'checked_ins', fallback: 'Checked-ins'),
+                  label: safeLocaleString(
+                    context,
+                    'checked_ins',
+                    fallback: 'Checked-ins',
+                  ),
                   icon: Icons.people,
                 ),
               ),
@@ -328,7 +344,7 @@ class _SummaryCards extends StatelessWidget {
     return Container(
       padding: EdgeInsets.all(cardPadding),
       decoration: BoxDecoration(
-        color: isDark 
+        color: isDark
             ? AppColors.success.withValues(alpha: 0.2)
             : AppColors.success.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(AppSizes.radiusL),

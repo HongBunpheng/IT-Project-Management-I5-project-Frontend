@@ -2,9 +2,7 @@ import 'package:flutter/material.dart';
 import '../../configs/app_colors.dart';
 import '../../configs/app_sizes.dart';
 import '../../utils/responsive.dart';
-import '../../utils/localization_helper.dart';
 import '../model/dashboard_models.dart';
-import '../../main_shell.dart';
 
 class ExamScoreSummaryCard extends StatelessWidget {
   final ExamScoreSummary scoreSummary;
@@ -15,22 +13,20 @@ class ExamScoreSummaryCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final horizontalPadding = Responsive.getPadding(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Container(
       margin: EdgeInsets.symmetric(horizontal: horizontalPadding),
-      padding: EdgeInsets.all(AppSizes.spacingL),
+      padding: const EdgeInsets.all(AppSizes.spacingL),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: isDark
               ? [
-                  AppColors.primaryBlue.withValues(alpha: 0.8),
-                  AppColors.primaryBlueLight.withValues(alpha: 0.7),
+                  AppColors.primaryBlue.withValues(alpha: 0.85),
+                  AppColors.primaryBlueLight.withValues(alpha: 0.75),
                 ]
-              : [
-                  AppColors.primaryBlue,
-                  AppColors.primaryBlueLight,
-                ],
+              : [AppColors.primaryBlue, AppColors.primaryBlueLight],
         ),
         borderRadius: BorderRadius.circular(AppSizes.radiusL),
         boxShadow: [
@@ -43,60 +39,49 @@ class ExamScoreSummaryCard extends StatelessWidget {
       ),
       child: Row(
         children: [
+          /// LEFT SIDE — TEXT
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  safeLocaleString(context, 'please_checkin_checkout', fallback: 'Checkin/Checkout here'),
+                const Text(
+                  'Exam Overview',
                   style: TextStyle(
                     fontSize: AppSizes.fontSizeL,
                     fontWeight: FontWeight.bold,
                     color: AppColors.white,
                   ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
                 ),
-                SizedBox(height: AppSizes.spacingM),
-                ElevatedButton(
-                  onPressed: () {
-                    goToMainTab(context, 1);
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.white,
-                    foregroundColor: AppColors.primaryBlue,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(AppSizes.radiusS),
-                    ),
+                const SizedBox(height: AppSizes.spacingS),
+                Text(
+                  'Average Score',
+                  style: TextStyle(
+                    fontSize: AppSizes.fontSizeS,
+                    color: AppColors.white.withValues(alpha: 0.9),
                   ),
-                  child: Text(
-                    safeLocaleString(context, 'scan_attendance', fallback: 'Scan Attendance'),
-                    style: TextStyle(
-                      fontSize: AppSizes.fontSizeM,
-                      fontWeight: FontWeight.w600,
-                    ),
+                ),
+                const SizedBox(height: AppSizes.spacingXS),
+                Text(
+                  '${scoreSummary.score.toStringAsFixed(1)}%',
+                  style: const TextStyle(
+                    fontSize: AppSizes.fontSizeXXL,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.white,
                   ),
                 ),
               ],
             ),
           ),
-          GestureDetector(
-            onTap: () {
-              goToMainTab(context, 1);
-            },
-            child: Container(
-              width: 80,
-              height: 80,
-              decoration: BoxDecoration(
-                color: AppColors.white.withValues(alpha: 0.15),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.qr_code_scanner,
-                color: AppColors.white,
-                size: 60,
-              ),
+
+          /// RIGHT SIDE — ICON ONLY (NO ATTENDANCE)
+          Container(
+            width: 72,
+            height: 72,
+            decoration: BoxDecoration(
+              color: AppColors.white.withValues(alpha: 0.18),
+              shape: BoxShape.circle,
             ),
+            child: const Icon(Icons.school, color: AppColors.white, size: 40),
           ),
         ],
       ),
