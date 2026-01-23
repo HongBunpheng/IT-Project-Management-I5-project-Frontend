@@ -37,7 +37,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final AuthService _authService = AuthService();
   final TokenStorage _tokenStorage = TokenStorage();
 
-  String? _name;
   String? _fullName;
   String? _email;
   String? _userId;
@@ -48,7 +47,30 @@ class _ProfileScreenState extends State<ProfileScreen> {
   void initState() {
     super.initState();
     _scrollController.addListener(_onScroll);
-    _loadProfile();
+    // Load from storage first for immediate display
+    _loadFromStorage().then((_) {
+      // Then load from API
+      _loadProfile();
+    });
+  }
+  
+  Future<void> _loadFromStorage() async {
+    try {
+      final storedFullName = await _tokenStorage.readFullName();
+      final storedEmail = await _tokenStorage.readEmail();
+      if (mounted && (storedFullName != null || storedEmail != null)) {
+        setState(() {
+          if (storedFullName != null && storedFullName.isNotEmpty) {
+            _fullName = storedFullName;
+          }
+          if (storedEmail != null && storedEmail.isNotEmpty) {
+            _email = storedEmail;
+          }
+        });
+      }
+    } catch (_) {
+      // ignore
+    }
   }
 
   @override
@@ -83,25 +105,41 @@ class _ProfileScreenState extends State<ProfileScreen> {
           _groupId = storedGroupId;
           _fullName = storedFullName;
           _email = storedEmail;
-          _name = storedFullName ?? storedEmail;
         });
       }
 
-      // Then fetch from API
+      // Then fetch from API to get latest data
       final decoded = await _authService.me();
-      if (!mounted || decoded == null) return;
+      if (!mounted || decoded == null) {
+        // If API fails, at least we have data from storage
+        return;
+      }
 
       final data = asMap(decoded['data']) ?? decoded;
       final user = asMap(data['user']) ?? data;
 
       setState(() {
-        _fullName = (readString(user, const ['full_name', 'fullName', 'name']) ?? 
-                    readString(data, const ['full_name', 'fullName', 'name']) ??
-                    _fullName)?.toString();
-        _email = readString(user, const ['email']) ?? 
-                 readString(data, const ['email']) ?? 
-                 _email;
-        _name = _fullName ?? _email ?? 'Student';
+        // IMPORTANT: Only use full_name, fullName, or name - NOT user_name/username
+        // user_name/username are different fields and should not be used as full name
+        final apiFullName = readString(user, const ['full_name', 'fullName', 'name']) ?? 
+                          readString(data, const ['full_name', 'fullName', 'name']);
+        
+        // IMPORTANT: Only update full name if API returns a valid value
+        // Never overwrite existing stored full name with null or empty
+        if (apiFullName != null && apiFullName.isNotEmpty) {
+          _fullName = apiFullName;
+          // Store it back to storage
+          _tokenStorage.writeFullName(apiFullName);
+        }
+        // If API doesn't return full name, keep the one we already have from storage
+        // This ensures full name from signup persists
+        
+        final apiEmail = readString(user, const ['email']) ?? 
+                        readString(data, const ['email']);
+        if (apiEmail != null && apiEmail.isNotEmpty) {
+          _email = apiEmail;
+          _tokenStorage.writeEmail(apiEmail);
+        }
         _userId = readString(user, const ['id', 'user_id', 'userId']) ?? 
                   readString(data, const ['id', 'user_id', 'userId']) ?? 
                   _userId;
@@ -567,22 +605,28 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ],
                     ),
                     const SizedBox(height: 20),
-                    // Full Name (capitalized)
-                    Text(
-                      _isLoadingMe 
-                        ? 'Loading...' 
-                        : (_fullName != null && _fullName!.isNotEmpty 
-                            ? _capitalizeFullName(_fullName) 
-                            : _name ?? 'Student Name'),
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: isDark ? Colors.white : AppColors.textPrimary,
+                    // Full Name (capitalized) - always show if available
+                    if (_isLoadingMe)
+                      Text(
+                        'Loading...',
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: isDark ? Colors.white : AppColors.textPrimary,
+                        ),
+                      )
+                    else if (_fullName != null && _fullName!.isNotEmpty)
+                      Text(
+                        _capitalizeFullName(_fullName),
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: isDark ? Colors.white : AppColors.textPrimary,
+                        ),
                       ),
-                    ),
-                    // Email
+                    // Email (second line) - always show if available
                     if (_email != null && _email!.isNotEmpty) ...[
-                      const SizedBox(height: 8),
+                      if (_fullName != null && _fullName!.isNotEmpty) const SizedBox(height: 8),
                       Text(
                         _email!,
                         style: TextStyle(

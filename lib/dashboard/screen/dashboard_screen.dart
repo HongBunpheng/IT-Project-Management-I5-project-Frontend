@@ -110,6 +110,8 @@ class _DashboardViewState extends State<DashboardView> {
       final data = me['data'] is Map ? (me['data'] as Map) : me;
       final user = data['user'] is Map ? (data['user'] as Map) : data;
       setState(() {
+        // IMPORTANT: Only use full_name, fullName, or name - NOT user_name/username
+        // user_name/username are different fields (like "jkjph" from email) and should not be used as full name
         _fullName = (user['full_name'] ?? user['fullName'] ?? user['name'] ?? data['full_name'] ?? data['fullName'] ?? data['name'] ?? _fullName)
             ?.toString();
         _email = (user['email'] ?? data['email'] ?? _email)?.toString();

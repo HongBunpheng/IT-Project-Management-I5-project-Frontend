@@ -221,18 +221,29 @@ class AuthService {
     }
 
     // Try multiple field names for full name (backend might use different field names)
-    var fullName = readString(user, const ['full_name', 'fullName', 'name', 'user_name', 'userName']);
+    // IMPORTANT: Don't use user_name/username as they are different from full_name
+    var fullName = readString(user, const ['full_name', 'fullName', 'name']);
     if (fullName == null) {
       // Also check in data level
-      fullName = readString(data, const ['full_name', 'fullName', 'name', 'user_name', 'userName']);
+      fullName = readString(data, const ['full_name', 'fullName', 'name']);
     }
     if (fullName == null) {
       // Check in root level
-      fullName = readString(decoded, const ['full_name', 'fullName', 'name', 'user_name', 'userName']);
+      fullName = readString(decoded, const ['full_name', 'fullName', 'name']);
     }
     
+    // IMPORTANT: Only update full name if API returns a valid value
+    // Never overwrite existing stored full name with null or empty
     if (fullName != null && fullName.isNotEmpty) {
       await _tokenStorage.writeFullName(fullName);
+    } else {
+      // If API doesn't return full name, check if we have one stored
+      // If not stored, don't overwrite - preserve what we have
+      final existingFullName = await _tokenStorage.readFullName();
+      if (existingFullName == null || existingFullName.isEmpty) {
+        // Only if we don't have one stored, we can't do anything
+        // But don't overwrite with null/empty
+      }
     }
 
     final email = readString(user, const ['email']);

@@ -76,13 +76,69 @@ class _TimetableViewState extends State<TimetableView> {
         }
       }
 
+      // If user ID is missing, automatically fetch it from /auth/me
       if (userId == null || userId.isEmpty) {
-        throw 'Missing user id. Please login again.';
+        try {
+          final authService = AuthService();
+          // Fetch user data and store it (similar to login flow)
+          final meData = await authService.me();
+          if (meData != null) {
+            final data = asMap(meData['data']) ?? meData;
+            final user = asMap(data['user']) ?? data;
+            
+            // Extract and store user ID
+            userId = readString(user, const ['id', 'user_id', 'userId']) ??
+                     readString(data, const ['id', 'user_id', 'userId']);
+            if (userId != null && userId.isNotEmpty) {
+              await _tokenStorage.writeUserId(userId);
+            }
+            
+            // Extract and store group ID
+            final extractedGroupId = readString(user, const ['group_id', 'groupId']) ??
+                                    readString(data, const ['group_id', 'groupId']);
+            if (extractedGroupId != null && extractedGroupId.isNotEmpty) {
+              groupId = extractedGroupId;
+              await _tokenStorage.writeGroupId(groupId);
+            }
+          }
+          
+          // If still missing, retry once more
+          if (userId == null || userId.isEmpty) {
+            await Future.delayed(const Duration(milliseconds: 500));
+            final retryData = await authService.me();
+            if (retryData != null) {
+              final data = asMap(retryData['data']) ?? retryData;
+              final user = asMap(data['user']) ?? data;
+              userId = readString(user, const ['id', 'user_id', 'userId']) ??
+                       readString(data, const ['id', 'user_id', 'userId']);
+              if (userId != null && userId.isNotEmpty) {
+                await _tokenStorage.writeUserId(userId);
+              }
+            }
+          }
+        } catch (_) {
+          // If fetching fails, continue without user ID (will use group ID if available)
+        }
+      }
+      
+      // If still no user ID, try to continue with group ID only
+      if ((userId == null || userId.isEmpty) && (groupId == null || groupId.isEmpty)) {
+        // Don't throw error, just show empty timetable
+        if (!mounted) return;
+        setState(() {
+          _isLoading = false;
+          _tasks = [];
+          _rawTimetable = [];
+          _tasksCountByDate = {};
+        });
+        return;
       }
 
       final raw = groupId != null && groupId.isNotEmpty
           ? await _timetableService.listByGroup(groupId)
-          : await _timetableService.listByUser(userId);
+          : (userId != null && userId.isNotEmpty
+              ? await _timetableService.listByUser(userId)
+              : <Map<String, dynamic>>[]);
 
       if (!mounted) return;
       setState(() {
