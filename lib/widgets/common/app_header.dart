@@ -55,6 +55,7 @@ class _AppHeaderState extends State<AppHeader> {
   String? _fetchedProfileImageUrl;
   String? _fetchedUsername;
   String? _fetchedUserId;
+  String? _fetchedEmail;
 
   @override
   void initState() {
@@ -64,42 +65,43 @@ class _AppHeaderState extends State<AppHeader> {
 
   Future<void> _loadUserProfile() async {
     try {
-      // First try to get from stored data
+      // Local storage
       final storedUserId = await _tokenStorage.readUserId();
+      final storedEmail = await _tokenStorage.readEmail();
+
       if (mounted) {
         setState(() {
           _fetchedUserId = storedUserId;
+          _fetchedEmail = storedEmail;
         });
       }
 
-      // Fetch user profile from API using AccountService
+      // Backend profile
       final profileResponse = await _accountService.getProfile();
       if (profileResponse == null || !mounted) return;
 
-      // Extract avatar URL using service method
       final avatarUrl = _accountService.extractAvatarUrl(profileResponse);
-
-      // Extract user data
       final user = _accountService.extractUserData(profileResponse);
 
       final userName = readString(user, const [
         'user_name',
+        'username',
         'name',
         'full_name',
         'fullName',
-        'username',
       ]);
-      final userId = readString(user, const ['id', 'user_id', 'userId']);
+
+      final emailFromApi = readString(user, const ['email', 'user_email']);
 
       if (mounted) {
         setState(() {
           _fetchedProfileImageUrl = avatarUrl;
           _fetchedUsername = userName;
-          _fetchedUserId = userId ?? _fetchedUserId;
+          _fetchedEmail = emailFromApi ?? _fetchedEmail;
         });
       }
-    } catch (e) {
-      // Ignore errors, use fallback values
+    } catch (_) {
+      // silent fallback
     }
   }
 
@@ -108,12 +110,10 @@ class _AppHeaderState extends State<AppHeader> {
     final appColors = context.appColors;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    // Use fetched data or fallback to widget parameters
     final profileImageUrl = _fetchedProfileImageUrl ?? widget.profileImageUrl;
     final username = _fetchedUsername ?? widget.username;
-    final userId = _fetchedUserId ?? widget.userId;
     final fullName = widget.fullName;
-    final email = widget.email;
+    final email = _fetchedEmail;
 
     return Container(
       padding: EdgeInsets.only(
@@ -124,20 +124,19 @@ class _AppHeaderState extends State<AppHeader> {
       ),
       decoration: BoxDecoration(
         color: isDark
-            ? AppColors.primaryBlue.withValues(alpha: 0.2)
+            ? AppColors.primaryBlue.withOpacity(0.2)
             : AppColors.white,
         border: isDark
             ? Border(
                 bottom: BorderSide(
-                  color: AppColors.primaryBlue.withValues(alpha: 0.3),
-                  width: 1,
+                  color: AppColors.primaryBlue.withOpacity(0.3),
                 ),
               )
             : null,
       ),
       child: Row(
         children: [
-          // Profile Picture (Clickable)
+          // Profile avatar
           GestureDetector(
             onTap:
                 widget.onProfileTap ??
@@ -159,42 +158,8 @@ class _AppHeaderState extends State<AppHeader> {
                       child: Image.network(
                         profileImageUrl,
                         fit: BoxFit.cover,
-                        width: 60,
-                        height: 60,
-                        loadingBuilder: (context, child, loadingProgress) {
-                          if (loadingProgress == null) return child;
-                          return Center(
-                            child: CircularProgressIndicator(
-                              value: loadingProgress.expectedTotalBytes != null
-                                  ? loadingProgress.cumulativeBytesLoaded /
-                                        loadingProgress.expectedTotalBytes!
-                                  : null,
-                              color: appColors.primaryBlue,
-                              strokeWidth: 2,
-                            ),
-                          );
-                        },
-                        errorBuilder: (context, error, stackTrace) {
-                          print(
-                            'Error loading network image in header: $error',
-                          );
-                          print('Failed URL: $profileImageUrl');
-                          // Clear invalid URL
-                          if (mounted) {
-                            Future.microtask(() {
-                              if (mounted) {
-                                setState(() {
-                                  _fetchedProfileImageUrl = null;
-                                });
-                              }
-                            });
-                          }
-                          return Icon(
-                            Icons.person,
-                            size: 30,
-                            color: appColors.textSecondary,
-                          );
-                        },
+                        errorBuilder: (_, __, ___) =>
+                            Icon(Icons.person, color: appColors.textSecondary),
                       ),
                     )
                   : Icon(
@@ -204,8 +169,10 @@ class _AppHeaderState extends State<AppHeader> {
                     ),
             ),
           ),
+
           const SizedBox(width: AppSizes.spacingM),
-          // Full Name and Email
+
+          // Name + Email
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -221,13 +188,10 @@ class _AppHeaderState extends State<AppHeader> {
                     color: appColors.textPrimary,
                   ),
                 ),
-                if ((email != null && email.isNotEmpty) ||
-                    (userId != null && userId.isNotEmpty)) ...[
+                if (email != null && email.isNotEmpty) ...[
                   const SizedBox(height: 4),
                   Text(
-                    email != null && email.isNotEmpty
-                        ? email
-                        : 'ID: ${userId ?? ''}',
+                    email,
                     style: TextStyle(
                       fontSize: AppSizes.fontSizeM,
                       color: appColors.textSecondary,
@@ -239,37 +203,39 @@ class _AppHeaderState extends State<AppHeader> {
               ],
             ),
           ),
-          // Notification Icon
+
+          // Notification
           widget.trailing ??
               Container(
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
                   color: isDark
-                      ? AppColors.primaryBlue.withValues(alpha: 0.3)
+                      ? AppColors.primaryBlue.withOpacity(0.3)
                       : appColors.lightGrey,
                   borderRadius: BorderRadius.circular(AppSizes.radiusS),
                   border: Border.all(
                     color: isDark
-                        ? AppColors.primaryBlue.withValues(alpha: 0.5)
+                        ? AppColors.primaryBlue.withOpacity(0.5)
                         : appColors.borderLight,
-                    width: 1,
                   ),
                 ),
                 child: IconButton(
+                  padding: EdgeInsets.zero,
                   icon: Icon(
                     Icons.notifications_outlined,
                     color: appColors.textPrimary,
                   ),
                   onPressed:
                       widget.onNotificationTap ??
-                      () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const NotificationView(),
-                        ),
-                      ),
-                  padding: EdgeInsets.zero,
+                      () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const NotificationView(),
+                          ),
+                        );
+                      },
                 ),
               ),
         ],
