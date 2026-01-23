@@ -50,6 +50,30 @@ class ExamService {
     return _mapExamToExamResult(data, fallbackId: examId);
   }
 
+  Future<List<Map<String, dynamic>>> listByGroup(String groupId) async {
+    final res = await _api.getJson('/exams/group/$groupId');
+    final decoded = _safeDecode(res.body);
+
+    final data = decoded is Map<String, dynamic>
+        ? (asList(decoded['data']) ??
+              asList(decoded['exams']) ??
+              asList(decoded))
+        : asList(decoded);
+
+    return (data ?? const [])
+        .map((e) => asMap(e))
+        .whereType<Map<String, dynamic>>()
+        .toList();
+  }
+
+  Future<List<Map<String, dynamic>>> listMyGroupExams() async {
+    final groupId = await _tokenStorage.readGroupId();
+    if (groupId == null || groupId.isEmpty) {
+      throw Exception('Missing group id. Please login again.');
+    }
+    return listByGroup(groupId);
+  }
+
   Future<List<SubjectScore>> getScoresSummary() async {
     final summary = await getExamResults();
     final exams = summary.examResults;

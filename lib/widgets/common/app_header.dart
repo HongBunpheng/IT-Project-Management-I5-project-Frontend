@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import '../../configs/app_colors.dart';
 import '../../configs/app_sizes.dart';
 import '../../configs/app_theme_extension.dart';
@@ -7,6 +8,8 @@ import '../../utils/json_utils.dart';
 import '../../account/service/account_service.dart';
 import '../../account/screen/profile_screen.dart';
 import '../../notification/screen/notification_screen.dart';
+
+enum AppHeaderDensity { regular, compact }
 
 class AppHeader extends StatefulWidget {
   final String? profileImageUrl;
@@ -18,6 +21,7 @@ class AppHeader extends StatefulWidget {
   final String? title;
   final Widget? trailing;
   final VoidCallback? onProfileTap;
+  final AppHeaderDensity density;
 
   const AppHeader({
     super.key,
@@ -30,6 +34,7 @@ class AppHeader extends StatefulWidget {
     this.title,
     this.trailing,
     this.onProfileTap,
+    this.density = AppHeaderDensity.regular,
   });
 
   String _capitalizeFullName(String? name) {
@@ -107,6 +112,7 @@ class _AppHeaderState extends State<AppHeader> {
   Widget build(BuildContext context) {
     final appColors = context.appColors;
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isCompact = widget.density == AppHeaderDensity.compact;
 
     // Use fetched data or fallback to widget parameters
     final profileImageUrl = _fetchedProfileImageUrl ?? widget.profileImageUrl;
@@ -115,13 +121,13 @@ class _AppHeaderState extends State<AppHeader> {
     final fullName = widget.fullName;
     final email = widget.email;
 
+    final avatarSize = isCompact ? 44.0 : 60.0;
+    final titleSize = isCompact ? AppSizes.fontSizeL : AppSizes.fontSizeXL;
+    final subtitleSize = isCompact ? AppSizes.fontSizeS : AppSizes.fontSizeM;
+    final actionSize = isCompact ? 34.0 : 40.0;
+    final iconSize = isCompact ? 18.0 : 24.0;
+
     return Container(
-      padding: EdgeInsets.only(
-        left: AppSizes.spacingM,
-        right: AppSizes.spacingM,
-        bottom: AppSizes.spacingM,
-        top: MediaQuery.of(context).padding.top + AppSizes.spacingM,
-      ),
       decoration: BoxDecoration(
         color: isDark
             ? AppColors.primaryBlue.withValues(alpha: 0.2)
@@ -135,144 +141,161 @@ class _AppHeaderState extends State<AppHeader> {
               )
             : null,
       ),
-      child: Row(
-        children: [
-          // Profile Picture (Clickable)
-          GestureDetector(
-            onTap:
-                widget.onProfileTap ??
-                () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const ProfileScreen()),
-                  );
-                },
-            child: Container(
-              width: 60,
-              height: 60,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: appColors.lightGrey,
-              ),
-              child: profileImageUrl != null && profileImageUrl.isNotEmpty
-                  ? ClipOval(
-                      child: Image.network(
-                        profileImageUrl,
-                        fit: BoxFit.cover,
-                        width: 60,
-                        height: 60,
-                        loadingBuilder: (context, child, loadingProgress) {
-                          if (loadingProgress == null) return child;
-                          return Center(
-                            child: CircularProgressIndicator(
-                              value: loadingProgress.expectedTotalBytes != null
-                                  ? loadingProgress.cumulativeBytesLoaded /
-                                        loadingProgress.expectedTotalBytes!
-                                  : null,
-                              color: appColors.primaryBlue,
-                              strokeWidth: 2,
-                            ),
-                          );
-                        },
-                        errorBuilder: (context, error, stackTrace) {
-                          print(
-                            'Error loading network image in header: $error',
-                          );
-                          print('Failed URL: $profileImageUrl');
-                          // Clear invalid URL
-                          if (mounted) {
-                            Future.microtask(() {
-                              if (mounted) {
-                                setState(() {
-                                  _fetchedProfileImageUrl = null;
-                                });
-                              }
-                            });
-                          }
-                          return Icon(
-                            Icons.person,
-                            size: 30,
-                            color: appColors.textSecondary,
-                          );
-                        },
-                      ),
-                    )
-                  : Icon(
-                      Icons.person,
-                      size: 30,
-                      color: appColors.textSecondary,
-                    ),
-            ),
-          ),
-          const SizedBox(width: AppSizes.spacingM),
-          // Full Name and Email
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  widget.title ??
-                      (fullName != null && fullName.isNotEmpty
-                          ? widget._capitalizeFullName(fullName)
-                          : (username ?? 'Student')),
-                  style: TextStyle(
-                    fontSize: AppSizes.fontSizeXL,
-                    fontWeight: FontWeight.bold,
-                    color: appColors.textPrimary,
-                  ),
-                ),
-                if ((email != null && email.isNotEmpty) ||
-                    (userId != null && userId.isNotEmpty)) ...[
-                  const SizedBox(height: 4),
-                  Text(
-                    email != null && email.isNotEmpty
-                        ? email
-                        : 'ID: ${userId ?? ''}',
-                    style: TextStyle(
-                      fontSize: AppSizes.fontSizeM,
-                      color: appColors.textSecondary,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
-              ],
-            ),
-          ),
-          // Notification Icon
-          widget.trailing ??
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: isDark
-                      ? AppColors.primaryBlue.withValues(alpha: 0.3)
-                      : appColors.lightGrey,
-                  borderRadius: BorderRadius.circular(AppSizes.radiusS),
-                  border: Border.all(
-                    color: isDark
-                        ? AppColors.primaryBlue.withValues(alpha: 0.5)
-                        : appColors.borderLight,
-                    width: 1,
-                  ),
-                ),
-                child: IconButton(
-                  icon: Icon(
-                    Icons.notifications_outlined,
-                    color: appColors.textPrimary,
-                  ),
-                  onPressed:
-                      widget.onNotificationTap ??
-                      () => Navigator.push(
+      child: SafeArea(
+        top: true,
+        bottom: false,
+        left: false,
+        right: false,
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Row(
+            children: [
+              // Profile Picture (Clickable)
+              GestureDetector(
+                onTap:
+                    widget.onProfileTap ??
+                    () {
+                      Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (_) => const NotificationView(),
+                          builder: (_) => const ProfileScreen(),
                         ),
-                      ),
-                  padding: EdgeInsets.zero,
+                      );
+                    },
+                child: Container(
+                  width: avatarSize,
+                  height: avatarSize,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: appColors.lightGrey,
+                  ),
+                  child: profileImageUrl != null && profileImageUrl.isNotEmpty
+                      ? ClipOval(
+                          child: Image.network(
+                            profileImageUrl,
+                            fit: BoxFit.cover,
+                            width: avatarSize,
+                            height: avatarSize,
+                            loadingBuilder: (context, child, loadingProgress) {
+                              if (loadingProgress == null) return child;
+                              return Center(
+                                child: CircularProgressIndicator(
+                                  value:
+                                      loadingProgress.expectedTotalBytes != null
+                                      ? loadingProgress.cumulativeBytesLoaded /
+                                            loadingProgress.expectedTotalBytes!
+                                      : null,
+                                  color: appColors.primaryBlue,
+                                  strokeWidth: 2,
+                                ),
+                              );
+                            },
+                            errorBuilder: (context, error, stackTrace) {
+                              if (kDebugMode) {
+                                debugPrint(
+                                  'Error loading network image in header: $error',
+                                );
+                                debugPrint('Failed URL: $profileImageUrl');
+                              }
+                              // Clear invalid URL
+                              if (mounted) {
+                                Future.microtask(() {
+                                  if (mounted) {
+                                    setState(() {
+                                      _fetchedProfileImageUrl = null;
+                                    });
+                                  }
+                                });
+                              }
+                              return Icon(
+                                Icons.person,
+                                size: isCompact ? 22 : 30,
+                                color: appColors.textSecondary,
+                              );
+                            },
+                          ),
+                        )
+                      : Icon(
+                          Icons.person,
+                          size: isCompact ? 22 : 30,
+                          color: appColors.textSecondary,
+                        ),
                 ),
               ),
-        ],
+              SizedBox(
+                width: isCompact ? AppSizes.spacingS : AppSizes.spacingM,
+              ),
+              // Full Name and Email
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      widget.title ??
+                          (fullName != null && fullName.isNotEmpty
+                              ? widget._capitalizeFullName(fullName)
+                              : (username ?? 'Student')),
+                      style: TextStyle(
+                        fontSize: titleSize,
+                        fontWeight: FontWeight.bold,
+                        color: appColors.textPrimary,
+                      ),
+                    ),
+                    if ((email != null && email.isNotEmpty) ||
+                        (userId != null && userId.isNotEmpty)) ...[
+                      SizedBox(height: isCompact ? 2 : 4),
+                      Text(
+                        email != null && email.isNotEmpty
+                            ? email
+                            : 'ID: ${userId ?? ''}',
+                        style: TextStyle(
+                          fontSize: subtitleSize,
+                          color: appColors.textSecondary,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              // Notification Icon
+              widget.trailing ??
+                  Container(
+                    width: actionSize,
+                    height: actionSize,
+                    decoration: BoxDecoration(
+                      color: isDark
+                          ? AppColors.primaryBlue.withValues(alpha: 0.3)
+                          : appColors.lightGrey,
+                      borderRadius: BorderRadius.circular(AppSizes.radiusS),
+                      border: Border.all(
+                        color: isDark
+                            ? AppColors.primaryBlue.withValues(alpha: 0.5)
+                            : appColors.borderLight,
+                        width: 1,
+                      ),
+                    ),
+                    child: IconButton(
+                      icon: Icon(
+                        Icons.notifications_outlined,
+                        color: appColors.textPrimary,
+                        size: iconSize,
+                      ),
+                      onPressed:
+                          widget.onNotificationTap ??
+                          () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const NotificationView(),
+                            ),
+                          ),
+                      padding: EdgeInsets.zero,
+                    ),
+                  ),
+            ],
+          ),
+        ),
       ),
     );
   }

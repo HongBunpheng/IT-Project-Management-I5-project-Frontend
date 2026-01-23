@@ -5,11 +5,13 @@ import '../../configs/app_theme_extension.dart';
 import '../../utils/responsive.dart';
 import '../../utils/localization_helper.dart';
 import 'qr_scanner_screen.dart';
+import '../../attendance/screen/attendance_screen.dart';
 import '../../services/attendance_service.dart';
 import '../../services/timetable_service.dart';
 import '../../services/token_storage.dart';
 import '../../utils/json_utils.dart';
 import '../../utils/snackbar.dart';
+import '../../utils/pull_to_refresh.dart';
 
 class CheckInScreen extends StatefulWidget {
   const CheckInScreen({super.key});
@@ -25,8 +27,8 @@ class _CheckInScreenState extends State<CheckInScreen> {
 
   bool _isLoading = false;
   List<Map<String, dynamic>> _recent = [];
-  int _totalRooms = 0;
-  int _totalCheckedIns = 0;
+  int _todayTimetables = 0;
+  int _checkedToday = 0;
   bool _isSummaryLoading = true;
 
   @override
@@ -38,7 +40,7 @@ class _CheckInScreenState extends State<CheckInScreen> {
   Future<void> _loadSummary() async {
     if (!mounted) return;
     setState(() => _isSummaryLoading = true);
-    await Future.wait([_loadAttendance(), _loadRooms()]);
+    await Future.wait([_loadAttendance(), _loadTodayTimetables()]);
     if (!mounted) return;
     setState(() => _isSummaryLoading = false);
   }
@@ -48,17 +50,21 @@ class _CheckInScreenState extends State<CheckInScreen> {
       final userId = await _tokenStorage.readUserId();
       if (userId == null || userId.isEmpty) return;
       final list = await _attendanceService.myAttendance(userId);
+      final today = DateTime.now();
+      final todayRows = list
+          .where((row) => _isSameDay(_parseDate(row), today))
+          .toList();
       if (!mounted) return;
       setState(() {
-        _totalCheckedIns = list.length;
-        _recent = list.take(6).toList();
+        _checkedToday = todayRows.length;
+        _recent = todayRows.take(6).toList();
       });
     } catch (_) {
       // ignore
     }
   }
 
-  Future<void> _loadRooms() async {
+  Future<void> _loadTodayTimetables() async {
     try {
       final userId = await _tokenStorage.readUserId();
       final groupId = await _tokenStorage.readGroupId();
@@ -72,25 +78,54 @@ class _CheckInScreenState extends State<CheckInScreen> {
         return;
       }
 
-      final rooms = <String>{};
-      for (final row in raw) {
-        final classroom = asMap(row['classroom']);
-        final roomName =
-            (classroom != null
-                ? readString(classroom, const ['name'])
-                : null) ??
-            readString(row, const ['room', 'classroom_name', 'classroom']);
-        final normalized = roomName?.trim();
-        if (normalized != null && normalized.isNotEmpty) {
-          rooms.add(normalized);
-        }
-      }
+      final todayIndex = DateTime.now().weekday;
+      final today = raw.where((row) {
+        final day = readString(row, const ['day_of_week', 'dayOfWeek', 'day']);
+        final idx = _weekdayIndex(day);
+        return idx == todayIndex;
+      }).toList();
 
       if (!mounted) return;
-      setState(() => _totalRooms = rooms.length);
+      setState(() => _todayTimetables = today.length);
     } catch (_) {
       // ignore
     }
+  }
+
+  int? _weekdayIndex(String? raw) {
+    if (raw == null) return null;
+    final v = raw.trim().toLowerCase();
+    if (v.isEmpty) return null;
+    if (v.startsWith('mon')) return DateTime.monday;
+    if (v.startsWith('tue')) return DateTime.tuesday;
+    if (v.startsWith('wed')) return DateTime.wednesday;
+    if (v.startsWith('thu')) return DateTime.thursday;
+    if (v.startsWith('fri')) return DateTime.friday;
+    if (v.startsWith('sat')) return DateTime.saturday;
+    if (v.startsWith('sun')) return DateTime.sunday;
+    return null;
+  }
+
+  DateTime? _parseDate(Map<String, dynamic> row) {
+    final raw = readString(row, const ['date', 'created_at', 'createdAt']);
+    if (raw == null || raw.isEmpty) return null;
+    try {
+      return DateTime.parse(raw);
+    } catch (_) {
+      if (raw.length >= 10) {
+        try {
+          return DateTime.parse(raw.substring(0, 10));
+        } catch (_) {
+          return null;
+        }
+      }
+      return null;
+    }
+  }
+
+  bool _isSameDay(DateTime? a, DateTime b) {
+    if (a == null) return false;
+    return a.year == b.year && a.month == b.month && a.day == b.day;
   }
 
   @override
@@ -101,155 +136,218 @@ class _CheckInScreenState extends State<CheckInScreen> {
 
     return Scaffold(
       backgroundColor: isDark ? const Color(0xFF121212) : AppColors.white,
-      body: SingleChildScrollView(
-        padding: EdgeInsets.symmetric(
-          horizontal: horizontalPadding,
-          vertical: AppSizes.spacingL,
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Text(
-              safeLocaleString(
-                context,
-                'click_qr_code',
-                fallback: 'Click QR Code for Scan',
-              ),
-              style: TextStyle(
-                fontSize: AppSizes.fontSizeXL,
-                fontWeight: FontWeight.bold,
-                color: appColors.textPrimary,
-              ),
-              textAlign: TextAlign.center,
+      body: SafeArea(
+        bottom: false,
+        child: AppPullToRefresh(
+          onRefresh: _loadSummary,
+          alwaysScrollable: true,
+          child: Padding(
+            padding: EdgeInsets.symmetric(
+              horizontal: horizontalPadding,
+              vertical: AppSizes.spacingL,
             ),
-            const SizedBox(height: AppSizes.spacingS),
-            GestureDetector(
-              onTap: () async {
-                final result = await Navigator.push<String>(
-                  context,
-                  MaterialPageRoute(builder: (_) => const QrScannerScreen()),
-                );
-                if (!mounted) return;
-                if (result != null && result.isNotEmpty) {
-                  setState(() => _isLoading = true);
-                  final res = await _attendanceService.checkIn(code: result);
-                  if (!context.mounted) return;
-                  setState(() => _isLoading = false);
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Text(
+                  safeLocaleString(
+                    context,
+                    'click_qr_code',
+                    fallback: 'Click QR Code for Scan',
+                  ),
+                  style: TextStyle(
+                    fontSize: AppSizes.fontSizeXL,
+                    fontWeight: FontWeight.bold,
+                    color: appColors.textPrimary,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: AppSizes.spacingS),
+                GestureDetector(
+                  onTap: () async {
+                    final result = await Navigator.push<String>(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const QrScannerScreen(),
+                      ),
+                    );
+                    if (!mounted) return;
+                    if (result != null && result.isNotEmpty) {
+                      setState(() => _isLoading = true);
+                      final res = await _attendanceService.checkIn(
+                        code: result,
+                      );
+                      if (!context.mounted) return;
+                      setState(() => _isLoading = false);
 
-                  final body = res['body'];
-                  final message = body is Map
-                      ? (body['message']?.toString() ?? 'Check-in complete')
-                      : 'Check-in complete';
-                  final statusCode = res['statusCode'];
-                  if (statusCode is int &&
-                      statusCode >= 200 &&
-                      statusCode < 300) {
-                    CustomSnackBar.success(title: message);
-                  } else {
-                    CustomSnackBar.error(title: message);
-                  }
-                  await _loadAttendance();
-                }
-              },
-              child: SizedBox(
-                width: 280,
-                height: 280,
-                child: Stack(
-                  alignment: Alignment.center,
+                      final body = res['body'];
+                      final message = body is Map
+                          ? (body['message']?.toString() ?? 'Check-in complete')
+                          : 'Check-in complete';
+                      final statusCode = res['statusCode'];
+                      if (statusCode is int &&
+                          statusCode >= 200 &&
+                          statusCode < 300) {
+                        CustomSnackBar.success(title: message);
+                      } else {
+                        CustomSnackBar.error(title: message);
+                      }
+                      await _loadAttendance();
+                    }
+                  },
+                  child: SizedBox(
+                    width: 280,
+                    height: 280,
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        // blue corner frame
+                        CustomPaint(
+                          size: const Size(250, 250),
+                          painter: _QrCornerFramePainter(
+                            color: AppColors.primaryBlue,
+                          ),
+                        ),
+                        // qr
+                        Container(
+                          width: 220,
+                          height: 220,
+                          decoration: BoxDecoration(
+                            color: isDark
+                                ? const Color(0xFF1E1E1E)
+                                : AppColors.white,
+                            borderRadius: BorderRadius.circular(
+                              AppSizes.radiusM,
+                            ),
+                          ),
+                          child: Icon(
+                            Icons.qr_code_2,
+                            size: 220,
+                            color: isDark ? AppColors.white : Colors.black,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: AppSizes.spacingS),
+                Text(
+                  _isLoading
+                      ? 'Checking in...'
+                      : safeLocaleString(
+                          context,
+                          'click_me',
+                          fallback: 'Click me',
+                        ),
+                  style: const TextStyle(
+                    fontSize: AppSizes.fontSizeL,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.success,
+                  ),
+                ),
+                const SizedBox(height: AppSizes.spacingXL),
+                _SummaryCards(
+                  todayTimetables: _todayTimetables,
+                  checkedToday: _checkedToday,
+                  isLoading: _isSummaryLoading,
+                ),
+                const SizedBox(height: AppSizes.spacingXL),
+                Row(
                   children: [
-                    // blue corner frame
-                    CustomPaint(
-                      size: const Size(250, 250),
-                      painter: _QrCornerFramePainter(
-                        color: AppColors.primaryBlue,
+                    Text(
+                      safeLocaleString(
+                        context,
+                        'recent_scan',
+                        fallback: 'Recent Scan',
+                      ),
+                      style: TextStyle(
+                        fontSize: AppSizes.fontSizeM,
+                        fontWeight: FontWeight.w700,
+                        color: appColors.primaryBlue,
                       ),
                     ),
-                    // qr
-                    Container(
-                      width: 220,
-                      height: 220,
-                      decoration: BoxDecoration(
-                        color: isDark
-                            ? const Color(0xFF1E1E1E)
-                            : AppColors.white,
-                        borderRadius: BorderRadius.circular(AppSizes.radiusM),
-                      ),
-                      child: Icon(
-                        Icons.qr_code_2,
-                        size: 220,
-                        color: isDark ? AppColors.white : Colors.black,
-                      ),
+                    const Spacer(),
+                    TextButton.icon(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const AttendanceScreen(),
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.fact_check_outlined, size: 18),
+                      label: const Text('Attendance'),
                     ),
                   ],
                 ),
-              ),
+                const SizedBox(height: AppSizes.spacingS),
+                if (_recent.isEmpty)
+                  const Text('No recent scans')
+                else
+                  ..._recent.map((row) {
+                    final date = _formatDate(
+                      readString(row, const [
+                        'date',
+                        'created_at',
+                        'createdAt',
+                      ]),
+                    );
+                    final inTime = readString(row, const [
+                      'check_in_time',
+                      'checkInTime',
+                      'time_in',
+                    ]);
+                    final subject = _readSubject(row);
+                    final status =
+                        readString(row, const ['status']) ?? 'present';
+                    return _ScanRow(
+                      date: date ?? '-',
+                      checkInTime: (inTime == null || inTime.isEmpty)
+                          ? '--:--'
+                          : inTime,
+                      subject: subject ?? 'Class',
+                      status: status,
+                    );
+                  }),
+              ],
             ),
-            const SizedBox(height: AppSizes.spacingS),
-            Text(
-              _isLoading
-                  ? 'Checking in...'
-                  : safeLocaleString(context, 'click_me', fallback: 'Click me'),
-              style: const TextStyle(
-                fontSize: AppSizes.fontSizeL,
-                fontWeight: FontWeight.w700,
-                color: AppColors.success,
-              ),
-            ),
-            const SizedBox(height: AppSizes.spacingXL),
-            _SummaryCards(
-              totalRooms: _totalRooms,
-              totalCheckedIns: _totalCheckedIns,
-              isLoading: _isSummaryLoading,
-            ),
-            const SizedBox(height: AppSizes.spacingXL),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                safeLocaleString(
-                  context,
-                  'recent_scan',
-                  fallback: 'Recent Scan',
-                ),
-                style: TextStyle(
-                  fontSize: AppSizes.fontSizeM,
-                  fontWeight: FontWeight.w700,
-                  color: appColors.primaryBlue,
-                ),
-              ),
-            ),
-            const SizedBox(height: AppSizes.spacingS),
-            if (_recent.isEmpty)
-              const Text('No recent scans')
-            else
-              ..._recent.map((row) {
-                final code = readString(row, const ['code', 'qr_code']) ?? '-';
-                final date =
-                    readString(row, const ['date', 'created_at']) ?? '-';
-                final inTime = readString(row, const ['check_in_time']) ?? '-';
-                final outTime =
-                    readString(row, const ['check_out_time']) ?? '-';
-                return _ScanRow(
-                  code: code,
-                  date: date,
-                  inTime: inTime,
-                  outTime: outTime,
-                );
-              }),
-          ],
+          ),
         ),
       ),
     );
   }
+
+  String? _formatDate(String? raw) {
+    if (raw == null || raw.isEmpty) return null;
+    if (raw.length >= 10) return raw.substring(0, 10);
+    return raw;
+  }
+
+  String? _readSubject(Map<String, dynamic> row) {
+    final timetable =
+        asMap(row['timetable']) ??
+        asMap(row['schedule']) ??
+        asMap(row['class']);
+    final subject = asMap(timetable?['subject']);
+    return readString(subject ?? timetable ?? row, const [
+      'name',
+      'title',
+      'subject_name',
+      'subjectName',
+      'subject',
+    ]);
+  }
 }
 
 class _SummaryCards extends StatelessWidget {
-  final int totalRooms;
-  final int totalCheckedIns;
+  final int todayTimetables;
+  final int checkedToday;
   final bool isLoading;
 
   const _SummaryCards({
-    required this.totalRooms,
-    required this.totalCheckedIns,
+    required this.todayTimetables,
+    required this.checkedToday,
     required this.isLoading,
   });
 
@@ -269,21 +367,9 @@ class _SummaryCards extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                safeLocaleString(
-                  context,
-                  'rooms',
-                  fallback: 'ROOMS',
-                ).toUpperCase(),
+                'TODAY',
                 style: TextStyle(
                   fontSize: AppSizes.fontSizeS,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.success,
-                ),
-              ),
-              Text(
-                safeLocaleString(context, 'view_rooms', fallback: 'View Rooms'),
-                style: TextStyle(
-                  fontSize: AppSizes.fontSizeM,
                   fontWeight: FontWeight.w600,
                   color: AppColors.success,
                 ),
@@ -299,22 +385,26 @@ class _SummaryCards extends StatelessWidget {
               Expanded(
                 child: _buildSummaryCard(
                   context: context,
-                  number: isLoading ? '—' : totalRooms.toString(),
-                  label: safeLocaleString(context, 'rooms', fallback: 'Rooms'),
-                  icon: Icons.grid_view,
+                  number: isLoading ? '—' : todayTimetables.toString(),
+                  label: safeLocaleString(
+                    context,
+                    'timetable',
+                    fallback: 'Timetable',
+                  ),
+                  icon: Icons.calendar_month_outlined,
                 ),
               ),
               SizedBox(width: spacing),
               Expanded(
                 child: _buildSummaryCard(
                   context: context,
-                  number: isLoading ? '—' : totalCheckedIns.toString(),
+                  number: isLoading ? '—' : checkedToday.toString(),
                   label: safeLocaleString(
                     context,
-                    'checked_ins',
-                    fallback: 'Checked-ins',
+                    'check_in_today',
+                    fallback: 'Check in today',
                   ),
-                  icon: Icons.people,
+                  icon: Icons.verified_outlined,
                 ),
               ),
             ],
@@ -387,23 +477,25 @@ class _SummaryCards extends StatelessWidget {
 }
 
 class _ScanRow extends StatelessWidget {
-  final String code;
   final String date;
-  final String inTime;
-  final String outTime;
+  final String checkInTime;
+  final String subject;
+  final String status;
 
   const _ScanRow({
-    required this.code,
     required this.date,
-    required this.inTime,
-    required this.outTime,
+    required this.checkInTime,
+    required this.subject,
+    required this.status,
   });
 
   @override
   Widget build(BuildContext context) {
     final appColors = context.appColors;
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final accentColor = isDark ? Colors.pinkAccent.shade200 : Colors.pinkAccent;
+    final normalized = status.trim().toLowerCase();
+    final isPresent = normalized.contains('present') || normalized == '1';
+    final statusColor = isPresent ? AppColors.success : Colors.red;
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: AppSizes.spacingS),
@@ -424,61 +516,78 @@ class _ScanRow extends StatelessWidget {
           children: [
             Container(
               width: 3,
-              height: 32,
+              height: 44,
               decoration: BoxDecoration(
-                color: accentColor,
+                color: statusColor,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
             const SizedBox(width: AppSizes.spacingM),
-            Text(
-              code,
-              style: TextStyle(
-                fontSize: AppSizes.fontSizeM,
-                fontWeight: FontWeight.w600,
-                color: accentColor,
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    subject,
+                    style: TextStyle(
+                      fontSize: AppSizes.fontSizeM,
+                      fontWeight: FontWeight.w700,
+                      color: appColors.textPrimary,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.calendar_today_outlined,
+                        size: 14,
+                        color: appColors.textSecondary,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        date,
+                        style: TextStyle(
+                          fontSize: AppSizes.fontSizeS,
+                          color: appColors.textSecondary,
+                        ),
+                      ),
+                      const SizedBox(width: AppSizes.spacingM),
+                      Icon(
+                        Icons.access_time,
+                        size: 14,
+                        color: appColors.textSecondary,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        checkInTime,
+                        style: TextStyle(
+                          fontSize: AppSizes.fontSizeS,
+                          color: appColors.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ),
             const SizedBox(width: AppSizes.spacingM),
-            Expanded(
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: statusColor.withValues(alpha: isDark ? 0.18 : 0.12),
+                borderRadius: BorderRadius.circular(999),
+                border: Border.all(color: statusColor.withValues(alpha: 0.35)),
+              ),
               child: Text(
-                date,
+                isPresent ? 'Present' : 'Absent',
                 style: TextStyle(
-                  fontSize: AppSizes.fontSizeM,
-                  color: appColors.textPrimary,
+                  fontSize: AppSizes.fontSizeS,
+                  fontWeight: FontWeight.w700,
+                  color: statusColor,
                 ),
               ),
-            ),
-            Row(
-              children: [
-                Icon(
-                  Icons.access_time,
-                  size: 16,
-                  color: isDark ? Colors.blue.shade300 : Colors.blue,
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  inTime,
-                  style: TextStyle(
-                    fontSize: AppSizes.fontSizeS,
-                    color: isDark ? Colors.blue.shade300 : Colors.blue,
-                  ),
-                ),
-                const SizedBox(width: AppSizes.spacingS),
-                Icon(
-                  Icons.access_time,
-                  size: 16,
-                  color: isDark ? Colors.red.shade300 : Colors.red,
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  outTime,
-                  style: TextStyle(
-                    fontSize: AppSizes.fontSizeS,
-                    color: isDark ? Colors.red.shade300 : Colors.red,
-                  ),
-                ),
-              ],
             ),
           ],
         ),

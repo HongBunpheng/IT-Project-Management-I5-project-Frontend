@@ -28,19 +28,18 @@ class MainShellState extends State<MainShell> {
     setState(() => _index = index);
   }
 
-  bool _showHeaderForIndex(int index) => index != 4;
+  bool _showHeaderForIndex(int index) => index == 0;
 
   @override
   Widget build(BuildContext context) {
     final showHeader = _showHeaderForIndex(_index);
+    const headerDensity = AppHeaderDensity.compact;
 
     return Scaffold(
       body: Column(
         children: [
           if (showHeader)
-            AppHeader(
-              onProfileTap: () => setTab(4),
-            ),
+            AppHeader(density: headerDensity, onProfileTap: () => setTab(4)),
           Expanded(
             child: IndexedStack(
               index: _index,

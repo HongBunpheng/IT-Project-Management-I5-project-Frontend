@@ -13,30 +13,25 @@ class TaskCardItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final appColors = context.appColors;
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+
     Color iconColor;
-    Color progressColor;
     IconData iconData;
 
     switch (task.iconCategory) {
       case 'office':
         iconColor = AppColors.iconPink;
-        progressColor = AppColors.progressRed;
         iconData = Icons.work_outline;
         break;
       case 'personal':
         iconColor = AppColors.purple;
-        progressColor = AppColors.purple;
         iconData = Icons.category_outlined;
         break;
       case 'study':
         iconColor = AppColors.progressOrange;
-        progressColor = AppColors.progressOrange;
         iconData = Icons.book_outlined;
         break;
       default:
         iconColor = AppColors.grey;
-        progressColor = AppColors.grey;
         iconData = Icons.work_outline;
     }
 
@@ -44,12 +39,12 @@ class TaskCardItem extends StatelessWidget {
       margin: EdgeInsets.only(bottom: AppSizes.spacingM),
       padding: EdgeInsets.all(AppSizes.spacingM),
       decoration: BoxDecoration(
-        color: isDark 
+        color: isDark
             ? AppColors.primaryBlue.withValues(alpha: 0.15)
             : AppColors.white,
         borderRadius: BorderRadius.circular(AppSizes.radiusM),
         border: Border.all(
-          color: isDark 
+          color: isDark
               ? AppColors.primaryBlue.withValues(alpha: 0.3)
               : AppColors.primaryBlue.withValues(alpha: 0.1),
           width: 1,
@@ -94,41 +89,10 @@ class TaskCardItem extends StatelessWidget {
                   ),
                 ),
                 SizedBox(height: AppSizes.spacingXS),
-                Text(
-                  '${task.taskCount ?? 0} Tasks',
-                  style: TextStyle(
-                    fontSize: AppSizes.fontSizeS,
-                    color: appColors.textSecondary,
-                  ),
-                ),
               ],
             ),
           ),
-          Stack(
-            alignment: Alignment.center,
-            children: [
-              SizedBox(
-                width: 50,
-                height: 50,
-                child: CircularProgressIndicator(
-                  value: task.progress ?? 0.0,
-                  strokeWidth: 4,
-                  backgroundColor: isDark
-                      ? appColors.lightGrey.withValues(alpha: 0.3)
-                      : appColors.lightGrey,
-                  valueColor: AlwaysStoppedAnimation<Color>(progressColor),
-                ),
-              ),
-              Text(
-                '${((task.progress ?? 0.0) * 100).toInt()}%',
-                style: TextStyle(
-                  fontSize: AppSizes.fontSizeXS,
-                  fontWeight: FontWeight.bold,
-                  color: appColors.textPrimary,
-                ),
-              ),
-            ],
-          ),
+          const SizedBox.shrink(),
         ],
       ),
     );

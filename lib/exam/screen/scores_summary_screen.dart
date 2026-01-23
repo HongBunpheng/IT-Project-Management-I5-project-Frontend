@@ -6,10 +6,10 @@ import '../widget/rounded_donut_chart.dart';
 import '../widget/subject_score_row.dart';
 import '../widget/scores_table_header.dart';
 
-import '../../widgets/common/app_header.dart';
 import '../../configs/app_colors.dart';
 import '../../configs/app_sizes.dart';
 import '../../utils/snackbar.dart';
+import '../../utils/pull_to_refresh.dart';
 
 class ScoresSummaryScreen extends StatefulWidget {
   const ScoresSummaryScreen({super.key});
@@ -88,69 +88,73 @@ class _ScoresSummaryScreenState extends State<ScoresSummaryScreen> {
               )
             : Column(
                 children: [
-                  const AppHeader(),
-
                   Expanded(
-                    child: SingleChildScrollView(
-                      physics: const BouncingScrollPhysics(),
-                      child: Column(
-                        children: [
-                          const SizedBox(height: 35),
+                    child: AppPullToRefresh(
+                      onRefresh: _loadSummaryData,
+                      child: SingleChildScrollView(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        child: Column(
+                          children: [
+                            const SizedBox(height: 35),
 
-                          /// 🔵 DONUT CHART (AVERAGE SCORE)
-                          RoundedDonutChart(
-                            subjects: _subjectScores,
-                            averageScore: _averageScore,
-                          ),
+                            /// 🔵 DONUT CHART (AVERAGE SCORE)
+                            RoundedDonutChart(
+                              subjects: _subjectScores,
+                              averageScore: _averageScore,
+                            ),
 
-                          const SizedBox(height: 60),
+                            const SizedBox(height: 60),
 
-                          /// 📊 TABLE HEADER
-                          const ScoresTableHeader(),
+                            /// 📊 TABLE HEADER
+                            const ScoresTableHeader(),
 
-                          const SizedBox(height: 12),
+                            const SizedBox(height: 12),
 
-                          /// 📋 SUBJECT SCORE LIST
-                          ListView.builder(
-                            shrinkWrap: true,
-                            physics: const NeverScrollableScrollPhysics(),
-                            padding: const EdgeInsets.only(left: 32, right: 16),
-                            itemCount: _subjectScores.length,
-                            itemBuilder: (context, index) {
-                              return SubjectScoreRow(
-                                subject: _subjectScores[index],
-                              );
-                            },
-                          ),
+                            /// 📋 SUBJECT SCORE LIST
+                            ListView.builder(
+                              shrinkWrap: true,
+                              physics: const NeverScrollableScrollPhysics(),
+                              padding: const EdgeInsets.only(
+                                left: 32,
+                                right: 16,
+                              ),
+                              itemCount: _subjectScores.length,
+                              itemBuilder: (context, index) {
+                                return SubjectScoreRow(
+                                  subject: _subjectScores[index],
+                                );
+                              },
+                            ),
 
-                          /// ⬅️ BACK BUTTON
-                          Padding(
-                            padding: const EdgeInsets.all(16),
-                            child: SizedBox(
-                              width: double.infinity,
-                              height: 50,
-                              child: ElevatedButton(
-                                onPressed: () => Navigator.pop(context),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: AppColors.primaryBlue,
-                                  foregroundColor: AppColors.white,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(
-                                      AppSizes.radiusM,
+                            /// ⬅️ BACK BUTTON
+                            Padding(
+                              padding: const EdgeInsets.all(16),
+                              child: SizedBox(
+                                width: double.infinity,
+                                height: 50,
+                                child: ElevatedButton(
+                                  onPressed: () => Navigator.pop(context),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: AppColors.primaryBlue,
+                                    foregroundColor: AppColors.white,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(
+                                        AppSizes.radiusM,
+                                      ),
                                     ),
                                   ),
-                                ),
-                                child: Text(
-                                  'Back',
-                                  style: TextStyle(
-                                    fontSize: AppSizes.fontSizeM,
-                                    fontWeight: FontWeight.w600,
+                                  child: Text(
+                                    'Back',
+                                    style: TextStyle(
+                                      fontSize: AppSizes.fontSizeM,
+                                      fontWeight: FontWeight.w600,
+                                    ),
                                   ),
                                 ),
                               ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
                   ),

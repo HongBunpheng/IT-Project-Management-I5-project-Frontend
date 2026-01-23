@@ -23,6 +23,21 @@ class ScoreService {
         .toList();
   }
 
+  Future<List<Map<String, dynamic>>> byExam(String examId) async {
+    final res = await _api.getJson('/scores/exam/$examId');
+    final decoded = _safeDecode(res.body);
+    final data = decoded is Map<String, dynamic>
+        ? (asList(decoded['data']) ??
+              asList(decoded['scores']) ??
+              asList(decoded))
+        : asList(decoded);
+
+    return (data ?? const [])
+        .map((e) => asMap(e))
+        .whereType<Map<String, dynamic>>()
+        .toList();
+  }
+
   dynamic _safeDecode(String body) {
     try {
       return jsonDecode(body);

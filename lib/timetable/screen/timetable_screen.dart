@@ -8,6 +8,7 @@ import '../../services/timetable_service.dart';
 import '../../services/token_storage.dart';
 import '../../utils/json_utils.dart';
 import '../../account/service/account_service.dart';
+import '../../utils/pull_to_refresh.dart';
 
 class TimetableView extends StatefulWidget {
   const TimetableView({super.key});
@@ -156,59 +157,60 @@ class _TimetableViewState extends State<TimetableView> {
 
     return Scaffold(
       backgroundColor: isDark ? const Color(0xFF121212) : AppColors.white,
-      body: Column(
-        children: [
-          // Timetable Header
-          SizedBox(height: AppSizes.spacingM),
-          // Calendar Table
-          CalendarTableWidget(
-            selectedDate: _selectedDate,
-            currentMonth: _currentMonth,
-            onDateSelected: _onDateSelected,
-            onMonthChanged: _onMonthChanged,
-            tasksCount: _tasksCountByDate,
-          ),
-          SizedBox(height: AppSizes.spacingXL),
-          // Tasks List
-          Expanded(
-            child: _isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : _errorMessage != null
-                    ? Center(
-                        child: Padding(
-                          padding: const EdgeInsets.all(16),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                _errorMessage!,
-                                textAlign: TextAlign.center,
-                              ),
-                              const SizedBox(height: 12),
-                              ElevatedButton(
-                                onPressed: _loadTimetable,
-                                child: const Text('Retry'),
-                              ),
-                            ],
-                          ),
-                        ),
-                      )
-                    : RefreshIndicator(
-                        onRefresh: _loadTimetable,
-                        child: ListView.builder(
-                          padding: EdgeInsets.only(bottom: AppSizes.spacingM),
-                          itemCount: _tasks.length,
-                          itemBuilder: (context, index) {
-                            return TimetableTaskCard(
-                              task: _tasks[index],
-                              onCompletionChanged: (completed) =>
-                                  _onTaskCompleted(index, completed),
-                            );
-                          },
+      body: SafeArea(
+        bottom: false,
+        child: Column(
+          children: [
+            // Timetable Header
+            SizedBox(height: AppSizes.spacingM),
+            // Calendar Table
+            CalendarTableWidget(
+              selectedDate: _selectedDate,
+              currentMonth: _currentMonth,
+              onDateSelected: _onDateSelected,
+              onMonthChanged: _onMonthChanged,
+              tasksCount: _tasksCountByDate,
+            ),
+            SizedBox(height: AppSizes.spacingXL),
+            // Tasks List
+            Expanded(
+              child: _isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : _errorMessage != null
+                  ? Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(_errorMessage!, textAlign: TextAlign.center),
+                            const SizedBox(height: 12),
+                            ElevatedButton(
+                              onPressed: _loadTimetable,
+                              child: const Text('Retry'),
+                            ),
+                          ],
                         ),
                       ),
-          ),
-        ],
+                    )
+                  : AppPullToRefresh(
+                      onRefresh: _loadTimetable,
+                      child: ListView.builder(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        padding: EdgeInsets.only(bottom: AppSizes.spacingM),
+                        itemCount: _tasks.length,
+                        itemBuilder: (context, index) {
+                          return TimetableTaskCard(
+                            task: _tasks[index],
+                            onCompletionChanged: (completed) =>
+                                _onTaskCompleted(index, completed),
+                          );
+                        },
+                      ),
+                    ),
+            ),
+          ],
+        ),
       ),
     );
   }

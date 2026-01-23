@@ -11,14 +11,18 @@ class ExamCard {
   final String? id;
   final String? category;
   final String? title;
-  final double? progress;
+  final String? date;
+  final String? startTime;
+  final String? endTime;
   final String? iconCategory;
 
   ExamCard({
     this.id,
     this.category,
     this.title,
-    this.progress,
+    this.date,
+    this.startTime,
+    this.endTime,
     this.iconCategory,
   });
 }
@@ -27,15 +31,7 @@ class ExamCard {
 class TaskCard {
   final String? id;
   final String? title;
-  final int? taskCount;
-  final double? progress;
   final String? iconCategory;
 
-  TaskCard({
-    this.id,
-    this.title,
-    this.taskCount,
-    this.progress,
-    this.iconCategory,
-  });
+  TaskCard({this.id, this.title, this.iconCategory});
 }

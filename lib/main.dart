@@ -62,15 +62,12 @@ class _MyAppState extends State<MyApp> {
         builder: (locale) {
           final appLocale = locale ?? const Locale('en', '');
           return MaterialApp(
-            title: 'CG Intern Project',
+            title: 'Project',
             theme: theme,
             darkTheme: darkTheme,
             navigatorKey: CustomSnackBar.navigatorKey,
             locale: appLocale,
-            supportedLocales: const [
-              Locale('en', ''),
-              Locale('km', ''),
-            ],
+            supportedLocales: const [Locale('en', ''), Locale('km', '')],
             localizationsDelegates: Locales.delegates,
             home: const AuthCheckScreen(),
             debugShowCheckedModeBanner: false,
@@ -100,7 +97,7 @@ class _AuthCheckScreenState extends State<AuthCheckScreen> {
 
   Future<void> _checkAuthStatus() async {
     final token = await _tokenStorage.readToken();
-    
+
     if (!mounted) return;
 
     // If token exists, user is logged in - go to dashboard
@@ -123,9 +120,7 @@ class _AuthCheckScreenState extends State<AuthCheckScreen> {
     return Scaffold(
       backgroundColor: AppColors.primaryBlue,
       body: const Center(
-        child: CircularProgressIndicator(
-          color: AppColors.white,
-        ),
+        child: CircularProgressIndicator(color: AppColors.white),
       ),
     );
   }

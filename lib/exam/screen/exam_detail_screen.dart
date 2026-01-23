@@ -4,10 +4,10 @@ import '../model/exam_model.dart';
 import '../service/exam_service.dart';
 import '../widget/single_score_donut_chart.dart';
 
-import '../../widgets/common/app_header.dart';
 import '../../utils/snackbar.dart';
 import '../../configs/app_colors.dart';
 import '../../configs/app_sizes.dart';
+import '../../utils/pull_to_refresh.dart';
 
 class ExamDetailScreen extends StatefulWidget {
   final String examId;
@@ -62,77 +62,93 @@ class _ExamDetailScreenState extends State<ExamDetailScreen> {
             ? const Center(child: CircularProgressIndicator())
             : _examResult == null
             ? const Center(child: Text('No exam data available'))
-            : SingleChildScrollView(
-                physics: const BouncingScrollPhysics(),
-                child: Column(
-                  children: [
-                    const SizedBox(height: 20),
-
-                    /// HEADER
-                    AppHeader(title: widget.subjectName),
-
-                    const SizedBox(height: 35),
-
-                    /// DONUT SCORE
-                    Center(
-                      child: SingleScoreDonutChart(
-                        score: _examResult!.score.toDouble(),
-                        scoreColor: AppColors.primaryBlue,
-                        remainingColor: const Color(0xFFEEEEEE),
-                        size: 180,
-                        strokeWidth: 20,
-                      ),
-                    ),
-
-                    const SizedBox(height: 30),
-
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                      child: Column(
-                        children: [
-                          _ScoreDetailsCard(result: _examResult!),
-                          const SizedBox(height: 16),
-                          _ExamDateCard(date: _examResult!.examDate ?? 'N/A'),
-                          const SizedBox(height: 16),
-                          _LecturersCard(
-                            lecturers: _examResult!.lecturers ?? [],
+            : AppPullToRefresh(
+                onRefresh: _loadExamDetail,
+                child: SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  child: Column(
+                    children: [
+                      const SizedBox(height: 20),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        child: Align(
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            widget.subjectName,
+                            style: const TextStyle(
+                              fontSize: AppSizes.fontSizeXL,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.textPrimary,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
-                        ],
+                        ),
                       ),
-                    ),
 
-                    const SizedBox(height: 24),
+                      const SizedBox(height: 35),
 
-                    /// BACK BUTTON
-                    Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: SizedBox(
-                        width: double.infinity,
-                        height: 50,
-                        child: ElevatedButton(
-                          onPressed: () => Navigator.pop(context),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primaryBlue,
-                            foregroundColor: AppColors.white,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(
-                                AppSizes.radiusM,
+                      /// DONUT SCORE
+                      Center(
+                        child: SingleScoreDonutChart(
+                          score: _examResult!.score.toDouble(),
+                          scoreColor: AppColors.primaryBlue,
+                          remainingColor: const Color(0xFFEEEEEE),
+                          size: 180,
+                          strokeWidth: 20,
+                        ),
+                      ),
+
+                      const SizedBox(height: 30),
+
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        child: Column(
+                          children: [
+                            _ScoreDetailsCard(result: _examResult!),
+                            const SizedBox(height: 16),
+                            _ExamDateCard(date: _examResult!.examDate ?? 'N/A'),
+                            const SizedBox(height: 16),
+                            _LecturersCard(
+                              lecturers: _examResult!.lecturers ?? [],
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      const SizedBox(height: 24),
+
+                      /// BACK BUTTON
+                      Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: SizedBox(
+                          width: double.infinity,
+                          height: 50,
+                          child: ElevatedButton(
+                            onPressed: () => Navigator.pop(context),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.primaryBlue,
+                              foregroundColor: AppColors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(
+                                  AppSizes.radiusM,
+                                ),
                               ),
                             ),
-                          ),
-                          child: const Text(
-                            'Back',
-                            style: TextStyle(
-                              fontSize: AppSizes.fontSizeM,
-                              fontWeight: FontWeight.w600,
+                            child: const Text(
+                              'Back',
+                              style: TextStyle(
+                                fontSize: AppSizes.fontSizeM,
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                           ),
                         ),
                       ),
-                    ),
 
-                    const SizedBox(height: 20),
-                  ],
+                      const SizedBox(height: 20),
+                    ],
+                  ),
                 ),
               ),
       ),
