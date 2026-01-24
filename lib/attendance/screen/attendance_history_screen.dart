@@ -23,7 +23,11 @@ class _AttendanceHistoryScreenState extends State<AttendanceHistoryScreen> {
   final TokenStorage _tokenStorage = TokenStorage();
 
   bool _isMonthView = true;
-  DateTime _focusedDate = DateTime(DateTime.now().year, DateTime.now().month);
+  DateTime _focusedDate = DateTime(
+    DateTime.now().year,
+    DateTime.now().month,
+    DateTime.now().day,
+  );
   bool _isLoading = true;
   String? _errorMessage;
   List<Map<String, dynamic>> _attendanceRows = [];
@@ -105,11 +109,8 @@ class _AttendanceHistoryScreenState extends State<AttendanceHistoryScreen> {
   }
 
   bool _isPresentRow(Map<String, dynamic> row) {
-    final checkIn = readString(row, const [
-          'check_in_time',
-          'checkInTime',
-          'time_in',
-        ]) ??
+    final checkIn =
+        readString(row, const ['check_in_time', 'checkInTime', 'time_in']) ??
         '';
     final status = (readString(row, const ['status', 'remark']) ?? '')
         .trim()
@@ -124,11 +125,8 @@ class _AttendanceHistoryScreenState extends State<AttendanceHistoryScreen> {
   }
 
   bool _isExplicitAbsentRow(Map<String, dynamic> row) {
-    final checkIn = readString(row, const [
-          'check_in_time',
-          'checkInTime',
-          'time_in',
-        ]) ??
+    final checkIn =
+        readString(row, const ['check_in_time', 'checkInTime', 'time_in']) ??
         '';
     if (checkIn.isNotEmpty) return false;
     final status = (readString(row, const ['status', 'remark']) ?? '')
@@ -169,9 +167,7 @@ class _AttendanceHistoryScreenState extends State<AttendanceHistoryScreen> {
 
     final out = <CalendarDay>[];
     for (var i = 0; i < leadingEmpty; i++) {
-      out.add(
-        CalendarDay(date: DateTime(0), status: AttendanceStatus.noData),
-      );
+      out.add(CalendarDay(date: DateTime(0), status: AttendanceStatus.noData));
     }
 
     for (var day = 1; day <= last.day; day++) {
@@ -180,11 +176,9 @@ class _AttendanceHistoryScreenState extends State<AttendanceHistoryScreen> {
       final isWeekend =
           weekday == DateTime.saturday || weekday == DateTime.sunday;
 
-      final status =
-          isWeekend
-              ? AttendanceStatus.nonWorking
-              : (statusByDay[DateUtils.dateOnly(dt)] ??
-                  AttendanceStatus.noData);
+      final status = isWeekend
+          ? AttendanceStatus.nonWorking
+          : (statusByDay[DateUtils.dateOnly(dt)] ?? AttendanceStatus.noData);
 
       out.add(CalendarDay(date: dt, status: status));
     }
@@ -205,10 +199,9 @@ class _AttendanceHistoryScreenState extends State<AttendanceHistoryScreen> {
       final isWeekend =
           weekday == DateTime.saturday || weekday == DateTime.sunday;
 
-      final dayStatus =
-          isWeekend
-              ? AttendanceStatus.nonWorking
-              : (statusByDay[dt] ?? AttendanceStatus.noData);
+      final dayStatus = isWeekend
+          ? AttendanceStatus.nonWorking
+          : (statusByDay[dt] ?? AttendanceStatus.noData);
 
       final rowsForDay = _attendanceRows
           .where((row) {
@@ -221,13 +214,15 @@ class _AttendanceHistoryScreenState extends State<AttendanceHistoryScreen> {
       String timeRange = '--';
       if (rowsForDay.isNotEmpty) {
         final row = rowsForDay.first;
-        final checkIn = readString(row, const [
+        final checkIn =
+            readString(row, const [
               'check_in_time',
               'checkInTime',
               'time_in',
             ]) ??
             '';
-        final checkOut = readString(row, const [
+        final checkOut =
+            readString(row, const [
               'check_out_time',
               'checkOutTime',
               'time_out',
@@ -343,7 +338,7 @@ class _AttendanceHistoryScreenState extends State<AttendanceHistoryScreen> {
     return Scaffold(
       backgroundColor: isDark ? const Color(0xFF121212) : AppColors.white,
       appBar: AppBar(
-        backgroundColor: isDark 
+        backgroundColor: isDark
             ? AppColors.primaryBlue.withValues(alpha: 0.2)
             : AppColors.white,
         elevation: 0,
@@ -459,10 +454,7 @@ class _AttendanceHistoryScreenState extends State<AttendanceHistoryScreen> {
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Text(
-                                _errorMessage!,
-                                textAlign: TextAlign.center,
-                              ),
+                              Text(_errorMessage!, textAlign: TextAlign.center),
                               const SizedBox(height: 12),
                               ElevatedButton(
                                 onPressed: _loadAttendance,

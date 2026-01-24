@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import '../../configs/app_colors.dart';
+import '../../configs/app_sizes.dart';
 import '../../configs/app_theme_extension.dart';
 import 'apply_leave_screen.dart';
+import 'leave_request_detail_screen.dart';
 import '../../services/leave_request_service.dart';
 import '../../services/token_storage.dart';
 import '../../utils/json_utils.dart';
@@ -23,7 +25,7 @@ class _LeaveRequestScreenState extends State<LeaveRequestScreen> {
   String? _errorMessage;
   DateTime _focusedMonth = DateTime.now();
 
-  final Map<int, String> _leaveStatus = {};
+  final Map<int, Map<String, dynamic>> _dayRequests = {};
 
   @override
   void initState() {
@@ -35,7 +37,7 @@ class _LeaveRequestScreenState extends State<LeaveRequestScreen> {
     setState(() {
       _isLoading = true;
       _errorMessage = null;
-      _leaveStatus.clear();
+      _dayRequests.clear();
     });
 
     try {
@@ -47,15 +49,13 @@ class _LeaveRequestScreenState extends State<LeaveRequestScreen> {
 
       for (final row in rows) {
         final start = readString(row, const ['start_date', 'startDate']);
-        final status = (readString(row, const ['status']) ?? 'awaiting')
-            .toLowerCase();
         if (start == null) continue;
 
         final parsed = DateTime.tryParse(start);
         if (parsed == null) continue;
         if (parsed.year == _focusedMonth.year &&
             parsed.month == _focusedMonth.month) {
-          _leaveStatus[parsed.day] = status;
+          _dayRequests[parsed.day] = row;
         }
       }
 
@@ -92,11 +92,25 @@ class _LeaveRequestScreenState extends State<LeaveRequestScreen> {
   Widget build(BuildContext context) {
     final appColors = context.appColors;
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+
+    final firstDayOfMonth = DateTime(
+      _focusedMonth.year,
+      _focusedMonth.month,
+      1,
+    );
+    final lastDayOfMonth = DateTime(
+      _focusedMonth.year,
+      _focusedMonth.month + 1,
+      0,
+    );
+    final daysInMonth = lastDayOfMonth.day;
+    final firstDayOffset =
+        firstDayOfMonth.weekday - 1; // 1=Mon, so offset is 0 for Mon
+
     return Scaffold(
       backgroundColor: isDark ? const Color(0xFF121212) : AppColors.white,
       appBar: AppBar(
-        backgroundColor: isDark 
+        backgroundColor: isDark
             ? AppColors.primaryBlue.withValues(alpha: 0.2)
             : AppColors.white,
         elevation: 0,
@@ -133,23 +147,63 @@ class _LeaveRequestScreenState extends State<LeaveRequestScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.add, color: Colors.blue, size: 28),
-            onPressed: () {
-              showModalBottomSheet(
+            onPressed: () async {
+              final result = await showModalBottomSheet(
                 context: context,
                 isScrollControlled: true,
                 backgroundColor: Colors.transparent,
                 builder: (context) {
-                  return FractionallySizedBox(
-                    heightFactor: 0.7, // 70% height sheet
-                    child: ClipRRect(
-                      borderRadius: const BorderRadius.vertical(
-                        top: Radius.circular(16),
-                      ),
-                      child: const ApplyLeaveScreen(),
+                  return ClipRRect(
+                    borderRadius: const BorderRadius.vertical(
+                      top: Radius.circular(16),
                     ),
+                    child: const ApplyLeaveScreen(),
                   );
                 },
               );
+
+              if (result is Map && result['success'] == true) {
+                _loadLeaveRequests();
+
+                // Construct basic data for detail screen if not fully provided
+                final request = asMap(result['request']) ?? {};
+                final id = readString(request, const ['id', '_id']);
+                final startDate =
+                    readString(request, const ['start_date', 'startDate']) ??
+                    '';
+                final endDate =
+                    readString(request, const ['end_date', 'endDate']) ?? '';
+                final reason = readString(request, const ['reason']) ?? '';
+                final status =
+                    readString(request, const ['status']) ?? 'Pending';
+
+                if (!context.mounted) return;
+
+                // Show detail screen immediately after success
+                showModalBottomSheet(
+                  context: context,
+                  isScrollControlled: true,
+                  backgroundColor: Colors.transparent,
+                  builder: (context) {
+                    return FractionallySizedBox(
+                      heightFactor: 0.8,
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.vertical(
+                          top: Radius.circular(AppSizes.radiusL),
+                        ),
+                        child: LeaveRequestDetailScreen(
+                          id: id,
+                          startDate: startDate,
+                          endDate: endDate,
+                          reason: reason,
+                          status: status,
+                          isAdmin: false,
+                        ),
+                      ),
+                    );
+                  },
+                );
+              }
             },
           ),
         ],
@@ -252,7 +306,7 @@ class _LeaveRequestScreenState extends State<LeaveRequestScreen> {
                         ),
                       )
                     : GridView.builder(
-                        itemCount: 31 + 2, // 31 days + 2 offset
+                        itemCount: daysInMonth + firstDayOffset,
                         gridDelegate:
                             const SliverGridDelegateWithFixedCrossAxisCount(
                               crossAxisCount: 7,
@@ -260,10 +314,10 @@ class _LeaveRequestScreenState extends State<LeaveRequestScreen> {
                               crossAxisSpacing: 10,
                             ),
                         itemBuilder: (context, index) {
-                          if (index < 2) {
+                          if (index < firstDayOffset) {
                             return const SizedBox.shrink(); // Offset
                           }
-                          final day = index - 1;
+                          final day = index - firstDayOffset + 1;
 
                           return _buildDayCell(day);
                         },
@@ -293,27 +347,40 @@ class _LeaveRequestScreenState extends State<LeaveRequestScreen> {
   Widget _buildDayCell(int day) {
     Color textColor = Colors.grey.shade700;
 
+    Widget cellContent;
+
     // Status Logic
-    if (_leaveStatus.containsKey(day)) {
-      final status = _leaveStatus[day];
-      textColor = status == 'awaiting' ? Colors.black : Colors.white;
+    if (_dayRequests.containsKey(day)) {
+      final request = _dayRequests[day]!;
+      final status = (readString(request, const ['status']) ?? 'awaiting')
+          .toLowerCase();
+
+      textColor = (status == 'awaiting' || status == 'pending')
+          ? Colors.black
+          : Colors.white;
 
       switch (status) {
         case 'declined':
+        case 'rejected':
+          cellContent = Container(
+            decoration: const BoxDecoration(
+              color: Color(0xFFEF5350), // Red
+              shape: BoxShape.circle,
+            ),
+            child: Center(
+              child: Text(
+                '$day',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+          );
           break;
         case 'approved':
-          // Green - small dot logic needs CustomPainter, using simple circle for now or stack
-          // For 'approved' (16) screenshot shows green DOT, others show full circle?
-          // Actually screenshot 8 is RED circle. 16 is GREEN DOT. 21, 22 ORANGE DOT.
-          // Let's implement dots for some, circle for others based on image.
-          // Screenshot:
-          // 8: Red Circle background, white text.
-          // 16: Green Dot below text.
-          // 21, 22: Orange Dot below text.
-          // 6: Grey Dot below text.
-
-          // Let's refactor to match that specific look.
-          return Column(
+          cellContent = Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Text(
@@ -324,9 +391,11 @@ class _LeaveRequestScreenState extends State<LeaveRequestScreen> {
               const CircleAvatar(radius: 4, backgroundColor: Colors.green),
             ],
           );
-
+          break;
         case 'awaiting':
-          return Column(
+        case 'pending':
+        default:
+          cellContent = Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Text(
@@ -337,55 +406,67 @@ class _LeaveRequestScreenState extends State<LeaveRequestScreen> {
               const CircleAvatar(radius: 4, backgroundColor: Colors.orange),
             ],
           );
+          break;
       }
-    }
-
-    // Specific Override for "8" (Declined) -> Red Circle
-    if (day == 8) {
-      return Container(
-        decoration: const BoxDecoration(
-          color: Color(0xFFEF5350), // Red
-          shape: BoxShape.circle,
-        ),
-        child: Center(
-          child: Text(
-            '$day',
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
+    } else {
+      // Default cell
+      cellContent = Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text('$day', style: TextStyle(fontSize: 16, color: textColor)),
+            if (day == 6) ...[
+              const SizedBox(height: 4),
+              const CircleAvatar(radius: 4, backgroundColor: Colors.grey),
+            ] else ...[
+              const SizedBox(height: 12), // Placeholder height
+            ],
+          ],
         ),
       );
     }
 
-    // Default cell
-    return Center(
-      child: Column(
-        // Use Column to reserve space for dot if needed for alignment consistency
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text('$day', style: TextStyle(fontSize: 16, color: textColor)),
-          if (_leaveStatus.containsKey(day) &&
-              _leaveStatus[day] != 'declined') ...[
-            const SizedBox(height: 4),
-            CircleAvatar(
-              radius: 4,
-              backgroundColor: _leaveStatus[day] == 'approved'
-                  ? Colors.green
-                  : Colors.orange,
-            ),
-          ] else if (day == 6) ...[
-            // Specific case for '6' in screenshot
-            const SizedBox(height: 4),
-            const CircleAvatar(radius: 4, backgroundColor: Colors.grey),
-          ] else ...[
-            const SizedBox(height: 12), // Placeholder height to keep alignment
-          ],
-        ],
-      ),
+    return InkWell(
+      onTap: _dayRequests.containsKey(day) ? () => _onDayTapped(day) : null,
+      borderRadius: BorderRadius.circular(20),
+      child: cellContent,
     );
+  }
+
+  void _onDayTapped(int day) {
+    final request = _dayRequests[day];
+    if (request == null) return;
+
+    final startDate =
+        readString(request, const ['start_date', 'startDate']) ?? '';
+    final endDate = readString(request, const ['end_date', 'endDate']) ?? '';
+    final reason = readString(request, const ['reason']) ?? '';
+    final status = readString(request, const ['status']) ?? 'Pending';
+    final id = readString(request, const ['id', '_id']);
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return FractionallySizedBox(
+          heightFactor: 0.8,
+          child: ClipRRect(
+            borderRadius: BorderRadius.vertical(
+              top: Radius.circular(AppSizes.radiusL),
+            ),
+            child: LeaveRequestDetailScreen(
+              id: id,
+              startDate: startDate,
+              endDate: endDate,
+              reason: reason,
+              status: status,
+              isAdmin: false,
+            ),
+          ),
+        );
+      },
+    ).then((_) => _loadLeaveRequests()); // Refresh on close
   }
 
   Widget _buildLegendItem(Color color, String label) {
