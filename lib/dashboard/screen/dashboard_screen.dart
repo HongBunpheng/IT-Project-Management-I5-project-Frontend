@@ -15,6 +15,7 @@ import '../model/dashboard_models.dart';
 import '../../services/token_storage.dart';
 import '../../utils/json_utils.dart';
 import '../../services/event_service.dart';
+import '../../services/subject_service.dart';
 
 class DashboardView extends StatefulWidget {
   const DashboardView({super.key});
@@ -28,6 +29,7 @@ class _DashboardViewState extends State<DashboardView> {
   final EventService _eventService = EventService();
   final AttendanceService _attendanceService = AttendanceService();
   final TokenStorage _tokenStorage = TokenStorage();
+  final SubjectService _subjectService = SubjectService();
 
   List<ExamCard> _events = [];
   List<TaskCard> _subjects = [];
@@ -109,53 +111,7 @@ class _DashboardViewState extends State<DashboardView> {
 
   Future<void> _loadSubjects() async {
     try {
-      final userId = await _tokenStorage.readUserId();
-      if (userId == null || userId.isEmpty) return;
-      final groupId = await _tokenStorage.readGroupId();
-
-      final raw = groupId != null && groupId.isNotEmpty
-          ? await _timetableService.listByGroup(groupId)
-          : await _timetableService.listByUser(userId);
-
-      final nowWeekday = DateTime.now().weekday; // Mon=1..Sun=7
-      final stats = <String, ({int total, int completed})>{};
-
-      for (final row in raw) {
-        final subject = asMap(row['subject']);
-        final title =
-            readString(subject ?? row, const [
-              'name',
-              'title',
-              'subject_name',
-              'subjectName',
-            ]) ??
-            'Class';
-
-        final day = readString(row, const ['day_of_week', 'dayOfWeek', 'day']);
-        final dayIndex = _weekdayIndex(day);
-        final isCompleted = dayIndex != null && dayIndex <= nowWeekday;
-
-        final existing = stats[title] ?? (total: 0, completed: 0);
-        stats[title] = (
-          total: existing.total + 1,
-          completed: existing.completed + (isCompleted ? 1 : 0),
-        );
-      }
-
-      final subjects =
-          stats.keys
-              .map(
-                (title) => TaskCard(
-                  title: title,
-                  iconCategory: _subjectIconCategory(title),
-                ),
-              )
-              .toList()
-            ..sort(
-              (a, b) => (a.title ?? '').toLowerCase().compareTo(
-                (b.title ?? '').toLowerCase(),
-              ),
-            );
+      final subjects = await _subjectService.listSubjects();
 
       if (!mounted) return;
       setState(() => _subjects = subjects);
@@ -210,18 +166,6 @@ class _DashboardViewState extends State<DashboardView> {
     if (v.startsWith('sat')) return DateTime.saturday;
     if (v.startsWith('sun')) return DateTime.sunday;
     return null;
-  }
-
-  String _subjectIconCategory(String title) {
-    final index = title.hashCode.abs() % 3;
-    switch (index) {
-      case 0:
-        return 'office';
-      case 1:
-        return 'personal';
-      default:
-        return 'study';
-    }
   }
 
   @override

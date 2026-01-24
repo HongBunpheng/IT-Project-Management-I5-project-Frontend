@@ -9,6 +9,8 @@ import '../../services/token_storage.dart';
 import '../../utils/json_utils.dart';
 import '../../account/service/account_service.dart';
 import '../../utils/pull_to_refresh.dart';
+import '../../services/subject_service.dart';
+import '../../dashboard/model/dashboard_models.dart';
 
 class TimetableView extends StatefulWidget {
   const TimetableView({super.key});
@@ -24,6 +26,7 @@ class _TimetableViewState extends State<TimetableView> {
   bool _isLoading = true;
   String? _errorMessage;
   List<Map<String, dynamic>> _rawTimetable = [];
+  List<TaskCard> _subjects = [];
 
   DateTime _selectedDate = DateTime.now();
   DateTime _currentMonth = DateTime.now();
@@ -81,6 +84,7 @@ class _TimetableViewState extends State<TimetableView> {
       if (!mounted) return;
       setState(() {
         _rawTimetable = raw;
+        _subjects = SubjectService.buildSubjectCards(raw);
         // Rebuild tasks count whenever data is loaded
         _tasksCountByDate = _buildTasksCountByDate();
         _tasks = _mapTasksForSelectedDay();
@@ -96,6 +100,7 @@ class _TimetableViewState extends State<TimetableView> {
             ? errorStr.substring(12)
             : errorStr;
         _tasks = [];
+        _subjects = [];
       });
     }
   }
@@ -171,7 +176,86 @@ class _TimetableViewState extends State<TimetableView> {
               onMonthChanged: _onMonthChanged,
               tasksCount: _tasksCountByDate,
             ),
-            SizedBox(height: AppSizes.spacingXL),
+            SizedBox(height: AppSizes.spacingM),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: AppSizes.spacingM),
+              child: Row(
+                children: [
+                  const Text(
+                    'Subjects',
+                    style: TextStyle(fontWeight: FontWeight.w700),
+                  ),
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.primaryBlue.withValues(
+                        alpha: isDark ? 0.22 : 0.12,
+                      ),
+                      borderRadius: BorderRadius.circular(999),
+                      border: Border.all(
+                        color: AppColors.primaryBlue.withValues(alpha: 0.25),
+                      ),
+                    ),
+                    child: Text(
+                      '${_subjects.length}',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: isDark ? AppColors.white : AppColors.primaryBlue,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            SizedBox(height: AppSizes.spacingS),
+            if (_subjects.isNotEmpty)
+              SizedBox(
+                height: 44,
+                child: ListView.separated(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSizes.spacingM,
+                  ),
+                  scrollDirection: Axis.horizontal,
+                  itemCount: _subjects.length,
+                  separatorBuilder: (_, __) =>
+                      const SizedBox(width: AppSizes.spacingS),
+                  itemBuilder: (context, index) {
+                    final title = _subjects[index].title ?? 'Subject';
+                    return Container(
+                      alignment: Alignment.center,
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      decoration: BoxDecoration(
+                        color: isDark
+                            ? const Color(0xFF1E1E1E)
+                            : AppColors.white,
+                        borderRadius: BorderRadius.circular(999),
+                        border: Border.all(
+                          color: isDark
+                              ? const Color(0xFF2E2E2E)
+                              : const Color(0xFFE5E7EB),
+                        ),
+                      ),
+                      child: Text(
+                        title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              )
+            else
+              const SizedBox(height: 44),
+            SizedBox(height: AppSizes.spacingM),
             // Tasks List
             Expanded(
               child: _isLoading

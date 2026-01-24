@@ -90,12 +90,12 @@ BEGIN
         BLOCK "040904e4"
         BEGIN
             VALUE "CompanyName", "com.example" "\0"
-            VALUE "FileDescription", "it_project_management_i5_project_frontend" "\0"
+            VALUE "FileDescription", "Portal Student" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
-            VALUE "InternalName", "it_project_management_i5_project_frontend" "\0"
+            VALUE "InternalName", "Portal Student" "\0"
             VALUE "LegalCopyright", "Copyright (C) 2025 com.example. All rights reserved." "\0"
-            VALUE "OriginalFilename", "it_project_management_i5_project_frontend.exe" "\0"
-            VALUE "ProductName", "it_project_management_i5_project_frontend" "\0"
+            VALUE "OriginalFilename", "Portal Student.exe" "\0"
+            VALUE "ProductName", "Portal Student" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END

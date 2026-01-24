@@ -448,7 +448,7 @@ class _StatCard extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Expanded(
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 14),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
         decoration: BoxDecoration(
           color: isDark ? const Color(0xFF1E1E1E) : AppColors.white,
           borderRadius: BorderRadius.circular(14),
@@ -456,8 +456,17 @@ class _StatCard extends StatelessWidget {
             color: isDark ? const Color(0xFF2E2E2E) : appColors.borderLight,
           ),
         ),
-        child: Column(
+        child: Row(
           children: [
+            Expanded(
+              child: Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(fontSize: 12, color: appColors.textSecondary),
+              ),
+            ),
+            const SizedBox(width: 10),
             Text(
               value,
               style: TextStyle(
@@ -465,11 +474,6 @@ class _StatCard extends StatelessWidget {
                 fontWeight: FontWeight.bold,
                 color: appColors.textPrimary,
               ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              style: TextStyle(fontSize: 12, color: appColors.textSecondary),
             ),
           ],
         ),
@@ -641,60 +645,106 @@ class _ExamListCard extends StatelessWidget {
                   const SizedBox(height: 6),
                   Row(
                     children: [
-                      if (item.dateLabel != null) ...[
-                        Icon(
-                          Icons.calendar_today_outlined,
-                          size: 14,
-                          color: appColors.textSecondary,
-                        ),
-                        const SizedBox(width: 6),
-                        Text(
-                          item.dateLabel!,
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: appColors.textSecondary,
+                      if (item.dateLabel != null)
+                        Flexible(
+                          flex: 3,
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.calendar_today_outlined,
+                                size: 14,
+                                color: appColors.textSecondary,
+                              ),
+                              const SizedBox(width: 6),
+                              Expanded(
+                                child: Text(
+                                  item.dateLabel!,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: appColors.textSecondary,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                      ],
                       if (item.dateLabel != null && item.totalMark != null)
-                        const SizedBox(width: 14),
-                      if (item.totalMark != null) ...[
-                        Icon(
-                          Icons.stacked_bar_chart_rounded,
-                          size: 14,
-                          color: appColors.textSecondary,
-                        ),
-                        const SizedBox(width: 6),
-                        Text(
-                          'Total: ${item.totalMark}',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: appColors.textSecondary,
+                        const SizedBox(width: 10),
+                      if (item.totalMark != null)
+                        Flexible(
+                          flex: 2,
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.stacked_bar_chart_rounded,
+                                size: 14,
+                                color: appColors.textSecondary,
+                              ),
+                              const SizedBox(width: 6),
+                              Expanded(
+                                child: Text(
+                                  'Total: ${item.totalMark}',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: appColors.textSecondary,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                      ],
                     ],
                   ),
                 ],
               ],
             ),
           ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-            decoration: BoxDecoration(
-              color: statusColor.withValues(alpha: isDark ? 0.18 : 0.10),
-              borderRadius: BorderRadius.circular(999),
-              border: Border.all(color: statusColor.withValues(alpha: 0.35)),
-            ),
-            child: Text(
-              statusLabel,
-              style: TextStyle(fontWeight: FontWeight.bold, color: statusColor),
-            ),
-          ),
-          const SizedBox(width: 8),
-          IconButton(
-            icon: const Icon(Icons.chevron_right),
-            onPressed: onPreview,
+          const SizedBox(width: 12),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 110),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: statusColor.withValues(alpha: isDark ? 0.18 : 0.10),
+                    borderRadius: BorderRadius.circular(999),
+                    border:
+                        Border.all(color: statusColor.withValues(alpha: 0.35)),
+                  ),
+                  child: Text(
+                    statusLabel,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: statusColor,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 4),
+              IconButton(
+                onPressed: onPreview,
+                icon: const Icon(Icons.chevron_right),
+                iconSize: 22,
+                padding: EdgeInsets.zero,
+                visualDensity: VisualDensity.compact,
+                constraints: BoxConstraints.tightFor(
+                  width: 32,
+                  height: 32,
+                ),
+                splashRadius: 18,
+              ),
+            ],
           ),
         ],
       ),
