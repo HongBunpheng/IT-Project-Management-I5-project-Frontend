@@ -350,15 +350,18 @@ class _CheckInScreenState extends State<CheckInScreen> {
                       'time_in',
                     ]);
                     final subject = _readSubject(row);
-                    final status =
-                        readString(row, const ['status']) ?? 'present';
+                    final status = readString(row, const [
+                      'status',
+                      'remark',
+                      'attendance_status',
+                    ]);
                     return _ScanRow(
                       date: date ?? '-',
                       checkInTime: (inTime == null || inTime.isEmpty)
                           ? '--:--'
                           : inTime,
                       subject: subject ?? 'Class',
-                      status: status,
+                      status: status ?? '',
                     );
                   }),
               ],
@@ -545,7 +548,14 @@ class _ScanRow extends StatelessWidget {
     final appColors = context.appColors;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final normalized = status.trim().toLowerCase();
-    final isPresent = normalized.contains('present') || normalized == '1';
+    final isPresent =
+        checkInTime.trim().isNotEmpty &&
+        checkInTime.trim() != '--:--' ||
+        normalized.contains('present') ||
+        normalized.contains('on time') ||
+        normalized.contains('late') ||
+        normalized == '1' ||
+        normalized == 'true';
     final statusColor = isPresent ? AppColors.success : Colors.red;
 
     return Padding(

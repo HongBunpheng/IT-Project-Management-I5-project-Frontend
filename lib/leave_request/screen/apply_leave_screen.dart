@@ -3,7 +3,6 @@ import '../../configs/app_colors.dart';
 import '../../configs/app_sizes.dart';
 import '../../configs/app_theme_extension.dart';
 import '../../utils/responsive.dart';
-import 'leave_request_detail_screen.dart';
 import '../../services/leave_request_service.dart';
 import '../../utils/snackbar.dart';
 
@@ -136,13 +135,12 @@ class _ApplyLeaveScreenState extends State<ApplyLeaveScreen> {
     final horizontalPadding = Responsive.getPadding(context);
     final appColors = context.appColors;
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
 
     return Scaffold(
       backgroundColor: isDark ? const Color(0xFF121212) : AppColors.white,
       resizeToAvoidBottomInset: true, // Let Scaffold handle resizing
       appBar: AppBar(
-        backgroundColor: isDark 
+        backgroundColor: isDark
             ? AppColors.primaryBlue.withValues(alpha: 0.2)
             : AppColors.white,
         elevation: 0,
@@ -381,7 +379,7 @@ class _ApplyLeaveScreenState extends State<ApplyLeaveScreen> {
                                 );
                                 if (!context.mounted) return;
                                 setState(() => _isSubmitting = false);
-                                
+
                                 final statusCode = res['statusCode'];
                                 if (statusCode is int &&
                                     statusCode >= 200 &&
@@ -392,7 +390,9 @@ class _ApplyLeaveScreenState extends State<ApplyLeaveScreen> {
                                   // Close ApplyLeaveScreen and pass the new request back
                                   Navigator.pop(context, {
                                     'success': true,
-                                    'request': res['body'] is Map ? res['body'] : null,
+                                    'request': res['body'] is Map
+                                        ? res['body']
+                                        : null,
                                   });
                                 } else {
                                   final body = res['body'];

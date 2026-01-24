@@ -92,16 +92,25 @@ class _LeaveRequestScreenState extends State<LeaveRequestScreen> {
   Widget build(BuildContext context) {
     final appColors = context.appColors;
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
-    final firstDayOfMonth = DateTime(_focusedMonth.year, _focusedMonth.month, 1);
-    final lastDayOfMonth = DateTime(_focusedMonth.year, _focusedMonth.month + 1, 0);
+
+    final firstDayOfMonth = DateTime(
+      _focusedMonth.year,
+      _focusedMonth.month,
+      1,
+    );
+    final lastDayOfMonth = DateTime(
+      _focusedMonth.year,
+      _focusedMonth.month + 1,
+      0,
+    );
     final daysInMonth = lastDayOfMonth.day;
-    final firstDayOffset = firstDayOfMonth.weekday - 1; // 1=Mon, so offset is 0 for Mon
+    final firstDayOffset =
+        firstDayOfMonth.weekday - 1; // 1=Mon, so offset is 0 for Mon
 
     return Scaffold(
       backgroundColor: isDark ? const Color(0xFF121212) : AppColors.white,
       appBar: AppBar(
-        backgroundColor: isDark 
+        backgroundColor: isDark
             ? AppColors.primaryBlue.withValues(alpha: 0.2)
             : AppColors.white,
         elevation: 0,
@@ -152,20 +161,24 @@ class _LeaveRequestScreenState extends State<LeaveRequestScreen> {
                   );
                 },
               );
-              
+
               if (result is Map && result['success'] == true) {
                 _loadLeaveRequests();
-                
+
                 // Construct basic data for detail screen if not fully provided
                 final request = asMap(result['request']) ?? {};
                 final id = readString(request, const ['id', '_id']);
-                final startDate = readString(request, const ['start_date', 'startDate']) ?? '';
-                final endDate = readString(request, const ['end_date', 'endDate']) ?? '';
+                final startDate =
+                    readString(request, const ['start_date', 'startDate']) ??
+                    '';
+                final endDate =
+                    readString(request, const ['end_date', 'endDate']) ?? '';
                 final reason = readString(request, const ['reason']) ?? '';
-                final status = readString(request, const ['status']) ?? 'Pending';
+                final status =
+                    readString(request, const ['status']) ?? 'Pending';
 
                 if (!context.mounted) return;
-                
+
                 // Show detail screen immediately after success
                 showModalBottomSheet(
                   context: context,
@@ -175,14 +188,16 @@ class _LeaveRequestScreenState extends State<LeaveRequestScreen> {
                     return FractionallySizedBox(
                       heightFactor: 0.8,
                       child: ClipRRect(
-                        borderRadius: BorderRadius.vertical(top: Radius.circular(AppSizes.radiusL)),
+                        borderRadius: BorderRadius.vertical(
+                          top: Radius.circular(AppSizes.radiusL),
+                        ),
                         child: LeaveRequestDetailScreen(
                           id: id,
                           startDate: startDate,
                           endDate: endDate,
                           reason: reason,
                           status: status,
-                          isAdmin: false, 
+                          isAdmin: false,
                         ),
                       ),
                     );
@@ -337,9 +352,12 @@ class _LeaveRequestScreenState extends State<LeaveRequestScreen> {
     // Status Logic
     if (_dayRequests.containsKey(day)) {
       final request = _dayRequests[day]!;
-      final status = (readString(request, const ['status']) ?? 'awaiting').toLowerCase();
-      
-      textColor = (status == 'awaiting' || status == 'pending') ? Colors.black : Colors.white;
+      final status = (readString(request, const ['status']) ?? 'awaiting')
+          .toLowerCase();
+
+      textColor = (status == 'awaiting' || status == 'pending')
+          ? Colors.black
+          : Colors.white;
 
       switch (status) {
         case 'declined':
@@ -419,11 +437,11 @@ class _LeaveRequestScreenState extends State<LeaveRequestScreen> {
     final request = _dayRequests[day];
     if (request == null) return;
 
-    final startDate = readString(request, const ['start_date', 'startDate']) ?? '';
+    final startDate =
+        readString(request, const ['start_date', 'startDate']) ?? '';
     final endDate = readString(request, const ['end_date', 'endDate']) ?? '';
     final reason = readString(request, const ['reason']) ?? '';
     final status = readString(request, const ['status']) ?? 'Pending';
-    final isHalfDay = request['is_half_day'] == true || request['isHalfDay'] == true;
     final id = readString(request, const ['id', '_id']);
 
     showModalBottomSheet(
@@ -434,14 +452,16 @@ class _LeaveRequestScreenState extends State<LeaveRequestScreen> {
         return FractionallySizedBox(
           heightFactor: 0.8,
           child: ClipRRect(
-            borderRadius: BorderRadius.vertical(top: Radius.circular(AppSizes.radiusL)),
+            borderRadius: BorderRadius.vertical(
+              top: Radius.circular(AppSizes.radiusL),
+            ),
             child: LeaveRequestDetailScreen(
               id: id,
               startDate: startDate,
               endDate: endDate,
               reason: reason,
               status: status,
-              isAdmin: false, 
+              isAdmin: false,
             ),
           ),
         );

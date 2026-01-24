@@ -1,6 +1,6 @@
 {
-    "name": "it_project_management_i5_project_frontend",
-    "short_name": "it_project_management_i5_project_frontend",
+    "name": "Portal Student",
+    "short_name": "Portal Student",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#ffffff",

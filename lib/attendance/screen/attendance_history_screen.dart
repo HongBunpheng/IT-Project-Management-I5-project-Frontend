@@ -3,6 +3,9 @@ import '../model/attendance_model.dart';
 import '../../configs/app_colors.dart';
 import '../../configs/app_sizes.dart';
 import '../../configs/app_theme_extension.dart';
+import '../../services/attendance_service.dart';
+import '../../services/token_storage.dart';
+import '../../utils/json_utils.dart';
 import '../widget/attendance_toggle_button.dart';
 import '../widget/calendar_day_cell.dart';
 import '../widget/week_record_item.dart';
@@ -16,96 +19,231 @@ class AttendanceHistoryScreen extends StatefulWidget {
 }
 
 class _AttendanceHistoryScreenState extends State<AttendanceHistoryScreen> {
-  bool _isMonthView = true;
-  DateTime _focusedDate = DateTime.now();
+  final AttendanceService _attendanceService = AttendanceService();
+  final TokenStorage _tokenStorage = TokenStorage();
 
-  // Mock Data for Month View
+  bool _isMonthView = true;
+  DateTime _focusedDate = DateTime(
+    DateTime.now().year,
+    DateTime.now().month,
+    DateTime.now().day,
+  );
+  bool _isLoading = true;
+  String? _errorMessage;
+  List<Map<String, dynamic>> _attendanceRows = [];
+
   final List<String> _weekDays = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
   final List<CalendarDay> _monthData = [];
 
-  // Mock Data for Week View
-  final List<WeeklyAttendanceRecord> _weekData = [
-    WeeklyAttendanceRecord(
-      date: "01/6",
-      status: AttendanceStatus.present,
-      timeRange: "8:00 - 17:00",
-    ),
-    WeeklyAttendanceRecord(
-      date: "02/6",
-      status: AttendanceStatus.present,
-      timeRange: "8:00 - 17:00",
-      additionalInfo: "HC",
-    ),
-    WeeklyAttendanceRecord(
-      date: "03/6",
-      status: AttendanceStatus.present,
-      timeRange: "8:00 - 17:00",
-      additionalInfo: "HC",
-    ),
-    WeeklyAttendanceRecord(
-      date: "04/6",
-      status: AttendanceStatus.absent,
-      timeRange: "8:00 - 17:00",
-      additionalInfo: "HC",
-    ),
-    WeeklyAttendanceRecord(
-      date: "05/6",
-      status: AttendanceStatus.absent,
-      timeRange: "8:00 - 17:00",
-      additionalInfo: "HC",
-    ),
-    WeeklyAttendanceRecord(
-      date: "06/6",
-      status: AttendanceStatus.absent,
-      timeRange: "8:00 - 17:00",
-      additionalInfo: "HC",
-    ),
-    WeeklyAttendanceRecord(
-      date: "07/6",
-      status: AttendanceStatus.nonWorking,
-      timeRange: "8:00 - 17:00",
-      additionalInfo: "HC",
-    ),
-  ];
+  final List<WeeklyAttendanceRecord> _weekData = [];
 
   @override
   void initState() {
     super.initState();
-    _generateMockMonthData();
+    _loadAttendance();
   }
 
-  void _generateMockMonthData() {
-    _monthData.clear();
-    
-    final firstDayOfMonth = DateTime(_focusedDate.year, _focusedDate.month, 1);
-    final lastDayOfMonth = DateTime(_focusedDate.year, _focusedDate.month + 1, 0);
-    final daysInMonth = lastDayOfMonth.day;
-    final firstDayOffset = firstDayOfMonth.weekday - 1; // 1=Mon, so offset is 0 for Mon
+  Future<void> _loadAttendance() async {
+    if (!mounted) return;
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
 
-    // Add empty cells for offset
-    for (int i = 0; i < firstDayOffset; i++) {
-      _monthData.add(
-        CalendarDay(
-          date: DateTime(_focusedDate.year, _focusedDate.month, 0),
-          status: AttendanceStatus.noData,
+    try {
+      final userId = await _tokenStorage.readUserId();
+      if (userId == null || userId.isEmpty) {
+        throw Exception('Missing user id. Please login again.');
+      }
+
+      final rows = await _attendanceService.myAttendance(userId);
+      if (!mounted) return;
+
+      setState(() {
+        _attendanceRows = rows;
+        _rebuildViewData();
+        _isLoading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _isLoading = false;
+        _errorMessage = e.toString();
+        _attendanceRows = [];
+        _monthData.clear();
+        _weekData.clear();
+      });
+    }
+  }
+
+  void _rebuildViewData() {
+    _monthData
+      ..clear()
+      ..addAll(_buildMonthData());
+    _weekData
+      ..clear()
+      ..addAll(_buildWeekData());
+  }
+
+  DateTime? _parseDate(Map<String, dynamic> row) {
+    final raw = readString(row, const [
+      'date',
+      'created_at',
+      'createdAt',
+      'check_in_date',
+      'checkInDate',
+    ]);
+    if (raw == null || raw.isEmpty) return null;
+    try {
+      return DateTime.parse(raw);
+    } catch (_) {
+      if (raw.length >= 10) {
+        try {
+          return DateTime.parse(raw.substring(0, 10));
+        } catch (_) {
+          return null;
+        }
+      }
+      return null;
+    }
+  }
+
+  bool _isPresentRow(Map<String, dynamic> row) {
+    final checkIn =
+        readString(row, const ['check_in_time', 'checkInTime', 'time_in']) ??
+        '';
+    final status = (readString(row, const ['status', 'remark']) ?? '')
+        .trim()
+        .toLowerCase();
+
+    return checkIn.isNotEmpty ||
+        status.contains('present') ||
+        status.contains('on time') ||
+        status.contains('late') ||
+        status == '1' ||
+        status == 'true';
+  }
+
+  bool _isExplicitAbsentRow(Map<String, dynamic> row) {
+    final checkIn =
+        readString(row, const ['check_in_time', 'checkInTime', 'time_in']) ??
+        '';
+    if (checkIn.isNotEmpty) return false;
+    final status = (readString(row, const ['status', 'remark']) ?? '')
+        .trim()
+        .toLowerCase();
+    return status.contains('absent') || status.contains('miss');
+  }
+
+  Map<DateTime, AttendanceStatus> _statusByDay() {
+    final map = <DateTime, AttendanceStatus>{};
+    for (final row in _attendanceRows) {
+      final dt = _parseDate(row);
+      if (dt == null) continue;
+      final day = DateUtils.dateOnly(dt);
+
+      final current = map[day];
+      if (_isPresentRow(row)) {
+        map[day] = AttendanceStatus.present;
+        continue;
+      }
+      if (_isExplicitAbsentRow(row) && current != AttendanceStatus.present) {
+        map[day] = AttendanceStatus.absent;
+      }
+    }
+    return map;
+  }
+
+  List<CalendarDay> _buildMonthData() {
+    final statusByDay = _statusByDay();
+
+    final year = _focusedDate.year;
+    final month = _focusedDate.month;
+    final first = DateTime(year, month, 1);
+    final last = DateTime(year, month + 1, 0);
+
+    // Monday=1..Sunday=7. We want Monday as first column.
+    final leadingEmpty = (first.weekday - DateTime.monday) % 7;
+
+    final out = <CalendarDay>[];
+    for (var i = 0; i < leadingEmpty; i++) {
+      out.add(CalendarDay(date: DateTime(0), status: AttendanceStatus.noData));
+    }
+
+    for (var day = 1; day <= last.day; day++) {
+      final dt = DateTime(year, month, day);
+      final weekday = dt.weekday;
+      final isWeekend =
+          weekday == DateTime.saturday || weekday == DateTime.sunday;
+
+      final status = isWeekend
+          ? AttendanceStatus.nonWorking
+          : (statusByDay[DateUtils.dateOnly(dt)] ?? AttendanceStatus.noData);
+
+      out.add(CalendarDay(date: dt, status: status));
+    }
+
+    return out;
+  }
+
+  List<WeeklyAttendanceRecord> _buildWeekData() {
+    final statusByDay = _statusByDay();
+    final weekStart = _focusedDate.subtract(
+      Duration(days: _focusedDate.weekday - DateTime.monday),
+    );
+
+    final out = <WeeklyAttendanceRecord>[];
+    for (var i = 0; i < 7; i++) {
+      final dt = DateUtils.dateOnly(weekStart.add(Duration(days: i)));
+      final weekday = dt.weekday;
+      final isWeekend =
+          weekday == DateTime.saturday || weekday == DateTime.sunday;
+
+      final dayStatus = isWeekend
+          ? AttendanceStatus.nonWorking
+          : (statusByDay[dt] ?? AttendanceStatus.noData);
+
+      final rowsForDay = _attendanceRows
+          .where((row) {
+            final d = _parseDate(row);
+            if (d == null) return false;
+            return DateUtils.isSameDay(d, dt);
+          })
+          .toList(growable: false);
+
+      String timeRange = '--';
+      if (rowsForDay.isNotEmpty) {
+        final row = rowsForDay.first;
+        final checkIn =
+            readString(row, const [
+              'check_in_time',
+              'checkInTime',
+              'time_in',
+            ]) ??
+            '';
+        final checkOut =
+            readString(row, const [
+              'check_out_time',
+              'checkOutTime',
+              'time_out',
+            ]) ??
+            '';
+        if (checkIn.isNotEmpty || checkOut.isNotEmpty) {
+          timeRange =
+              '${checkIn.isEmpty ? '--:--' : checkIn} - ${checkOut.isEmpty ? '--:--' : checkOut}';
+        }
+      }
+
+      out.add(
+        WeeklyAttendanceRecord(
+          date: '${dt.day.toString().padLeft(2, '0')}/${dt.month}',
+          status: dayStatus,
+          timeRange: timeRange,
         ),
       );
     }
 
-    // Days 1 to daysInMonth
-    for (int i = 1; i <= daysInMonth; i++) {
-      final date = DateTime(_focusedDate.year, _focusedDate.month, i);
-      AttendanceStatus status = AttendanceStatus.present;
-      
-      // Basic mock logic for status
-      if (date.weekday == DateTime.saturday || date.weekday == DateTime.sunday) {
-        status = AttendanceStatus.nonWorking;
-      } else if (i % 10 == 0) {
-        status = AttendanceStatus.absent;
-      }
-
-      _monthData.add(CalendarDay(date: date, status: status));
-    }
+    return out;
   }
 
   void _changeDate({required bool navBack}) {
@@ -121,7 +259,7 @@ class _AttendanceHistoryScreenState extends State<AttendanceHistoryScreen> {
         // Change week
         _focusedDate = _focusedDate.add(Duration(days: navBack ? -7 : 7));
       }
-      _generateMockMonthData(); // Re-generate mock data for the new month
+      _rebuildViewData();
     });
   }
 
@@ -138,7 +276,8 @@ class _AttendanceHistoryScreenState extends State<AttendanceHistoryScreen> {
 
     if (picked != null && picked != _focusedDate) {
       setState(() {
-        _focusedDate = picked;
+        _focusedDate = DateTime(picked.year, picked.month, picked.day);
+        _rebuildViewData();
       });
     }
   }
@@ -195,11 +334,11 @@ class _AttendanceHistoryScreenState extends State<AttendanceHistoryScreen> {
   Widget build(BuildContext context) {
     final appColors = context.appColors;
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+
     return Scaffold(
       backgroundColor: isDark ? const Color(0xFF121212) : AppColors.white,
       appBar: AppBar(
-        backgroundColor: isDark 
+        backgroundColor: isDark
             ? AppColors.primaryBlue.withValues(alpha: 0.2)
             : AppColors.white,
         elevation: 0,
@@ -306,7 +445,26 @@ class _AttendanceHistoryScreenState extends State<AttendanceHistoryScreen> {
 
               // Content
               Expanded(
-                child: _isMonthView ? _buildMonthView() : _buildWeekView(),
+                child: _isLoading
+                    ? const Center(child: CircularProgressIndicator())
+                    : _errorMessage != null
+                    ? Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(_errorMessage!, textAlign: TextAlign.center),
+                              const SizedBox(height: 12),
+                              ElevatedButton(
+                                onPressed: _loadAttendance,
+                                child: const Text('Retry'),
+                              ),
+                            ],
+                          ),
+                        ),
+                      )
+                    : (_isMonthView ? _buildMonthView() : _buildWeekView()),
               ),
 
               // Back Button (Bottom)
@@ -375,7 +533,7 @@ class _AttendanceHistoryScreenState extends State<AttendanceHistoryScreen> {
             ),
             itemBuilder: (context, index) {
               final day = _monthData[index];
-              if (day.status == AttendanceStatus.noData) {
+              if (day.date.year == 0) {
                 return const SizedBox.shrink();
               }
               return CalendarDayCell(day: day);
