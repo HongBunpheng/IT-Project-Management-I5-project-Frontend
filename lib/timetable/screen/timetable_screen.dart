@@ -5,6 +5,7 @@ import '../widget/calendar_table_widget.dart';
 import '../widget/timetable_task_card.dart';
 import '../model/timetable_task_model.dart';
 import '../../services/timetable_service.dart';
+import '../../services/leave_request_service.dart';
 import '../../services/token_storage.dart';
 import '../../utils/json_utils.dart';
 import '../../account/service/account_service.dart';
@@ -19,11 +20,13 @@ class TimetableView extends StatefulWidget {
 
 class _TimetableViewState extends State<TimetableView> {
   final TimetableService _timetableService = TimetableService();
+  final LeaveRequestService _leaveService = LeaveRequestService();
   final TokenStorage _tokenStorage = TokenStorage();
 
   bool _isLoading = true;
   String? _errorMessage;
   List<Map<String, dynamic>> _rawTimetable = [];
+  List<Map<String, dynamic>> _leaveRequests = [];
 
   DateTime _selectedDate = DateTime.now();
   DateTime _currentMonth = DateTime.now();
@@ -74,13 +77,16 @@ class _TimetableViewState extends State<TimetableView> {
         throw 'Missing user id. Please login again.';
       }
 
-      final raw = groupId != null && groupId.isNotEmpty
+      final timetableRaw = groupId != null && groupId.isNotEmpty
           ? await _timetableService.listByGroup(groupId)
           : await _timetableService.listByUser(userId);
+      
+      final leaveRaw = await _leaveService.byStudent(userId);
 
       if (!mounted) return;
       setState(() {
-        _rawTimetable = raw;
+        _rawTimetable = timetableRaw;
+        _leaveRequests = leaveRaw;
         // Rebuild tasks count whenever data is loaded
         _tasksCountByDate = _buildTasksCountByDate();
         _tasks = _mapTasksForSelectedDay();
@@ -110,7 +116,7 @@ class _TimetableViewState extends State<TimetableView> {
           details: _tasks[index].details,
           time: _tasks[index].time,
           isCompleted: true,
-          iconType: 'check',
+          iconType: _tasks[index].iconType,
           building: _tasks[index].building,
           room: _tasks[index].room,
           instructor: _tasks[index].instructor,
@@ -228,8 +234,8 @@ class _TimetableViewState extends State<TimetableView> {
       0,
     );
 
+    // Count Timetable Tasks
     for (final row in _rawTimetable) {
-      // Try to get date from various fields (specific date)
       final dateStr = readString(row, const [
         'date',
         'schedule_date',
@@ -240,37 +246,23 @@ class _TimetableViewState extends State<TimetableView> {
         try {
           final taskDate = DateTime.parse(dateStr);
           final dateKey = DateTime(taskDate.year, taskDate.month, taskDate.day);
-
-          // Only include if it's in the current month view
-          if (dateKey.isAfter(
-                firstDayOfMonth.subtract(const Duration(days: 1)),
-              ) &&
+          if (dateKey.isAfter(firstDayOfMonth.subtract(const Duration(days: 1))) &&
               dateKey.isBefore(lastDayOfMonth.add(const Duration(days: 1)))) {
             countMap[dateKey] = (countMap[dateKey] ?? 0) + 1;
           }
-          continue; // Skip day_of_week processing for specific dates
-        } catch (_) {
-          // If parsing fails, fall through to day of week processing
-        }
+          continue;
+        } catch (_) {}
       }
 
-      // Handle weekly recurring schedules (day_of_week)
-      final dayOfWeek = readString(row, const [
-        'day_of_week',
-        'dayOfWeek',
-        'day',
-      ]);
-
+      final dayOfWeek = readString(row, const ['day_of_week', 'dayOfWeek', 'day']);
       if (dayOfWeek != null) {
         final weekdayNumber = _getWeekdayNumber(dayOfWeek);
         if (weekdayNumber != null) {
-          // Find all occurrences of this weekday in the current month
           final occurrences = _getAllWeekdayOccurrencesInMonth(
             weekdayNumber,
             firstDayOfMonth,
             lastDayOfMonth,
           );
-
           for (final date in occurrences) {
             final dateKey = DateTime(date.year, date.month, date.day);
             countMap[dateKey] = (countMap[dateKey] ?? 0) + 1;
@@ -279,36 +271,41 @@ class _TimetableViewState extends State<TimetableView> {
       }
     }
 
+    // Count Leave Requests
+    for (final row in _leaveRequests) {
+      final startStr = readString(row, const ['start_date', 'startDate']);
+      final endStr = readString(row, const ['end_date', 'endDate']);
+      if (startStr == null) continue;
+
+      try {
+        final start = DateTime.parse(startStr);
+        final end = endStr != null ? DateTime.parse(endStr) : start;
+        
+        // Iterate through all days of the leave
+        for (int i = 0; i <= end.difference(start).inDays; i++) {
+          final d = start.add(Duration(days: i));
+          final dateKey = DateTime(d.year, d.month, d.day);
+          if (dateKey.isAfter(firstDayOfMonth.subtract(const Duration(days: 1))) &&
+              dateKey.isBefore(lastDayOfMonth.add(const Duration(days: 1)))) {
+            countMap[dateKey] = (countMap[dateKey] ?? 0) + 1;
+          }
+        }
+      } catch (_) {}
+    }
+
     return countMap;
   }
 
   int? _getWeekdayNumber(String dayOfWeek) {
     final dayNames = {
-      'monday': 1,
-      'mon': 1,
-      '1': 1,
-      'tuesday': 2,
-      'tue': 2,
-      '2': 2,
-      'wednesday': 3,
-      'wed': 3,
-      '3': 3,
-      'thursday': 4,
-      'thu': 4,
-      'thurs': 4,
-      '4': 4,
-      'friday': 5,
-      'fri': 5,
-      '5': 5,
-      'saturday': 6,
-      'sat': 6,
-      '6': 6,
-      'sunday': 7,
-      'sun': 7,
-      '0': 7,
-      '7': 7,
+      'monday': 1, 'mon': 1, '1': 1,
+      'tuesday': 2, 'tue': 2, '2': 2,
+      'wednesday': 3, 'wed': 3, '3': 3,
+      'thursday': 4, 'thu': 4, 'thurs': 4, '4': 4,
+      'friday': 5, 'fri': 5, '5': 5,
+      'saturday': 6, 'sat': 6, '6': 6,
+      'sunday': 7, 'sun': 7, '0': 7, '7': 7,
     };
-
     return dayNames[dayOfWeek.toLowerCase().trim()];
   }
 
@@ -318,20 +315,14 @@ class _TimetableViewState extends State<TimetableView> {
     DateTime lastDay,
   ) {
     final List<DateTime> occurrences = [];
-
-    // Find first occurrence of this weekday in the month
     int firstDayWeekday = firstDay.weekday;
     int daysToAdd = weekday - firstDayWeekday;
     if (daysToAdd < 0) daysToAdd += 7;
-
     DateTime currentDate = firstDay.add(Duration(days: daysToAdd));
-
-    // Add all occurrences in the month
     while (currentDate.isBefore(lastDay.add(const Duration(days: 1)))) {
       occurrences.add(currentDate);
       currentDate = currentDate.add(const Duration(days: 7));
     }
-
     return occurrences;
   }
 
@@ -343,101 +334,51 @@ class _TimetableViewState extends State<TimetableView> {
     );
     final selectedWeekday = _selectedDate.weekday;
 
-    return _rawTimetable
+    final List<TimetableTaskModel> combinedTasks = [];
+
+    // Map Timetable Tasks
+    final timetableTasks = _rawTimetable
         .where((row) {
-          // Try to match by actual date first (specific date schedules)
           final dateStr = readString(row, const [
-            'date',
-            'schedule_date',
-            'scheduleDate',
-            'scheduled_date',
-            'scheduledDate',
+            'date', 'schedule_date', 'scheduleDate', 'scheduled_date', 'scheduledDate',
           ]);
           if (dateStr != null && dateStr.isNotEmpty) {
             try {
               final taskDate = DateTime.parse(dateStr);
-              final taskDateKey = DateTime(
-                taskDate.year,
-                taskDate.month,
-                taskDate.day,
-              );
+              final taskDateKey = DateTime(taskDate.year, taskDate.month, taskDate.day);
               return taskDateKey == selectedDateKey;
-            } catch (_) {
-              // If parsing fails, fall through to day of week matching
-            }
+            } catch (_) {}
           }
-
-          // Fall back to day of week matching (weekly recurring schedules)
-          final day = readString(row, const [
-            'day_of_week',
-            'dayOfWeek',
-            'day',
-            'weekday',
-          ]);
+          final day = readString(row, const ['day_of_week', 'dayOfWeek', 'day', 'weekday']);
           if (day == null || day.isEmpty) return false;
-
           final weekdayNumber = _getWeekdayNumber(day);
           return weekdayNumber != null && weekdayNumber == selectedWeekday;
         })
         .map((row) {
-          // Extract nested objects
           final subject = asMap(row['subject']);
           final classroom = asMap(row['classroom']);
           final teacher = asMap(row['teacher']);
           final group = asMap(row['group']);
-          final building =
-              asMap(classroom?['building']) ?? asMap(row['building']);
-
-          // Get subject name
-          final subjectName = subject != null
-              ? readString(subject, const ['name'])
-              : null;
-
-          // Get title - prefer timetable.title, then subject.name, then default
-          final title =
-              readString(row, const ['title']) ?? subjectName ?? 'Class';
-
-          // Get time - format start_time and end_time
+          final building = asMap(classroom?['building']) ?? asMap(row['building']);
+          final subjectName = subject != null ? readString(subject, const ['name']) : null;
+          final title = readString(row, const ['title']) ?? subjectName ?? 'Class';
+          
           final start = readString(row, const ['start_time']) ?? '';
           final end = readString(row, const ['end_time']) ?? '';
           String time = '';
           if (start.isNotEmpty && end.isNotEmpty) {
-            // Format time: "08:00:00" -> "08:00"
-            final startFormatted = start.length >= 5
-                ? start.substring(0, 5)
-                : start;
+            final startFormatted = start.length >= 5 ? start.substring(0, 5) : start;
             final endFormatted = end.length >= 5 ? end.substring(0, 5) : end;
             time = '$startFormatted - $endFormatted';
           } else if (start.isNotEmpty) {
             time = start.length >= 5 ? start.substring(0, 5) : start;
           }
 
-          // Get room name from classroom
-          final roomName = classroom != null
-              ? readString(classroom, const ['name'])
-              : null;
-
-          // Get building name (if available in building object)
-          // Note: Backend returns building_id in classroom, not building object
-          // Building might need to be fetched separately or included in response
-          final buildingName = building != null
-              ? readString(building, const ['name'])
-              : null;
-
-          // Get teacher name from teacher object
-          final teacherName = teacher != null
-              ? readString(teacher, const ['user_name', 'name'])
-              : null;
-
-          // Get group name
-          final groupName = group != null
-              ? readString(group, const ['name'])
-              : null;
-
-          // Get day of week
+          final roomName = classroom != null ? readString(classroom, const ['name']) : null;
+          final buildingName = building != null ? readString(building, const ['name']) : null;
+          final teacherName = teacher != null ? readString(teacher, const ['user_name', 'name']) : null;
+          final groupName = group != null ? readString(group, const ['name']) : null;
           final dayOfWeek = readString(row, const ['day_of_week']);
-
-          // Build details string for card display (room and building)
           final details = [
             if (buildingName != null && buildingName.isNotEmpty) buildingName,
             if (roomName != null && roomName.isNotEmpty) roomName,
@@ -457,7 +398,39 @@ class _TimetableViewState extends State<TimetableView> {
             groupName: groupName,
             subjectName: subjectName,
           );
-        })
-        .toList();
+        });
+    
+    combinedTasks.addAll(timetableTasks);
+
+    // Map Leave Requests
+    final leaveTasks = _leaveRequests.where((row) {
+      final startStr = readString(row, const ['start_date', 'startDate']);
+      final endStr = readString(row, const ['end_date', 'endDate']);
+      if (startStr == null) return false;
+      try {
+        final start = DateTime.parse(startStr);
+        final end = endStr != null ? DateTime.parse(endStr) : start;
+        final startKey = DateTime(start.year, start.month, start.day);
+        final endKey = DateTime(end.year, end.month, end.day);
+        return (selectedDateKey.isAtSameMomentAs(startKey) || selectedDateKey.isAfter(startKey)) &&
+               (selectedDateKey.isAtSameMomentAs(endKey) || selectedDateKey.isBefore(endKey));
+      } catch (_) { return false; }
+    }).map((row) {
+      final status = (readString(row, const ['status']) ?? 'Pending').toUpperCase();
+      final reason = readString(row, const ['reason']) ?? 'No reason provided';
+      return TimetableTaskModel(
+        id: readString(row, const ['id']),
+        title: 'LEAVE: $status',
+        details: reason,
+        time: 'ALL DAY',
+        isCompleted: true, // Marked as completed because it's an informative event
+        iconType: 'check',
+        subjectName: 'Leave Request',
+      );
+    });
+
+    combinedTasks.addAll(leaveTasks);
+
+    return combinedTasks;
   }
 }

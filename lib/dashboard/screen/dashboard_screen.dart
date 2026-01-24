@@ -12,6 +12,7 @@ import '../../timetable/screen/timetable_screen.dart';
 import '../widget/exam_card_item.dart';
 import '../widget/task_card_item.dart';
 import '../model/dashboard_models.dart';
+import '../../services/leave_request_service.dart';
 import '../../services/token_storage.dart';
 import '../../utils/json_utils.dart';
 import '../../services/event_service.dart';
@@ -248,7 +249,51 @@ class _DashboardViewState extends State<DashboardView> {
                 todayClasses: _todayClasses,
                 todayChecked: _todayChecked,
                 progress: checkinProgress.clamp(0.0, 1.0),
-                onOpen: () {
+                onOpen: () async {
+                  // Proactive leave check
+                  try {
+                    final userId = await _tokenStorage.readUserId();
+                    if (userId != null && userId.isNotEmpty) {
+                      final leaveService = LeaveRequestService();
+                      final leaveRequests = await leaveService.byStudent(userId);
+                      final today = DateTime.now();
+                      
+                      final hasLeaveToday = leaveRequests.any((row) {
+                        final startStr = readString(row, const ['start_date', 'startDate']);
+                        final endStr = readString(row, const ['end_date', 'endDate']);
+                        final status = (readString(row, const ['status']) ?? 'pending').toLowerCase();
+                        
+                        if (status == 'rejected' || status == 'declined' || status == 'cancelled' || status == 'cancel') {
+                          return false;
+                        }
+                        
+                        if (startStr == null) return false;
+                        try {
+                          final start = DateTime.parse(startStr);
+                          final end = endStr != null ? DateTime.parse(endStr) : start;
+                          final startKey = DateTime(start.year, start.month, start.day);
+                          final endKey = DateTime(end.year, end.month, end.day);
+                          final todayKey = DateTime(today.year, today.month, today.day);
+                          
+                          return (todayKey.isAtSameMomentAs(startKey) || todayKey.isAfter(startKey)) &&
+                                 (todayKey.isAtSameMomentAs(endKey) || todayKey.isBefore(endKey));
+                        } catch (_) { return false; }
+                      });
+
+                      if (hasLeaveToday) {
+                        if (!context.mounted) return;
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('You cannot check-in while on leave.'),
+                            backgroundColor: Colors.red,
+                          ),
+                        );
+                        return;
+                      }
+                    }
+                  } catch (_) {}
+
+                  if (!context.mounted) return;
                   Navigator.push(
                     context,
                     MaterialPageRoute(builder: (_) => const CheckInScreen()),

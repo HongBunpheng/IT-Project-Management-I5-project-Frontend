@@ -18,16 +18,15 @@ class _ApplyLeaveScreenState extends State<ApplyLeaveScreen> {
   DateTime? _startDate;
   DateTime? _endDate;
   final TextEditingController _reasonController = TextEditingController();
-  bool _isHalfDay = false;
   bool _isSubmitting = false;
   final LeaveRequestService _leaveService = LeaveRequestService();
 
   @override
   void initState() {
     super.initState();
-    // Pre-fill dates as per screenshot for demo
-    _startDate = DateTime(2025, 1, 2);
-    _endDate = DateTime(2025, 1, 2);
+    // Pre-fill dates with current date
+    _startDate = DateTime.now();
+    _endDate = DateTime.now();
   }
 
   @override
@@ -141,6 +140,7 @@ class _ApplyLeaveScreenState extends State<ApplyLeaveScreen> {
 
     return Scaffold(
       backgroundColor: isDark ? const Color(0xFF121212) : AppColors.white,
+      resizeToAvoidBottomInset: true, // Let Scaffold handle resizing
       appBar: AppBar(
         backgroundColor: isDark 
             ? AppColors.primaryBlue.withValues(alpha: 0.2)
@@ -178,14 +178,10 @@ class _ApplyLeaveScreenState extends State<ApplyLeaveScreen> {
         centerTitle: false,
       ),
       body: SafeArea(
-        child: AnimatedPadding(
-          duration: const Duration(milliseconds: 150),
-          curve: Curves.easeOut,
-          padding: EdgeInsets.only(
-            left: horizontalPadding,
-            right: horizontalPadding,
-            top: AppSizes.spacingL,
-            bottom: AppSizes.spacingL + bottomInset,
+        child: Padding(
+          padding: EdgeInsets.symmetric(
+            horizontal: horizontalPadding,
+            vertical: AppSizes.spacingL,
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -318,34 +314,6 @@ class _ApplyLeaveScreenState extends State<ApplyLeaveScreen> {
                       ),
                       const SizedBox(height: 16),
 
-                      // Half Day Checkbox
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text(
-                            'Is half day leave?',
-                            style: TextStyle(
-                              fontSize: AppSizes.fontSizeM,
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.textPrimary,
-                            ),
-                          ),
-                          SizedBox(
-                            height: 24,
-                            width: 24,
-                            child: Checkbox(
-                              value: _isHalfDay,
-                              onChanged: (val) {
-                                setState(() => _isHalfDay = val ?? false);
-                              },
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                              side: BorderSide(color: Colors.grey.shade400),
-                            ),
-                          ),
-                        ],
-                      ),
                       const SizedBox(height: 16),
                     ],
                   ),
@@ -409,11 +377,11 @@ class _ApplyLeaveScreenState extends State<ApplyLeaveScreen> {
                                   reason: reason,
                                   startDateIso: startIso,
                                   endDateIso: endIso,
+                                  isHalfDay: false,
                                 );
                                 if (!context.mounted) return;
                                 setState(() => _isSubmitting = false);
-                                if (!context.mounted) return;
-
+                                
                                 final statusCode = res['statusCode'];
                                 if (statusCode is int &&
                                     statusCode >= 200 &&
@@ -421,6 +389,11 @@ class _ApplyLeaveScreenState extends State<ApplyLeaveScreen> {
                                   CustomSnackBar.success(
                                     title: 'Leave request submitted',
                                   );
+                                  // Close ApplyLeaveScreen and pass the new request back
+                                  Navigator.pop(context, {
+                                    'success': true,
+                                    'request': res['body'] is Map ? res['body'] : null,
+                                  });
                                 } else {
                                   final body = res['body'];
                                   final message = body is Map
@@ -432,35 +405,6 @@ class _ApplyLeaveScreenState extends State<ApplyLeaveScreen> {
                                     message: message,
                                   );
                                 }
-
-                                if (!context.mounted) return;
-                                showModalBottomSheet(
-                                  context: context,
-                                  isScrollControlled: true,
-                                  backgroundColor: Colors.transparent,
-                                  builder: (context) {
-                                    return FractionallySizedBox(
-                                      heightFactor: 0.7, // 70% height sheet
-                                      child: ClipRRect(
-                                        borderRadius:
-                                            const BorderRadius.vertical(
-                                              top: Radius.circular(
-                                                AppSizes.radiusL,
-                                              ),
-                                            ),
-                                        child: LeaveRequestDetailScreen(
-                                          startDate: _formatDate(_startDate),
-                                          endDate: _formatDate(_endDate),
-                                          reason:
-                                              _reasonController.text.isNotEmpty
-                                              ? _reasonController.text
-                                              : "I am not able to join due i have a bad health.",
-                                          isHalfDay: _isHalfDay,
-                                        ),
-                                      ),
-                                    );
-                                  },
-                                );
                               },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.primaryBlue, // Dark Blue

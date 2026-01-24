@@ -8,6 +8,7 @@ import 'qr_scanner_screen.dart';
 import '../../attendance/screen/attendance_screen.dart';
 import '../../services/attendance_service.dart';
 import '../../services/timetable_service.dart';
+import '../../services/leave_request_service.dart';
 import '../../services/token_storage.dart';
 import '../../utils/json_utils.dart';
 import '../../utils/snackbar.dart';
@@ -165,6 +166,56 @@ class _CheckInScreenState extends State<CheckInScreen> {
                 const SizedBox(height: AppSizes.spacingS),
                 GestureDetector(
                   onTap: () async {
+                    // Check for leave requests before allowing scan
+                    setState(() => _isLoading = true);
+                    try {
+                      final userId = await _tokenStorage.readUserId();
+                      if (userId != null && userId.isNotEmpty) {
+                        final leaveService = LeaveRequestService();
+                        final leaveRequests = await leaveService.byStudent(userId);
+                        final today = DateTime.now();
+                        
+                        final hasLeaveToday = leaveRequests.any((row) {
+                          final startStr = readString(row, const ['start_date', 'startDate']);
+                          final endStr = readString(row, const ['end_date', 'endDate']);
+                          final status = (readString(row, const ['status']) ?? 'pending').toLowerCase();
+                          
+                          // Block for both pending and approved leaves as per requirement
+                          if (status == 'rejected' || status == 'declined' || status == 'cancelled' || status == 'cancel') {
+                            return false;
+                          }
+                          
+                          if (startStr == null) return false;
+                          try {
+                            final start = DateTime.parse(startStr);
+                            final end = endStr != null ? DateTime.parse(endStr) : start;
+                            final startKey = DateTime(start.year, start.month, start.day);
+                            final endKey = DateTime(end.year, end.month, end.day);
+                            final todayKey = DateTime(today.year, today.month, today.day);
+                            
+                            return (todayKey.isAtSameMomentAs(startKey) || todayKey.isAfter(startKey)) &&
+                                   (todayKey.isAtSameMomentAs(endKey) || todayKey.isBefore(endKey));
+                          } catch (_) {
+                            return false;
+                          }
+                        });
+
+                        if (hasLeaveToday) {
+                          setState(() => _isLoading = false);
+                          CustomSnackBar.error(
+                            title: 'Access Denied',
+                            message: 'You cannot scan attendance while on leave.',
+                          );
+                          return;
+                        }
+                      }
+                    } catch (_) {
+                      // If leave check fails, we might want to let them through or block. 
+                      // For now, continue to scan as a fallback or just log.
+                    }
+                    setState(() => _isLoading = false);
+
+                    if (!context.mounted) return;
                     final result = await Navigator.push<String>(
                       context,
                       MaterialPageRoute(

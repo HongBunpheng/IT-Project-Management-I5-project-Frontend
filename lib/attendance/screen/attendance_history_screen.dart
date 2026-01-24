@@ -17,7 +17,7 @@ class AttendanceHistoryScreen extends StatefulWidget {
 
 class _AttendanceHistoryScreenState extends State<AttendanceHistoryScreen> {
   bool _isMonthView = true;
-  DateTime _focusedDate = DateTime(2025, 10, 1); // Mock start date as Oct 2025
+  DateTime _focusedDate = DateTime.now();
 
   // Mock Data for Month View
   final List<String> _weekDays = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
@@ -75,29 +75,36 @@ class _AttendanceHistoryScreenState extends State<AttendanceHistoryScreen> {
   }
 
   void _generateMockMonthData() {
-    // Generate some mock data similar to the screenshot
-    // Starting with empty cells for offset
-    for (int i = 0; i < 2; i++) {
-      // Placeholder for offset
+    _monthData.clear();
+    
+    final firstDayOfMonth = DateTime(_focusedDate.year, _focusedDate.month, 1);
+    final lastDayOfMonth = DateTime(_focusedDate.year, _focusedDate.month + 1, 0);
+    final daysInMonth = lastDayOfMonth.day;
+    final firstDayOffset = firstDayOfMonth.weekday - 1; // 1=Mon, so offset is 0 for Mon
+
+    // Add empty cells for offset
+    for (int i = 0; i < firstDayOffset; i++) {
       _monthData.add(
         CalendarDay(
-          date: DateTime(2025, 10, 0),
+          date: DateTime(_focusedDate.year, _focusedDate.month, 0),
           status: AttendanceStatus.noData,
         ),
       );
     }
 
-    // Days 1-31
-    for (int i = 1; i <= 31; i++) {
+    // Days 1 to daysInMonth
+    for (int i = 1; i <= daysInMonth; i++) {
+      final date = DateTime(_focusedDate.year, _focusedDate.month, i);
       AttendanceStatus status = AttendanceStatus.present;
-      if (i % 7 == 0 || i % 7 == 6) {
-        status = AttendanceStatus.nonWorking; // Weekend
-      }
-      if (i == 16 || i == 17 || i == 18 || i == 24) {
+      
+      // Basic mock logic for status
+      if (date.weekday == DateTime.saturday || date.weekday == DateTime.sunday) {
+        status = AttendanceStatus.nonWorking;
+      } else if (i % 10 == 0) {
         status = AttendanceStatus.absent;
       }
 
-      _monthData.add(CalendarDay(date: DateTime(2025, 10, i), status: status));
+      _monthData.add(CalendarDay(date: date, status: status));
     }
   }
 
@@ -114,6 +121,7 @@ class _AttendanceHistoryScreenState extends State<AttendanceHistoryScreen> {
         // Change week
         _focusedDate = _focusedDate.add(Duration(days: navBack ? -7 : 7));
       }
+      _generateMockMonthData(); // Re-generate mock data for the new month
     });
   }
 

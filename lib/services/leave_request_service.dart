@@ -16,6 +16,7 @@ class LeaveRequestService {
     required String reason,
     required String startDateIso,
     required String endDateIso,
+    bool isHalfDay = false,
   }) async {
     final userId = await _ensureUserId();
     if (userId == null || userId.isEmpty) {
@@ -32,6 +33,7 @@ class LeaveRequestService {
         'reason': reason,
         'start_date': startDateIso,
         'end_date': endDateIso,
+        'is_half_day': isHalfDay,
       },
     );
     final decoded = _safeDecode(res.body);
@@ -51,6 +53,39 @@ class LeaveRequestService {
         .map((e) => asMap(e))
         .whereType<Map<String, dynamic>>()
         .toList();
+  }
+
+  Future<List<Map<String, dynamic>>> byGroup(String groupId) async {
+    final res = await _api.getJson('/leave-requests/group/$groupId');
+    final decoded = _safeDecode(res.body);
+    final data = decoded is Map<String, dynamic>
+        ? (asList(decoded['data']) ??
+              asList(decoded['leave_requests']) ??
+              asList(decoded))
+        : asList(decoded);
+
+    return (data ?? const [])
+        .map((e) => asMap(e))
+        .whereType<Map<String, dynamic>>()
+        .toList();
+  }
+
+  Future<Map<String, dynamic>> show(String id) async {
+    final res = await _api.getJson('/leave-requests/$id');
+    final decoded = _safeDecode(res.body);
+    return {'statusCode': res.statusCode, 'body': decoded};
+  }
+
+  Future<Map<String, dynamic>> approve(String id) async {
+    final res = await _api.putJson('/leave-requests/$id/approve');
+    final decoded = _safeDecode(res.body);
+    return {'statusCode': res.statusCode, 'body': decoded};
+  }
+
+  Future<Map<String, dynamic>> reject(String id) async {
+    final res = await _api.putJson('/leave-requests/$id/reject');
+    final decoded = _safeDecode(res.body);
+    return {'statusCode': res.statusCode, 'body': decoded};
   }
 
   dynamic _safeDecode(String body) {
